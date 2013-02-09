@@ -1,0 +1,9 @@
+*.[oa]
+*~
+*.h5
+core
+test
+transsqw
+groundstate
+.runfile
+local.mak
