@@ -1,4 +1,5 @@
 #include "ArgParse.h"
+#include <stdexcept>
 
 using namespace std;
 
@@ -33,19 +34,47 @@ ArgParse::ArgParse(int argc, char* argv[])
 
 double ArgParse::d(const string& str) const
 {
-    return stod(m_streams.at(str));
+    double out;
+    try {
+        out=stod(m_streams.at(str));
+        return out;
+    } catch(out_of_range err) {
+        cerr<<"No member \""<<str<<"\" found in arguments"<<endl;
+        throw err;
+    }
 }
 
 int ArgParse::i(const string& str) const
 {
-    return stoi(m_streams.at(str));
+    int out;
+    try {
+        out=stoi(m_streams.at(str));
+        return out;
+    } catch (out_of_range err) {
+        cerr<<"No member \""<<str<<"\" found in arguments"<<endl;
+        throw err;
+    }
 }
 
 bool ArgParse::b(const string& str) const
 {
-    return stoi(m_streams.at(str));
+    bool out;
+    try {
+        out=stoi(m_streams.at(str));
+        return out;
+    } catch (out_of_range err) {
+        cerr<<"No member \""<<str<<"\" found in arguments"<<endl;
+        throw err;
+    }
 }
  string ArgParse::s(const string& str) const
 {
-    return m_streams.at(str);
+    string out;
+    try {
+        out=m_streams.at(str);
+        return out;
+    } catch (out_of_range err) {
+        cerr<<"No member \""<<str<<"\" found in arguments"<<endl;
+        throw err;
+    }
 }
