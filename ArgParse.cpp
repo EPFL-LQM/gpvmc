@@ -18,6 +18,7 @@ ArgParse::ArgParse(int argc, char* argv[])
             ifstream fin(argv[a]);
             string in,trig,val;
             while(getline(fin,in)) {
+                if(in.size()==0) continue;
                 if(in[0]=='#') continue;
                 trig=in.substr(0,in.find('='));
                 if(in.find('=')==string::npos) {
