@@ -7,7 +7,7 @@ ArgParse::ArgParse(int argc, char* argv[])
     for(int a=1;a<argc;++a){
         if(argv[a][0]=='-'){
             string in(argv[a]),trig,val;
-            trig=in.substr(1,in.find('='));
+            trig=in.substr(1,in.find('=')-1);
             if(in.find('=')==string::npos) {
                 val='1';//true
             } else {
@@ -18,8 +18,7 @@ ArgParse::ArgParse(int argc, char* argv[])
             ifstream fin(argv[a]);
             string in,trig,val;
             while(getline(fin,in)) {
-                if(in.size()==0) continue;
-                if(in[0]=='#') continue;
+                if(in.size()==0 || in[0]=='#') continue;
                 trig=in.substr(0,in.find('='));
                 if(in.find('=')==string::npos) {
                     val='1';
