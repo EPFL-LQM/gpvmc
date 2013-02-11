@@ -1,5 +1,6 @@
 #include "linalg.h"
 #include "blas_lapack.h"
+#include <vector>
 #include <algorithm>
 
 using namespace std;
