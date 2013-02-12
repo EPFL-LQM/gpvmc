@@ -1,16 +1,16 @@
 # example of input arguments for the spinexc
 # lattice (square) size
-L=8
+L=16
 # variational parameters
 phi=0.1
 neel=0
 jastrow=0.1
 # total number of measurements (below 2^17)
-N=2048
+N=256
 # number of samples
-s=16
+s=1
 # number of saves (must be greater or equal to s)
-saves=16
+saves=1
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)
 prefix=-1
 # output directory
@@ -19,7 +19,7 @@ dir=.
 qx=0
 qy=0
 # thermalization steps in units of L*L
-therm=256
+therm=16
 # boundary conditions
 phase_shift_x=1.0
 phase_shift_y=1.0
@@ -28,3 +28,4 @@ jas_onebodystag=1
 jas_twobodystag=0
 # second neighbour exchange
 Jr=0.0
+verbose=1

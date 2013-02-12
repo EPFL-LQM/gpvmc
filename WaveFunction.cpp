@@ -244,6 +244,27 @@ void WaveFunction::hop(size_t khop)
     m_c_exc=khop;
 }
 
+string WaveFunction::Fock() const
+{
+    ostringstream out;
+    out<<"up  : |";
+    for(size_t f=0;f<m_Lx*m_Ly;++f){
+        if(m_fockup[f]==m_Nfsup)
+            out<<std::setw(2)<<"."<<" ";
+        else
+            out<<std::setw(2)<<m_fockup[f]<<" ";
+    }
+    out<<">"<<endl<<"down: |";
+    for(size_t f=0;f<m_Lx*m_Ly;++f){
+        if(m_fockdo[f]==m_Nfsdo)
+            out<<std::setw(2)<<"."<<" ";
+        else
+            out<<std::setw(2)<<m_fockdo[f]<<" ";
+    }
+    out<<">"<<endl;
+    return out.str();
+}
+
 std::ostream & operator<<(std::ostream& out, const WaveFunction & wav)
 {
     out<<"********** WaveFunction: *************"<<std::endl;

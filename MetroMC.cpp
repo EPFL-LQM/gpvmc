@@ -42,21 +42,21 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent)
 #else
         rwtimei=clock();
 #endif
-        if(meas) gtimei=rwtimei;
+        if(meas && !silent) gtimei=rwtimei;
         Step(meas);
 #ifdef USEPARA
         m_rwtimer+=omp_get_wtime()-rwtimei;
 #else
         m_rwtimer+=(clock()-rwtimei)/double(CLOCKS_PER_SEC);
 #endif
-        if(meas!=0 && s%meas==0){
+        if(meas && s%meas==0){
             for(size_t q=0; q<m_quantity.size();++q)
                m_quantity[q]->measure(); 
         }
 #ifdef USEPARA
-        if(meas) m_gtimer+=omp_get_wtime()-gtimei;
+        if(!silent && meas) m_gtimer+=omp_get_wtime()-gtimei;
 #else
-        if(meas) m_gtimer+=(clock()-gtimei)/double(CLOCKS_PER_SEC);
+        if(!silent && meas) m_gtimer+=(clock()-gtimei)/double(CLOCKS_PER_SEC);
 #endif
         if(!silent && meas && len>=100 && s%(len/100)==0){
 #ifdef USEMPI

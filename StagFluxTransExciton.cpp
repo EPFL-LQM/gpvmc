@@ -1,5 +1,4 @@
 #include "StagFluxTransExciton.h"
-#include "Amplitude.h"
 #include "linalg.h"
 
 using namespace std;

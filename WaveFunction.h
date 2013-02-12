@@ -154,6 +154,7 @@ class WaveFunction {
         virtual int hop_sign(const hop_path_t& hopup,
                              const hop_path_t& hopdo) const;
 
+        std::string Fock() const;
         friend std::ostream &
             operator<<(std::ostream& left,
                        const WaveFunction & right);

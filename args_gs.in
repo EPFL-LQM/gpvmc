@@ -15,3 +15,4 @@ phase_shift_y=1.0
 jas_onebodystag=1
 jas_twobodystag=0
 Jr=0.0
+verbose=1

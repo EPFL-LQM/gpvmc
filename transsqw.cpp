@@ -54,6 +54,7 @@ int main(int argc, char* argv[])
     bool jas_stagmagn=arg.b("jas_onebodystag");
     bool jas_stag=arg.b("jas_twobodystag");
     double jr=arg.d("Jr");
+    bool verbose=arg.b("verbose");
 
     // Setup calculation parameters
     FileManager fm(dir,prefix);
@@ -71,6 +72,7 @@ int main(int argc, char* argv[])
     fm.FileAttribute("phasex",phase_shift[0]);
     fm.FileAttribute("phasey",phase_shift[1]);
     fm.FileAttribute("Jr",jr);
+    fm.FileAttribute("transverse",1);
     if(jas_stag) fm.FileAttribute("twobodystagjastrow",1);
     if(jas_stagmagn) fm.FileAttribute("onebodystagjastrow",1);
 
@@ -105,7 +107,7 @@ int main(int argc, char* argv[])
         // Calculation
         for(size_t m=0;m<saves;++m){
             Timer::tic("main/ranwalk");
-            varmc.Walk(L*L*N/saves,L*L);
+            varmc.Walk(L*L*N/saves,L*L,!verbose);
             Timer::toc("main/ranwalk");
             rej=varmc.Rejection();
             seen.save();

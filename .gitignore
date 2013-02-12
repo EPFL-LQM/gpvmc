@@ -4,6 +4,7 @@
 core
 test
 transsqw
+longsqw
 groundstate
 .runfile
 local.mak
