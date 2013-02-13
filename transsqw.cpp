@@ -93,11 +93,14 @@ int main(int argc, char* argv[])
                 jas=new StagJastrow(&sp,jastrow);
         }
         Amplitude amp(&sp,&wav);
+        while(amp.Amp()==0.0){
+            sp.Init();
+            amp.Init();
+        }
         FullSpaceStepper step(&amp);
         ProjHeis seen(&step,&fm,jr);
         MetroMC varmc(&step,&fm);
         varmc.AddQuantity(&seen);
-        while(amp.Amp()==0.0) sp.Init();
 
         // Start calculation: thermalize
         varmc.Walk(int(therm*L*L),0);
