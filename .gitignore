@@ -4,6 +4,7 @@
 core
 test
 transsqw
+genstranssqw
 longsqw
 groundstate
 .runfile

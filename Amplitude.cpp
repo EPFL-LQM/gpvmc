@@ -22,7 +22,6 @@ Amplitude::Amplitude(SpinState* sp, WaveFunction* wav)
     m_matdo(0),m_matido(0),
     m_amp(0), m_amp_ok(false), m_Nup(0), m_Ndo(0)
 {
-    std::cout<<"Init called"<<std::endl;
     if(sp->GetNup()!=wav->GetNup() || sp->GetNdo()!=wav->GetNdo())
 #ifdef EXCEPT
         throw(std::logic_error("Amplitude::"
