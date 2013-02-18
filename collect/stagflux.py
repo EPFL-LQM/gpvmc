@@ -1,4 +1,5 @@
 import scipy as sc
+from scipy.linalg import eigh
 import code
 
 def delta(kx,ky,param):
@@ -85,7 +86,7 @@ def fermisigns(Lx,Ly,shift,q):
 
 def sqwamp(H,O,Lx,Ly,q,shift,p):
     kx,ky=fermisea(Lx,Ly,shift)
-    E,V=sc.linalg.eigh(H,O)
+    E,V=eigh(H,O)
     sqw=len(E)*[0]
     for e in range(len(E)):
         pk=phik(kx,ky,q[0],q[1],[p['phi'],p['neel']])

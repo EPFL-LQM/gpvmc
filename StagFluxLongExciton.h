@@ -4,9 +4,9 @@
 class StagFluxLongExciton: public StagFluxWaveFunction
 {
     public:
-        StagFluxLongExciton(size_t Lx, size_t Ly,
-                             double phi, double neel,
-                             double *bc_phase, size_t *q);
+        StagFluxLongExciton(size_t L,
+                            double phi, double neel,
+                            double *bc_phase, size_t *q);
         virtual ~StagFluxLongExciton();
     private:
         size_t m_q[2];

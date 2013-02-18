@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
         // Setup calculation
         double rej=0;
         SpinState sp(L,L*L/2,L*L/2);
-        StagFluxLongExciton wav(L,L,phi,neel,phase_shift,Q);
+        StagFluxLongExciton wav(L,phi,neel,phase_shift,Q);
         Jastrow* jas=0;
         if(jastrow!=0){
             if(jas_stagmagn)

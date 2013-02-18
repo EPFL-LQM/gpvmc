@@ -28,8 +28,8 @@ def GetEigSys(rootdir,L,q,calc_id,Nsamp):
         for d in hfile[g]:
             if i<Nsamp:
                 dat=hfile["/{0}/{1}".format(g,d)]
-                H[i,:,:]+=dat[0:N/2,0:2*N:2]+dat[0:N/2,1:2*N:2]*1j
-                O[i,:,:]+=dat[N/2:N,0:2*N:2]+dat[N/2:N,1:2*N:2]*1j
+                H[i,:,:]+=dat[0:N/2,0:N:2]+dat[0:N/2,1:N:2]*1j
+                O[i,:,:]+=dat[N/2:N,0:N:2]+dat[N/2:N,1:N:2]*1j
                 ns+=1
                 if ns==samptot/Nsamp:
                     H[i,:,:]/=ns
