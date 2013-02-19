@@ -5,10 +5,12 @@ PROFILE=no
 OPT=-O3 -ffast-math
 DEB=
 
-USEMPI=no
+INSTALL_DIR=/home/bastien/vmc-run
+
+USEMPI=yes
 STATIC=no
 USEPARA=no
-USEEXCEPT=yes
+USEEXCEPT=no
 
 #compilers:
 INTEL=no
