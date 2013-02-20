@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 #ifdef USEMPI
     MPI_Init(&argc,&argv);
 #endif
-    size_t N=256;
+    //size_t N=256;
     //int seed=1351781469;
     int seed=time(NULL);
     size_t L=4;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     FileManager fm;
     //StagFluxTransExciton ex(L,L,0.1*M_PI,0.0,bc,q);
     //StagFluxGroundState ex(L,L,0.1*M_PI,0.0,bc);
-    StagFluxLongExciton ex(L,L,0.1*M_PI,0.0,bc,q);
+    StagFluxLongExciton ex(L,0.1*M_PI,0.0,bc,q);
     StaggMagnJastrow jas(&sp,0.08);
     Amplitude amp(&sp,&ex);
     for(size_t k=0;k<ex.GetNExc();++k){
