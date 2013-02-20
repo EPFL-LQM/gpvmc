@@ -62,11 +62,11 @@ clean:
 cleaner: clean
 	rm -f $(BIN)
 
+install: $(BIN)
+	mkdir -p $(INSTALL_DIR) && cp $(BIN) $(INSTALL_DIR)
+
 showme:
 	mpicxx -showme
-
-release: $(SRC) $(HDR) makefile
-	tar -czf StagVMC.tar.gz *.cpp *.h makefile
 
 doc: $(HDR) Doxyfile
 	doxygen
