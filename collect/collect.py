@@ -2,6 +2,7 @@
 import h5py
 import scipy as sc
 from scipy.linalg import eigh
+import stagflux as sf
 
 def check_sampling(hfile,Nsamp):
     samptot=0
