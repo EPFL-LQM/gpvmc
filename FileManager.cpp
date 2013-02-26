@@ -137,6 +137,11 @@ void FileManager::FileAttribute(string attr, double val)
     m_fileattr[attr]=val;
 }
 
+void FileManager::FileAttribute(string attr, string val)
+{
+    m_file_str_attr[attr]=val;
+}
+
 void FileManager::DataAttribute(string attr, double val)
 {
     m_dataattr[attr]=val;
@@ -178,6 +183,12 @@ void FileManager::Write(int isready)
                     H5LTset_attribute_double(fout,"/",atit->first.c_str(),
                                              &(atit->second),1);
                     atit++;
+                }
+                map<string,string>::iterator stratit=m_file_str_attr.begin();
+                while(stratit!=m_file_str_attr.end()){
+                    H5LTset_attribute_string(fout,"/",stratit->first.c_str(),
+                                             stratit->second.c_str());
+                    stratit++;
                 }
             } else {
                 // make backup of file in case process is killed while writing

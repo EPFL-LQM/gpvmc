@@ -1,7 +1,7 @@
 include config.mak
 
 #BIN=varmc spinexc test
-BIN=test transsqw groundstate longsqw gentranssqw
+BIN=test transsqw groundstate longsqw
 SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StagFluxGenTransExciton.cpp
 HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StagFluxGenTransExciton.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
@@ -10,7 +10,6 @@ all: $(BIN)
 
 groundstate.o: $(HDR)
 transsqw.o: $(HDR)
-gentranssqw.o: $(HDR)
 test.o: $(HDR)
 longsqw.o: $(HDR)
 zdotu_sub.o: zdotu_sub.f
@@ -45,9 +44,6 @@ test: test.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)
 
 transsqw: transsqw.o $(OBJ)
-	$(OCXX) -o $@ $^ $(LDFLAGS)
-
-gentranssqw: gentranssqw.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)
 
 longsqw: longsqw.o $(OBJ)

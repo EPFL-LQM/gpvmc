@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 #ifdef USEMPI
     MPI_Init(&argc,&argv);
 #endif
-    size_t N=256;
+    //size_t N=256;
     //int seed=1351781469;
     int seed=time(NULL);
     size_t L=4;

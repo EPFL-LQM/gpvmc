@@ -27,6 +27,7 @@ class FileManager
         std::string m_dir;
         std::map<std::string,MatStream> m_streams;
         std::map<std::string,double> m_fileattr;
+        std::map<std::string,std::string> m_file_str_attr;
         std::map<std::string,double> m_dataattr;
         int m_stat_per_sample;
     public:
@@ -34,6 +35,7 @@ class FileManager
         enum {message_monitor,message_save};
         MatStream& FileStream(std::string basename);
         void FileAttribute(std::string attr, double val);
+        void FileAttribute(std::string attr, std::string val);
         void DataAttribute(std::string attr, double val);
         int& StatPerSample();
         int Prefix() {return m_num;}

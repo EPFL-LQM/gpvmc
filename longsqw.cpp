@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     fm.FileAttribute("phasex",phase_shift[0]);
     fm.FileAttribute("phasey",phase_shift[1]);
     fm.FileAttribute("Jr",jr);
-    fm.FileAttribute("longitudinal",1);
+    fm.FileAttribute("channel","long");
     if(jas_stag) fm.FileAttribute("twobodystagjastrow",1);
     if(jas_stagmagn) fm.FileAttribute("onebodystagjastrow",1);
 
