@@ -40,11 +40,6 @@ def GetEigSys(rootdir,L,q,calc_id,Nsamp):
     for i in range(Nsamp):
         H[i,:,:]=0.5*(H[i,:,:]+sc.conj(H[i,:,:].T))
         O[i,:,:]=0.5*(O[i,:,:]+sc.conj(O[i,:,:].T))
-    p=GetParams(rootdir,L,q,calc_id)
-    shift=[p['phasex']/2.0,p['phasey']/2.0]
-    fs=sf.fermisigns(L,L,shift,q)
-    H=sc.dot(sc.diag(fs),sc.dot(H,sc.diag(fs)))
-    O=sc.dot(sc.diag(fs),sc.dot(O,sc.diag(fs)))
     return H, O
 
 def GetParams(rootdir,L,q,calc_id):

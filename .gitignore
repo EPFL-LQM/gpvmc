@@ -10,3 +10,4 @@ groundstate
 .runfile
 local.mak
 *.swp
+*.pyc
