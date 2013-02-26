@@ -64,15 +64,15 @@ void StatSpinStruct::measure()
                                     vector<hop_path_t>(1),
                                     vector<hop_path_t>(1),
                                     &swamps[0]);
-    size_t sw=0;
     vector<complex<double> > sqlong(m_qs.size()/2,0);
     vector<BigComplex> sqtranspm(m_qs.size()/2,0);
     vector<BigComplex> sqtransmp(m_qs.size()/2,0);
-    for(size_t ix=0;ix<L;++ix){
-        for(size_t iy=0;iy<L;++iy){
-            for(size_t jx=0;jx<L;++jx){
-                for(size_t jy=0;jy<L;++jy){
-                    for(size_t q=0;q<m_qs.size()/2;++q){
+    for(size_t q=0;q<m_qs.size()/2;++q){
+        size_t sw=0;
+        for(size_t ix=0;ix<L;++ix){
+            for(size_t iy=0;iy<L;++iy){
+                for(size_t jx=0;jx<L;++jx){
+                    for(size_t jy=0;jy<L;++jy){
                         if(st->GetLatOc(ix,iy)==UP){
                             if(st->GetLatOc(jx,jy)==UP){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*0.25*m_ph[(q*L+ix)*L+iy];

@@ -15,10 +15,9 @@
 #include "Amplitude.h"
 #include "RanGen.h"
 #include "ProjHeis.h"
-#include "SpinDensity.h"
+#include "StatSpinStruct.h"
 #include "FileManager.h"
 #include "ArgParse.h"
-#include "SpinSpinCorr.h"
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h>
@@ -52,7 +51,6 @@ int main(int argc, char* argv[])
     size_t saves=arg.i("saves");
     int prefix=arg.i("prefix");
     string dir=arg.s("dir");
-    string qfilestr=arg.s("qfile");
     double therm=arg.i("therm");
     double phase_shift[2]={arg.d("phase_shift_x"),arg.d("phase_shift_y")};
     bool jas_stagmagn=arg.b("jas_onebodystag");
@@ -64,19 +62,6 @@ int main(int argc, char* argv[])
     FileManager fm(dir,prefix);
     phi*=M_PI;
     double rej(0);
-    std::vector<std::vector<double> > qs;
-    std::ifstream qfile(qfilestr.c_str());
-    if(!qfilestr.empty() && qfile.is_open()){
-        while(qfile.good()){
-            double qx,qy;
-            qfile>>qx>>qy;
-            if(qfile.good()){
-                qs.push_back(std::vector<double>(2,0));
-                qs.back()[0]=qx*2*M_PI;
-                qs.back()[1]=qy*2*M_PI;
-            }
-        }
-    }
     size_t* Rs=new size_t[2*(L/2+1)*(L/2+1)];
     for(size_t x=0;x<=L/2;++x){
         for(size_t y=0;y<=L/2;++y){
@@ -114,12 +99,10 @@ int main(int argc, char* argv[])
         Amplitude amp(&sp,&wav);
         FullSpaceStepper step(&amp);
         ProjHeis heisen(&step,&fm,jr);
-        SpinSpinCorr sscorr(&step,&fm,(L/2+1)*(L/2+1),Rs);
-        SpinDensity spindense(&step,&fm,qs,L);
+        StatSpinStruct stat(&step,&fm);
         MetroMC varmc(&step,&fm);
         varmc.AddQuantity(&heisen);
-        varmc.AddQuantity(&sscorr);
-        if(qs.size()) varmc.AddQuantity(&spindense);
+        varmc.AddQuantity(&stat);
         while(amp.Amp()==0) sp.Init();
 
         // Start calculation: thermalize
@@ -132,9 +115,8 @@ int main(int argc, char* argv[])
             Timer::tic("main/ranwalk");
             varmc.Walk(L*L*N/saves,L*L,!verbose);
             Timer::toc("main/ranwalk");
-            if(qs.size()) spindense.save();
             heisen.save();
-            sscorr.save();
+            stat.save();
             rej=varmc.Rejection();
             std::stringstream ahead;
             if(stat_count>=fm.StatPerSample()) stat_count=0;
