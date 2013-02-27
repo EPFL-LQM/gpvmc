@@ -31,6 +31,7 @@ StatSpinStruct::StatSpinStruct(const Stepper* stepper,
 
 void StatSpinStruct::measure()
 {
+    Quantity::measure();
     const SpinState* st=m_stepper->GetAmp()->GetSpinState();
     size_t L=st->GetL();
     // get spin swap list
