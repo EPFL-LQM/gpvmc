@@ -23,15 +23,21 @@ def vk(kx,ky,spin,band,param):
     else:
         return sc.sqrt(0.5*(1+spin*param[1]/omega(kx,ky,param)));
 
-def phiktrans(kx,ky,qx,qy,p):
-    kqx=fold(kx-qx)
-    kqy=fold(ky-qy)
-    return  sc.conj(uk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
-            sc.conj(vk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p)
+def phiktrans(kx,ky,qx,qy,p,r=sc.array([0,0])):
+    kqx=kx-qx
+    kqy=ky-qy
+    if sc.mod(sc.sum(r),2)==0:
+        return  sc.exp(-2j*sc.pi*(kx*r[0]+ky*r[1]))*(\
+                sc.conj(uk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
+                sc.conj(vk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p))
+    if sc.mod(sc.sum(r),2)==1:
+        return sc.exp(-2j*sc.pi*(kx*r[0]+ky*r[1]))*(\
+                sc.conj(vk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
+                sc.conj(uk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p))
 
 def phiklong(kx,ky,qx,qy,spin,p):
-    kqx=fold(kx-qx)
-    kqy=fold(ky-qy)
+    kqx=kx-qx
+    kqy=ky-qy
     return 0.5*spin*(sc.conj(uk(kx,ky,spin,1,p))*uk(kqx,kqy,spin,-1,p)+\
                      sc.conj(vk(kx,ky,spin,1,p))*vk(kqx,kqy,spin,-1,p))
 
@@ -115,10 +121,8 @@ def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
 def sqwtransamp(H,O,Lx,Ly,q,shift,phi,neel):
     kx,ky=fermisea(Lx,Ly,shift)
     E,V=eigh(H,O)
-    sqw=len(E)*[0]
-    for e in range(len(E)):
-        pk=phiktrans(kx,ky,q[0],q[1],[phi,neel])
-        sqw[e]=abs(sc.dot(sc.conj(V[:,e]),sc.dot(O,pk)))**2
+    pk=phiktrans(kx,ky,q[0],q[1],[phi,neel])
+    sqw=abs(sc.einsum('ij,ik,k',sc.conj(V),O,pk))**2
     return E,sqw
 
 def sqwlongamp(H,O,Lx,Ly,q,shift,phi,neel):
@@ -138,6 +142,20 @@ def sqwlongamp(H,O,Lx,Ly,q,shift,phi,neel):
                 pk[-1]=sc.sum(neel/omega(kx,ky,p))
         sqw[e]=abs(sc.dot(sc.conj(V[:,e]),sc.dot(O,pk)))**2
     return E,sqw
+
+def transspinon(H,O,Lx,Ly,q,shift,phi,neel,rs,t):
+    kx,ky=fermisea(Lx,Ly,shift)
+    E,V=eigh(H,O)
+    Wq=sc.zeros((sc.shape(rs)[0],len(t)))
+    pk=phiktrans(kx,ky,q[0],q[1],[phi,neel])
+    rhs=sc.dot(sc.conj(V.T),sc.dot(O,pk))
+    for i in range(sc.shape(rs)[0]):
+        pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r=rs[i,:])
+        lhs=sc.dot(sc.conj(pkr),sc.dot(O,V))
+        omt=sc.exp(1j*sc.einsum('i,j',t,E))
+        omt=sc.einsum('ij,kj->kij',sc.eye(len(E)),omt)
+        Wq[i,:]=abs(sc.einsum('i,kij,j',lhs,omt,rhs))**2
+    return Wq
 
 def gaussians(x,x0,A,sig):
     gg=sc.zeros(sc.shape(x))
