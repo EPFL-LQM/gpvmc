@@ -114,38 +114,35 @@ def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
         fs=transfermisigns(Lx,Ly,shift,q)
     elif ori=='long':
         fs=longfermisigns(Lx,Ly,shift,q)
-    H=sc.dot(sc.diag(fs),sc.dot(H,sc.diag(fs)))
-    O=sc.dot(sc.diag(fs),sc.dot(O,sc.diag(fs)))
+    H=sc.einsum('ij,kjl,lm->kim',sc.diag(fs),H,sc.diag(fs))
+    O=sc.einsum('ij,kjl,lm->kim',sc.diag(fs),O,sc.diag(fs))
     return H,O
 
-def sqwtransamp(H,O,Lx,Ly,q,shift,phi,neel):
+def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel):
+    sqn=sc.zeros(sc.shape(V)[0:2])
     kx,ky=fermisea(Lx,Ly,shift)
-    E,V=eigh(H,O)
     pk=phiktrans(kx,ky,q[0],q[1],[phi,neel])
-    sqw=abs(sc.einsum('ij,ik,k',sc.conj(V),O,pk))**2
-    return E,sqw
+    sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
+    return sqn
 
-def sqwlongamp(H,O,Lx,Ly,q,shift,phi,neel):
+def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
+    sqn=sc.zeros(sc.shape(V)[0:2])
     kx,ky=fermisea(Lx,Ly,shift)
-    E,V=eigh(H,O)
-    sqw=len(E)*[0]
-    for e in range(len(E)):
-        pkup=sc.resize(phiklong(kx,ky,q[0],q[1],1,[phi,neel]),(len(kx),1))
-        pkdo=sc.resize(phiklong(kx,ky,q[0],q[1],-1,[phi,neel]),(len(kx),1))
-        pk=sc.zeros((2*len(pkup),1),complex)
-        pk[0:2*len(pkup):2]=pkup
-        pk[1:2*len(pkup):2]=pkdo
-        if (abs(q[0])+abs(q[1]))<1e-6 or\
-           (abs(q[0]-0.5)+abs(q[1]-0.5))<1e-6:
-            pk.append([0])
-            if neel!=0:
-                pk[-1]=sc.sum(neel/omega(kx,ky,p))
-        sqw[e]=abs(sc.dot(sc.conj(V[:,e]),sc.dot(O,pk)))**2
-    return E,sqw
+    pkup=phiklong(kx,ky,q[0],q[1],1,[phi,neel])
+    pkdo=phiklong(kx,ky,q[0],q[1],-1,[phi,neel])
+    pk=sc.zeros((2*len(pkup)),complex)
+    pk[0:2*len(pkup):2]=pkup
+    pk[1:2*len(pkup):2]=pkdo
+    if (abs(q[0])+abs(q[1]))<1e-6 or\
+       (abs(q[0]-0.5)+abs(q[1]-0.5))<1e-6:
+        pk.append([0])
+        if neel!=0:
+            pk[-1]=sc.sum(neel/omega(kx,ky,p))
+    sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
+    return sqn
 
-def transspinon(H,O,Lx,Ly,q,shift,phi,neel,rs,t):
+def transspinon(E,V,O,Lx,Ly,q,shift,phi,neel,rs,t):
     kx,ky=fermisea(Lx,Ly,shift)
-    E,V=eigh(H,O)
     Wq=sc.zeros((sc.shape(rs)[0],len(t)))
     pk=phiktrans(kx,ky,q[0],q[1],[phi,neel])
     rhs=sc.dot(sc.conj(V.T),sc.dot(O,pk))
@@ -155,6 +152,8 @@ def transspinon(H,O,Lx,Ly,q,shift,phi,neel,rs,t):
         omt=sc.exp(1j*sc.einsum('i,j',t,E))
         omt=sc.einsum('ij,kj->kij',sc.eye(len(E)),omt)
         Wq[i,:]=abs(sc.einsum('i,kij,j',lhs,omt,rhs))**2
+    nW=1.0/sc.sum(Wqrt,axis=0)
+    Wq=sc.einsum('ij,j->ij',Wqrt,nW)
     return Wq
 
 def gaussians(x,x0,A,sig):
