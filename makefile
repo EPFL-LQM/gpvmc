@@ -58,7 +58,7 @@ cleaner: clean
 	rm -f $(BIN)
 
 install: $(BIN)
-	mkdir -p $(INSTALL_DIR) && cp $(BIN) $(INSTALL_DIR)
+	mkdir -p $(INSTALL_DIR); cp $(BIN) $(INSTALL_DIR); cd collect; make install
 
 showme:
 	mpicxx -showme

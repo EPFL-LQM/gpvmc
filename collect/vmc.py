@@ -68,7 +68,32 @@ def GetEigSys(filename,Nsamp=1,channel=''):
     print('diagonalization finished')
     return H,O,E,V
 
+def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
+    attrs=GetAttr(filename)
+    if channel=='':
+        channel=attrs['channel']
+    if channel=='long':
+        raise ValueError('Longitudinal channel not yet implemented')
+    L=attrs['L']
+    q=[float(attrs['qx']/L),float(attrs['qy'])/L]
+    shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
+    phi=attrs['phi']
+    neel=attrs['neel']
+    if O==None:
+        H,O,E,V=GetEigSys(filename,Nsamp,channel)
+    if r==None:
+        X,Y=sc.meshgrid(range(-L/2,L/2),range(-L/2,L/2))
+        r=sc.column_stack([X.flatten(),Y.flatten()])
+    return sf.transspinonoverlap(O,L,L,q,shift,phi,neel,r)
+
 def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
+    """
+    For the transverse channel:
+    Calculates and returns Sq(sample,n,r)=<q,r|q,n><q,n|Sqp|GS>.
+    Coordinates are in the order Sq(sample,n,r).
+    For the longitudinal channel: input r has no effect.
+    Calculates and return Sq(sample,n)=|<q,n|Sqz|GS>|^2.
+    """
     attrs=GetAttr(filename)
     if channel=='':
         channel=attrs['channel']
@@ -140,11 +165,11 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
         S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,r=r,V=V,O=O)
     if w==None:
         w=sc.arange(-0.5,6,0.01)
-    sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]))
+    sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]),dtype=S.dtype)
     ax=None
     for ir in range(sc.shape(r)[0]):
         for s in range(sc.shape(sqw)[0]):
-            sqw[s,:]+=abs(sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,ir,:]),sc.ones(sc.shape(E)[1])*width))
+            sqw[s,:]+=sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,ir,:]),sc.ones(sc.shape(E)[1])*width)
     sqw=sqw/sc.shape(r)[0]+shift
     if fig is None:
         fig=pl.figure()
@@ -155,6 +180,7 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
     for s in range(sc.shape(sqw)[0]):
         ax.plot(w,sqw[s,:])
         ax.plot(E[s,:]-gsen*L*L,sc.zeros(sc.shape(E)[1]),'o')
+    ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
     ax.set_xlim((sc.amin(w),sc.amax(w)))
     return fig
 

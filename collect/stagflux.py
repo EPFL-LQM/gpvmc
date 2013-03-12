@@ -35,10 +35,10 @@ def phiktrans(kx,ky,qx,qy,p,r=sc.zeros((1,2))):
         sc.conj(vk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p)
     pko=sc.conj(vk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
         sc.conj(uk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p)
-    even=sc.diag(1-sc.mod(r[:,0]+r[:,1],2))
-    odd=sc.diag(sc.mod(r[:,0]+r[:,1],2))
+    even=1-sc.mod(r[:,0]+r[:,1],2)
+    odd=sc.mod(r[:,0]+r[:,1],2)
     ph=sc.exp(-2j*sc.pi*(sc.einsum('i,j->ij',kx,r[:,0])+sc.einsum('i,j->ij',ky,r[:,1])))
-    pk=sc.einsum('ij,jl,i->il',ph,even,pke)+sc.einsum('ij,jl,i->il',ph,odd,pko)
+    pk=sc.einsum('ij,j,i->ij',ph,even,pke)+sc.einsum('ij,j,i->ij',ph,odd,pko)
     return pk
 
 def phiklong(kx,ky,qx,qy,spin,p):
@@ -154,12 +154,19 @@ def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
     sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
     return sqn
 
+def transspinonoverlap(O,Lx,Ly,q,shift,phi,neel,r):
+    kx,ky=fermisea(Lx,Ly,shift)
+    pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
+    ork=sc.einsum('ij,kil->kjl',sc.conj(pkr),O)
+    return sc.einsum('kil,lm->kim',ork,pkr)
+
 def gaussians(x,x0,A,sig):
     gg=sc.zeros(sc.shape(x),A.dtype)
-    if sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A)))>0.01:
-        warnings.warn('Gaussian amplitude has a sizable imaginary part\(max(|Im|)/max(|Re|)={0}, mean(abs(A))={1}).'\
-            .format(sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A))), sc.mean(abs(A))))
-    amp=sc.real(A)*sc.sqrt(1/2.0/sc.pi)/sig
+    #if sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A)))>0.01:
+    #    warnings.warn(\
+    #'Gaussian amplitude has a sizable imaginary part\(max(|Im|)/max(|Re|)={0}, mean(abs(A))={1}).'\
+    #        .format(sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A))), sc.mean(abs(A))))
+    amp=A*sc.sqrt(1/2.0/sc.pi)/sig
     [X,X0]=sc.meshgrid(x,x0)
     gg=sc.einsum('i,ij',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
     return gg
