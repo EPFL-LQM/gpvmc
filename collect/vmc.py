@@ -7,11 +7,12 @@ import os
 import re
 import code
 
-def GetEigSys(filename,Nsamp=1,channel=''):
+class InputFileError(Exception):
+    def __init__(self,errstr):
+        self.message=errstr
+
+def CheckStat(filename,Nsamp=1):
     hfile=h5py.File(filename,'r')
-    attr=GetAttr(filename)
-    if channel=='':
-        channel=attr['channel']
     sw=0
     for r in hfile:
         for d in hfile[r]:
@@ -33,8 +34,16 @@ def GetEigSys(filename,Nsamp=1,channel=''):
     Average statistics of {1} (min: {2}, max: {3})"""\
                 .format(sc.mod(sw,Nsamp),sc.mean(stats),\
                 sc.amin(stats),sc.amax(stats)))
-    except:
-        pass
+    except Exception as err:
+        print(err)
+    return sdat
+
+def GetEigSys(filename,Nsamp=1,channel=''):
+    hfile=h5py.File(filename,'r')
+    attr=GetAttr(filename)
+    if channel=='':
+        channel=attr['channel']
+    sdat=CheckStat(filename,Nsamp)
     dat=hfile["/rank-1/data-0"]
     N=sc.shape(dat)[0]/2
     L=attr['L']
@@ -110,6 +119,32 @@ def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
         return sf.sqwtransamp(V,O,L,L,q,shift,phi,neel,r)
     pass
 
+def GetSq(filename,Nsamp=1):
+    attrs=GetAttr(filename)
+    hfile=h5py.File(filename,'r')
+    sdat=CheckStat(filename,Nsamp)
+    filetype=''
+    try:
+        filetype=attrs['type']
+    except KeyError:
+        mo=re.match('.*/?[0-9]+-(StatSpinStruct)\.h5',filename)
+        filetype=mo.groups()[0]
+    if filetype!='StatSpinStruct':
+        raise InputFileError('\"{0}\" is not a static structure factor file')
+    N=pow(attrs['L'],2)
+    Sq=sc.zeros((Nsamp,3,N))
+    sample=0
+    ns=0
+    for r in hfile:
+        for d in hfile[r]:
+            Sq[sample,:,:]+=hfile[r][d][0:3,0::2]+1j*hfile[r][d][0:3,1::2]
+            ns+=1
+            if ns==sdat:
+                ns=0
+                sample+=1
+    qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
+    return qx.flatten(),qy.flatten(),Sq
+
 def PlotTransSpinon(filename,Nsamp=1,V=None,O=None,E=None,S=None,\
                     r=sc.zeros((1,2)),fig=None,width=0.1,\
                     shift=0,w=None):
@@ -120,7 +155,7 @@ def PlotTransSpinon(filename,Nsamp=1,V=None,O=None,E=None,S=None,\
     except:
         pass
     if channel=='long':
-        raise ValueError('longitudinal channel not supported')
+        raise NotImplementedError('longitudinal channel not supported')
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     if E==None:
@@ -154,7 +189,7 @@ def GetAttr(filename):
     return hfile.attrs
 
 def PlotSqw(filename,gsen,Nsamp=1,channel='',\
-            fig=None,width=0.1,r=sc.zeros((1,2)),shift=0,\
+            fig=None,width=0.1,shift=0,\
             V=None,O=None,E=None,S=None,w=None):
     attrs=GetAttr(filename)
     L=attrs['L']
@@ -162,15 +197,16 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
     if E==None:
         H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
     if S==None:
-        S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,r=r,V=V,O=O)
+        S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,V=V,O=O)
     if w==None:
         w=sc.arange(-0.5,6,0.01)
     sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]),dtype=S.dtype)
     ax=None
-    for ir in range(sc.shape(r)[0]):
-        for s in range(sc.shape(sqw)[0]):
-            sqw[s,:]+=sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,ir,:]),sc.ones(sc.shape(E)[1])*width)
-    sqw=sqw/sc.shape(r)[0]+shift
+    if len(sc.shape(S))==3:
+        S=S[:,0,:]
+    for s in range(sc.shape(sqw)[0]):
+        sqw[s]=sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,:]),sc.ones(sc.shape(E)[1])*width)
+    sqw+=shift
     if fig is None:
         fig=pl.figure()
         ax=fig.gca()
@@ -180,7 +216,8 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
     for s in range(sc.shape(sqw)[0]):
         ax.plot(w,sqw[s,:])
         ax.plot(E[s,:]-gsen*L*L,sc.zeros(sc.shape(E)[1]),'o')
-    ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
+    if Nsamp!=1:
+        ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
     ax.set_xlim((sc.amin(w),sc.amax(w)))
     return fig
 
@@ -188,16 +225,18 @@ def ScanDir(folder='.',keys=[],return_dict=False):
     out={}
     for f in os.listdir(folder):
         if re.match(".*\.h5",f) is not None:
-            print(f)
             out[f]=dict(GetAttr("{0}/{1}".format(folder,f)))
+            s=f
             if len(keys):
                 s="{0}: ".format(f)
+                if keys=='*':
+                    keys=out[f].keys()
                 for k in keys:
                     try:
                         s="{0} {1} /".format(s,out[f][k])
                     except KeyError:
                         s="{0} None /".format(s)
-                print(s)
+            print(s)
     if return_dict:
         return out
 

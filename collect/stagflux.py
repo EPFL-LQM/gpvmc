@@ -126,7 +126,7 @@ def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
 
 def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2))):
     """
-    Returns Sq[r,n]=<q,r|q,n><q,n|q,0>
+    Returns Sq[sample,r,n]=<q,r|q,n><q,n|q,0>
     """
     sqn=sc.zeros(sc.shape(V)[0:2])
     kx,ky=fermisea(Lx,Ly,shift)

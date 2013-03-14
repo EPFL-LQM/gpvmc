@@ -190,6 +190,7 @@ void FileManager::Write(int isready)
                                              stratit->second.c_str());
                     stratit++;
                 }
+                H5LTset_attribute_string(fout,"/","type",strin);
             } else {
                 // make backup of file in case process is killed while writing
                 /*int src,dest;
@@ -333,6 +334,13 @@ void FileManager::Write(int isready)
                                          &(atit->second),1);
                 atit++;
             }
+            map<string,string>::iterator stratit=m_file_str_attr.begin();
+            while(stratit!=m_file_str_attr.end()){
+                H5LTset_attribute_string(fout,"/",stratit->first.c_str(),
+                                         stratit->second.c_str());
+                stratit++;
+            }
+            H5LTset_attribute_string(fout,"/","type",it->first);
         } else {
             fout=H5Fopen(fn.str().c_str(),
                          H5F_ACC_RDWR,H5P_DEFAULT);

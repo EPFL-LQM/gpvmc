@@ -1,12 +1,13 @@
 #include <cmath>
 #include "StatSpinStruct.h"
 #include "Stepper.h"
+#include "Jastrow.h"
 
 using namespace std;
 
 StatSpinStruct::StatSpinStruct(const Stepper* stepper,
                                FileManager* fm)
-    :MatrixQuantity(stepper,fm,"StatSpinStruct",4,pow(stepper->GetAmp()->GetSpinState()->GetL(),2))
+    :MatrixQuantity(stepper,fm,"StatSpinStruct",3,pow(stepper->GetAmp()->GetSpinState()->GetL(),2))
 {
     const SpinState* st=stepper->GetAmp()->GetSpinState();
     size_t L=st->GetL();
@@ -18,12 +19,12 @@ StatSpinStruct::StatSpinStruct(const Stepper* stepper,
         }
     }
     complex<double> I(0,1);
-    m_ph.reserve(L*L*m_qs.size()/2);
+    m_ph=vector<complex<double> >(L*L*m_qs.size()/2);
     for(size_t q=0;q<m_qs.size()/2;++q){
         for(size_t x=0;x<L;++x){
             for(size_t y=0;y<L;++y){
                 double phase=2*M_PI*double(m_qs[2*q]*x+m_qs[2*q+1]*y)/L;
-                m_ph.push_back(1.0/L*(cos(phase)+I*sin(phase)));
+                m_ph[(q*L+x)*L+y]=1.0/L*(cos(phase)+I*sin(phase));
             }
         }
     }
@@ -61,6 +62,7 @@ void StatSpinStruct::measure()
     }
     vector<BigComplex> swamps(hopup.size());
     BigComplex amp=m_stepper->GetAmp()->Amp();
+    if(st->GetJas()) amp=amp*st->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hopup,hopdo,
                                     vector<hop_path_t>(1),
                                     vector<hop_path_t>(1),
@@ -78,22 +80,36 @@ void StatSpinStruct::measure()
                             if(st->GetLatOc(jx,jy)==UP){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*0.25*m_ph[(q*L+ix)*L+iy];
                                 if(ix==jx && iy==jy){
-                                    sqtranspm[q]+=norm(amp);
+                                    sqtranspm[q]+=norm(amp)/double(L*L);
                                 }
                             } else if(st->GetLatOc(jx,jy)==DOWN){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*(-0.25)*m_ph[(q*L+ix)*L+iy];
-                                sqtransmp[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*swamps[sw]*m_ph[(q*L+ix)*L+iy];
+                                if(!st->GetJas()){
+                                    sqtransmp[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*
+                                                  swamps[sw]*m_ph[(q*L+ix)*L+iy];
+                                } else {
+                                    sqtransmp[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*
+                                                  swamps[sw]*m_ph[(q*L+ix)*L+iy]*
+                                                  st->GetJas()->virtualhop(hopup[sw],hopdo[sw]);
+                                }
                                 ++sw;
                             }
                         } else if(st->GetLatOc(ix,iy)==DOWN){
                             if(st->GetLatOc(jx,jy)==UP){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*(-0.25)*m_ph[(q*L+ix)*L+iy];
-                                sqtranspm[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*swamps[sw]*m_ph[(q*L+ix)*L+iy];
+                                if(st->GetJas()){
+                                    sqtranspm[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*
+                                                  swamps[sw]*m_ph[(q*L+ix)*L+iy];
+                                } else {
+                                    sqtranspm[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*
+                                                  swamps[sw]*m_ph[(q*L+ix)*L+iy]*
+                                                  st->GetJas()->virtualhop(hopup[sw],hopdo[sw]);
+                                }
                                 ++sw;
                             } else if(st->GetLatOc(jx,jy)==DOWN){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*0.25*m_ph[(q*L+ix)*L+iy];
                                 if(ix==jx && iy==jy){
-                                    sqtransmp[q]+=norm(amp);
+                                    sqtransmp[q]+=norm(amp)/double(L*L);
                                 }
                             }
                         }
@@ -102,9 +118,10 @@ void StatSpinStruct::measure()
             }
         }
     }
+    BigDouble w=m_stepper->weight();
     for(size_t q=0;q<m_qs.size()/2;++q){
         Val(0,q)+=sqlong[q];
-        Val(1,q)+=complex<double>(sqtransmp[q]/norm(amp));
-        Val(2,q)+=complex<double>(sqtranspm[q]/norm(amp));
+        Val(1,q)+=complex<double>(sqtransmp[q]/w);
+        Val(2,q)+=complex<double>(sqtranspm[q]/w);
     }
 }
