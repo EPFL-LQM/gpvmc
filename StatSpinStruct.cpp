@@ -97,7 +97,7 @@ void StatSpinStruct::measure()
                         } else if(st->GetLatOc(ix,iy)==DOWN){
                             if(st->GetLatOc(jx,jy)==UP){
                                 sqlong[q]+=conj(m_ph[(q*L+jx)*L+jy])*(-0.25)*m_ph[(q*L+ix)*L+iy];
-                                if(st->GetJas()){
+                                if(!st->GetJas()){
                                     sqtranspm[q]-=conj(m_ph[(q*L+jx)*L+jy])*conj(amp)*
                                                   swamps[sw]*m_ph[(q*L+ix)*L+iy];
                                 } else {

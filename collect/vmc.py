@@ -95,7 +95,7 @@ def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
         r=sc.column_stack([X.flatten(),Y.flatten()])
     return sf.transspinonoverlap(O,L,L,q,shift,phi,neel,r)
 
-def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
+def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
     For the transverse channel:
     Calculates and returns Sq(sample,n,r)=<q,r|q,n><q,n|Sqp|GS>.
@@ -116,7 +116,7 @@ def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
     if channel=='long':
         return sf.sqwlongamp(V,O,L,L,q,shift,phi,neel)
     elif channel=='trans':
-        return sf.sqwtransamp(V,O,L,L,q,shift,phi,neel,r)
+        return sf.sqwtransamp(V,O,L,L,q,shift,phi,neel,r,rp)
     pass
 
 def GetSq(filename,Nsamp=1):
