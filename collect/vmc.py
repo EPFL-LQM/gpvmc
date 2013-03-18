@@ -1,7 +1,11 @@
 import h5py
+import warnings
 import matplotlib.pyplot as pl
+import matplotlib.mlab as ml
 from scipy.linalg import eigh
 import scipy as sc
+from numpy.linalg import matrix_rank
+import vmc_linalg as vln
 import stagflux as sf
 import os
 import re
@@ -9,7 +13,9 @@ import code
 
 class InputFileError(Exception):
     def __init__(self,errstr):
-        self.message=errstr
+        self.value=errstr
+    def __str__(self):
+        return str(self.value)
 
 def CheckStat(filename,Nsamp=1):
     hfile=h5py.File(filename,'r')
@@ -38,10 +44,10 @@ def CheckStat(filename,Nsamp=1):
         print(err)
     return sdat
 
-def GetEigSys(filename,Nsamp=1,channel=''):
+def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
     hfile=h5py.File(filename,'r')
     attr=GetAttr(filename)
-    if channel=='':
+    if channel==None:
         channel=attr['channel']
     sdat=CheckStat(filename,Nsamp)
     dat=hfile["/rank-1/data-0"]
@@ -71,15 +77,63 @@ def GetEigSys(filename,Nsamp=1,channel=''):
                     ns=0
                     sample+=1
     H,O=sf.fixfermisigns(attr['L'],attr['L'],shift,q,H,O,channel)
+    ren=sc.ones(Nsamp)
+    if gsfile!=None:
+        ren=RenormalizeFactor(filename,gsfile,Nsamp=1,channel=channel,O=O)
     print('{0} pair of (H,O) matrices loaded, now diagonalize'.format(sc.shape(H)[0]))
+    H=sc.einsum('ijk,i->ijk',H,ren)
+    O=sc.einsum('ijk,i->ijk',O,ren)
     for s in range(sc.shape(H)[0]):
-        E[s,:],V[s,:,:]=eigh(sc.squeeze(H[s,:,:]),sc.squeeze(O[s,:,:]))
+        E[s,:],V[s,:,:]=vln.geneigh(sc.squeeze(H[s,:,:]),sc.squeeze(O[s,:,:]))
     print('diagonalization finished')
     return H,O,E,V
 
-def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
+def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
+    exat=GetAttr(excfile)
+    gsat=GetAttr(gsfile)
+    L=exat['L']
+    q=sc.array([exat['qx'],exat['qy']])
+    shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
+    phi=exat['phi']
+    neel=exat['neel']
+    qx,qy,Sq=GetSq(gsfile)
+    kx,ky=sf.fermisea(L,L,shift)
+    qidx=ml.find((qx==q[0])*(qy==q[1]))
+    if O==None:
+        _,O,_,_=GetEigSys(excfile,Nsamp)
+    pk=None
+    sqq=None
+    if channel==None:
+        channel=exat['channel']
+    if channel=='trans':
+        pk=sc.squeeze(sf.phiktrans(kx,ky,q[0]/L,q[1]/L,[phi,neel]))
+        sqq=0.5*(Sq[0,1,qidx]+Sq[0,2,qidx])
+    elif channel=='long':
+        pkup=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,1,[phi,neel]))
+        pkdo=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,-1,[phi,neel]))
+        if (q[0]/L==0.5 and q[1]/L==0.5) or (q[0]/L==0 and q[1]/L==0):
+            pk=sc.zeros(2*sc.shape(pkup)[0]+1,complex)
+        else:
+            pk=sc.zeros(2*sc.shape(pkup)[0],complex)
+        pk[0:2*sc.shape(pkup)[0]:2]=pkup
+        pk[1:2*sc.shape(pkdo)[0]:2]=pkdo
+        if (qx[0]/L==0.5 and q[1]/L==0.5) or (q[0]/L==0 and q[1]/L==0):
+            if neel==0:
+                pk[-1]=0
+            else:
+                pk[-1]=sum(neel/sf.omega(kx,ky,[phi,neel]))
+        sqq=Sq[0,0,qidx]
+    else:
+        raise(InputFileError('In file \''+excfile+'\', channel=\''+str(channel)+'\'. Should be \'trans\' or \'long\''))
+    sqe=sc.einsum('i,jik,k->j',sc.conj(pk),O,pk)
+    if abs(sqq)<1e-6:
+        warnings.warn('Probably ill-defined renormalization, returns 1',UserWarning)
+        return 1.0
+    return sc.real(sqq/sqe)
+
+def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,r=None):
     attrs=GetAttr(filename)
-    if channel=='':
+    if channel==None:
         channel=attrs['channel']
     if channel=='long':
         raise ValueError('Longitudinal channel not yet implemented')
@@ -95,7 +149,7 @@ def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
         r=sc.column_stack([X.flatten(),Y.flatten()])
     return sf.transspinonoverlap(O,L,L,q,shift,phi,neel,r)
 
-def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
+def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
     For the transverse channel:
     Calculates and returns Sq(sample,n,r)=<q,r|q,n><q,n|Sqp|GS>.
@@ -104,7 +158,7 @@ def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2)),rp=sc.
     Calculates and return Sq(sample,n)=|<q,n|Sqz|GS>|^2.
     """
     attrs=GetAttr(filename)
-    if channel=='':
+    if channel==None:
         channel=attrs['channel']
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
@@ -132,7 +186,7 @@ def GetSq(filename,Nsamp=1):
     if filetype!='StatSpinStruct':
         raise InputFileError('\"{0}\" is not a static structure factor file')
     N=pow(attrs['L'],2)
-    Sq=sc.zeros((Nsamp,3,N))
+    Sq=sc.zeros((Nsamp,3,N),complex)
     sample=0
     ns=0
     for r in hfile:
@@ -140,6 +194,7 @@ def GetSq(filename,Nsamp=1):
             Sq[sample,:,:]+=hfile[r][d][0:3,0::2]+1j*hfile[r][d][0:3,1::2]
             ns+=1
             if ns==sdat:
+                Sq[sample,:,:]/=ns
                 ns=0
                 sample+=1
     qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
@@ -188,14 +243,14 @@ def GetAttr(filename):
     hfile=h5py.File(filename,'r')
     return hfile.attrs
 
-def PlotSqw(filename,gsen,Nsamp=1,channel='',\
+def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
             fig=None,width=0.1,shift=0,\
-            V=None,O=None,E=None,S=None,w=None):
+            V=None,O=None,E=None,S=None,w=None,gsspinfile=None):
     attrs=GetAttr(filename)
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     if E==None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,gsfile=gsspinfile)
     if S==None:
         S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,V=V,O=O)
     if w==None:
@@ -205,7 +260,8 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
     if len(sc.shape(S))==3:
         S=S[:,0,:]
     for s in range(sc.shape(sqw)[0]):
-        sqw[s]=sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,:]),sc.ones(sc.shape(E)[1])*width)
+        idx=~sc.isnan(E[s,:])
+        sqw[s]=sf.gaussians(w,sc.squeeze(E[s,idx])-gsen*L*L,sc.squeeze(S[s,idx]),sc.ones(sc.shape(E[s,idx]))*width)
     sqw+=shift
     if fig is None:
         fig=pl.figure()
@@ -214,7 +270,7 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
         ax=fig.gca()
     #ax.hold(True)
     for s in range(sc.shape(sqw)[0]):
-        ax.plot(w,sqw[s,:])
+        ax.plot(w,sc.real(sqw[s,:]))
         ax.plot(E[s,:]-gsen*L*L,sc.zeros(sc.shape(E)[1]),'o')
     if Nsamp!=1:
         ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
@@ -233,7 +289,7 @@ def ScanDir(folder='.',keys=[],return_dict=False):
                     keys=out[f].keys()
                 for k in keys:
                     try:
-                        s="{0} {1} /".format(s,out[f][k])
+                        s="{0} {1}:{2} /".format(s,k,out[f][k])
                     except KeyError:
                         s="{0} None /".format(s)
             print(s)

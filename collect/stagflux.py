@@ -30,7 +30,7 @@ def phiktrans(kx,ky,qx,qy,p,r=sc.zeros((1,2))):
     """
     kqx=kx-qx
     kqy=ky-qy
-    pk=sc.zeros((sc.shape(kx)[0],sc.shape(r)[0]))
+    pk=sc.zeros((sc.shape(kx)[0],sc.shape(r)[0]),complex)
     pke=sc.conj(uk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
         sc.conj(vk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p)
     pko=sc.conj(vk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
@@ -44,8 +44,9 @@ def phiktrans(kx,ky,qx,qy,p,r=sc.zeros((1,2))):
 def phiklong(kx,ky,qx,qy,spin,p):
     kqx=kx-qx
     kqy=ky-qy
-    return 0.5*spin*(sc.conj(uk(kx,ky,spin,1,p))*uk(kqx,kqy,spin,-1,p)+\
-                     sc.conj(vk(kx,ky,spin,1,p))*vk(kqx,kqy,spin,-1,p))
+    pk=0.5*spin*(sc.conj(uk(kx,ky,spin,1,p))*uk(kqx,kqy,spin,-1,p)+\
+                 sc.conj(vk(kx,ky,spin,1,p))*vk(kqx,kqy,spin,-1,p))
+    return pk
 
 def fermisea(Lx,Ly,shift):
     fskx=sc.zeros(Lx*Ly/2)
@@ -128,7 +129,7 @@ def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2)),rp=sc.zeros((1,2)))
     """
     Returns Sq[sample,r,n]=<q,r|q,n><q,n|q,0>
     """
-    sqn=sc.zeros(sc.shape(V)[0:2])
+    sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
     pkrp=phiktrans(kx,ky,q[0],q[1],[phi,neel],rp)
     pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
@@ -139,7 +140,7 @@ def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2)),rp=sc.zeros((1,2)))
     return sqn
 
 def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
-    sqn=sc.zeros(sc.shape(V)[0:2])
+    sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
     pkup=phiklong(kx,ky,q[0],q[1],1,[phi,neel])
     pkdo=phiklong(kx,ky,q[0],q[1],-1,[phi,neel])
@@ -148,9 +149,9 @@ def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
     pk[1:2*len(pkup):2]=pkdo
     if (abs(q[0])+abs(q[1]))<1e-6 or\
        (abs(q[0]-0.5)+abs(q[1]-0.5))<1e-6:
-        pk.append([0])
+        pk=sc.append(pk,0)
         if neel!=0:
-            pk[-1]=sc.sum(neel/omega(kx,ky,p))
+            pk[-1]=sc.sum(neel/omega(kx,ky,[phi,neel]))
     sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
     return sqn
 
@@ -161,7 +162,6 @@ def transspinonoverlap(O,Lx,Ly,q,shift,phi,neel,r):
     return sc.einsum('kil,lm->kim',ork,pkr)
 
 def gaussians(x,x0,A,sig):
-    gg=sc.zeros(sc.shape(x),A.dtype)
     #if sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A)))>0.01:
     #    warnings.warn(\
     #'Gaussian amplitude has a sizable imaginary part\(max(|Im|)/max(|Re|)={0}, mean(abs(A))={1}).'\
