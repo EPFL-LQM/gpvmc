@@ -77,6 +77,12 @@ def mbzmod(kx,ky):
     mmky=fold(mky+0.5*(1-inmbz(mkx,mky)))
     return mmkx,mmky
 
+def shiftmbz(kx,ky):
+    kx,ky=mbzmod(kx,ky)
+    mkx=sc.array([k-(k>0.5) for k in kx])
+    mky=sc.array([k-(k>0.5) for k in ky])
+    return mkx,mky
+
 def transfermisigns(Lx,Ly,shift,q):
     kx,ky=fermisea(Lx,Ly,shift)
     kqx=sc.mod(kx*Lx-shift[0]-q[0]*Lx,Lx)/Lx+shift[0]/Lx

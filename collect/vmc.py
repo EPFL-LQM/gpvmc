@@ -5,7 +5,7 @@ import matplotlib.mlab as ml
 from scipy.linalg import eigh
 import scipy as sc
 from numpy.linalg import matrix_rank
-import vmc_linalg as vln
+import vmc_utils as vln
 import stagflux as sf
 import os
 import re
@@ -17,39 +17,35 @@ class InputFileError(Exception):
     def __str__(self):
         return str(self.value)
 
-def CheckStat(filename,Nsamp=1):
-    hfile=h5py.File(filename,'r')
-    sw=0
-    for r in hfile:
-        for d in hfile[r]:
-            sw+=1
-    sdat=sw/Nsamp
-    stats=sc.zeros(Nsamp)
-    astat=0
-    sample=0
-    try:
-        for r in hfile:
-            for d in hfile[r]:
-                if sample<Nsamp:
-                    stats[sample]+=hfile[r][d].attrs['statistics']
-                    astat+=1
-                    if astat==sdat:
-                        sample+=1
-                        astat=0
-        print("""{0} samples will be left out.
-    Average statistics of {1} (min: {2}, max: {3})"""\
-                .format(sc.mod(sw,Nsamp),sc.mean(stats),\
-                sc.amin(stats),sc.amax(stats)))
-    except Exception as err:
-        print(err)
-    return sdat
+def GetStat(filename,Nsamp=1):
+    hfile=[]
+    if type(filename)==list:
+        for i,f in enumerate(filename):
+            hfile.append(h5py.File(f,'r'))
+    elif type(filename)==str:
+        hfile.append(h5py.File(filename,'r'))
+        filename=[filename]
+    stats=[]
+    datapath=[]
+    for ih,h in enumerate(hfile):
+        for r in h:
+            for d in h[r]:
+                stats.append(int(h[r][d].attrs['statistics'][0]))
+                datapath.append((filename[ih],"/{0}/{1}".format(r,d)))
+    bunches,args=vln.bunch(stats,Nsamp,indices=True)
+    addstat=sc.array([sum(bunches[i]) for i in range(Nsamp)])
+    print("Average statistics of {0} (min: {1}, max: {2})"\
+            .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
+    return datapath,args
 
 def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
-    hfile=h5py.File(filename,'r')
-    attr=GetAttr(filename)
+    if type(filename)==str:
+        filename=[filename]
+    hfile=h5py.File(filename[0],'r')
+    attr=GetAttr(filename[0])
     if channel==None:
         channel=attr['channel']
-    sdat=CheckStat(filename,Nsamp)
+    dpath,args=GetStat(filename,Nsamp)
     dat=hfile["/rank-1/data-0"]
     N=sc.shape(dat)[0]/2
     L=attr['L']
@@ -57,25 +53,16 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
     shift=[attr['phasex']/2.0,attr['phasey']/2.0]
     H=sc.zeros([Nsamp,N,N],complex)
     O=sc.zeros([Nsamp,N,N],complex)
-    HO=sc.zeros([Nsamp,2*N,2*N])
     E=sc.zeros([Nsamp,N])
     V=sc.zeros([Nsamp,N,N],complex)
-    ns=0
-    sample=0
-    for g in hfile:
-        for d in hfile[g]:
-            if sample<sc.shape(H)[0]:
-                dat=hfile["/{0}/{1}".format(g,d)]
-                HO[sample,:,:]+=dat
-                H[sample,:,:]+=dat[0:N,0:2*N:2]+1j*dat[0:N,1:2*N:2]
-                O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
-                ns+=1
-                if ns==sdat:
-                    H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/ns
-                    O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/ns
-                    HO[sample,:,:]/=ns
-                    ns=0
-                    sample+=1
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            dat=hfile[dpath[d][1]]
+            H[sample,:,:]+=dat[0:N,0:2*N:2]+1j*dat[0:N,1:2*N:2]
+            O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
+        H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/len(b)
+        O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/len(b)
     H,O=sf.fixfermisigns(attr['L'],attr['L'],shift,q,H,O,channel)
     ren=sc.ones(Nsamp)
     if gsfile!=None:
@@ -89,8 +76,12 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
     return H,O,E,V
 
 def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
-    exat=GetAttr(excfile)
-    gsat=GetAttr(gsfile)
+    if type(excfile)==str:
+        excfile=[excfile]
+    if type(gsfile)==str:
+        gsfile=[gsfile]
+    exat=GetAttr(excfile[0])
+    gsat=GetAttr(gsfile[0])
     L=exat['L']
     q=sc.array([exat['qx'],exat['qy']])
     shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
@@ -157,7 +148,9 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
     For the longitudinal channel: input r has no effect.
     Calculates and return Sq(sample,n)=|<q,n|Sqz|GS>|^2.
     """
-    attrs=GetAttr(filename)
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
     if channel==None:
         channel=attrs['channel']
     L=attrs['L']
@@ -174,9 +167,11 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
     pass
 
 def GetSq(filename,Nsamp=1):
-    attrs=GetAttr(filename)
-    hfile=h5py.File(filename,'r')
-    sdat=CheckStat(filename,Nsamp)
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
+    #hfile=h5py.File(filename,'r')
+    dpath,args=GetStat(filename,Nsamp)
     filetype=''
     try:
         filetype=attrs['type']
@@ -187,16 +182,11 @@ def GetSq(filename,Nsamp=1):
         raise InputFileError('\"{0}\" is not a static structure factor file')
     N=pow(attrs['L'],2)
     Sq=sc.zeros((Nsamp,3,N),complex)
-    sample=0
-    ns=0
-    for r in hfile:
-        for d in hfile[r]:
-            Sq[sample,:,:]+=hfile[r][d][0:3,0::2]+1j*hfile[r][d][0:3,1::2]
-            ns+=1
-            if ns==sdat:
-                Sq[sample,:,:]/=ns
-                ns=0
-                sample+=1
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            Sq[sample,:,:]+=hfile[dpath[d][1]][0:3,0::2]+1j*hfile[dpath[d][1]][0:3,1::2]
+        Sq[sample,:,:]/=len(b)
     qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
     return qx.flatten(),qy.flatten(),Sq
 
@@ -246,7 +236,9 @@ def GetAttr(filename):
 def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
             fig=None,width=0.1,shift=0,\
             V=None,O=None,E=None,S=None,w=None,gsspinfile=None):
-    attrs=GetAttr(filename)
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     if E==None:

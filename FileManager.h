@@ -42,7 +42,7 @@ class FileManager
 #ifdef USEMPI
         void MainLoop();
 #endif
-        void Monitor(const std::vector<int>& ranks, const std::vector<double>& percents, const std::vector<double>& total_time);
+        void Monitor(const std::vector<int>& ranks, const std::vector<double>& percents, const std::vector<double>& total_time, const std::vector<int>& num_rep);
         void Write(int isready=0);
         static void EmergencyClose(int signum);
 };

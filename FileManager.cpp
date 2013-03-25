@@ -74,6 +74,7 @@ void FileManager::MainLoop()
     vector<int> ready(size-1);
     vector<double> done(size-1);
     vector<double> tot(size-1);
+    vector<int> num(size-1);
     for(int p=0;p<size-1;++p) ready[p]=p+1;
     bool loop=true;
     for(int p=1;p<size;++p)
@@ -87,8 +88,9 @@ void FileManager::MainLoop()
         if(mess==message_monitor){
             MPI_Recv(&done[isready-1],1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
             MPI_Recv(&tot[isready-1],1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&num[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
             ready[isready-1]=isready;
-            Monitor(ready,done,tot);
+            Monitor(ready,done,tot,num);
         } else {
             MPI_Recv(&ready[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
             Write(isready);
@@ -106,29 +108,42 @@ void FileManager::MainLoop()
 
 void FileManager::Monitor(const vector<int>& ranks,
                           const vector<double>& percents,
-                          const vector<double>& total_time)
+                          const vector<double>& total_time,
+                          const vector<int>& num_rep)
 {
+    // each ranks take 12 character long
+    // get terminal width:
+    size_t colwid=80;
+    size_t nrperline=colwid/12;
+    size_t nlines=ranks.size()/nrperline+1;
+    size_t nsaves=m_fileattr["saves"];
     ostringstream ostr;
-    for(size_t r=0;r<ranks.size();++r) ostr<<"____________";
-    ostr<<endl;
-    for(size_t r=0;r<ranks.size();++r){
-        ostr.unsetf(ios_base::right);
-        ostr.setf(ios_base::left);
-        ostr<<"r-"<<setw(4)<<setfill(' ')<<ranks[r];
-        ostr.unsetf(ios_base::left);
-        ostr.setf(ios_base::right);
-        ostr<<setw(3)<<setfill(' ')<<int(percents[r]*100)<<"% |";
+    for(size_t nl=0;nl<nlines;++nl){
+        size_t r0=nl*nrperline;
+        size_t re=min(ranks.size(),nrperline*(nl+1));
+        if(nl==0){
+            for(size_t r=r0;r<re;++r) ostr<<"____________";
+        }
+        ostr<<endl;
+        for(size_t r=r0;r<re;++r){
+            ostr.unsetf(ios_base::right);
+            ostr.setf(ios_base::left);
+            ostr<<"r-"<<setw(4)<<setfill(' ')<<ranks[r];
+            ostr.unsetf(ios_base::left);
+            ostr.setf(ios_base::right);
+            ostr<<setw(3)<<setfill(' ')<<int((num_rep[r]+percents[r])/nsaves*100.0)<<"% |";
+        }
+        ostr<<endl;
+        for(size_t r=r0;r<re;++r){
+            int d=floor(total_time[r]*nsaves/3600/24);
+            int h=floor(total_time[r]*nsaves/3600-d*24);
+            int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
+            int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
+            ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+        }
+        ostr<<endl;
+        for(size_t r=r0;r<re;++r) ostr<<"____________";
     }
-    ostr<<endl;
-    for(size_t r=0;r<ranks.size();++r){
-        int d=floor(total_time[r]/3600/24);
-        int h=floor(total_time[r]/3600-d*24);
-        int m=floor(total_time[r]/60-d*24*60-h*60);
-        int s=floor(total_time[r]-d*24*3600-h*3600-m*60);
-        ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
-    }
-    ostr<<endl;
-    for(size_t r=0;r<ranks.size();++r) ostr<<"____________";
     cout<<ostr.str()<<endl;
 }
 

@@ -30,7 +30,7 @@ bool MetroMC::YesNo(const BigDouble& in)
     return din>1.0 ? RanGen::uniform()<1 : RanGen::uniform() < din;
 }
 
-void MetroMC::Walk(const size_t& len, size_t meas, bool silent)
+void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
 {
     double rwtimei, gtimei(0);
     m_gtimer=0;
@@ -66,10 +66,12 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent)
             MPI_Send(&mess,1,MPI_INT,0,0,MPI_COMM_WORLD);
             MPI_Send(&done,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
             MPI_Send(&finishes,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+            MPI_Send(&num_rep,1,MPI_INT,0,0,MPI_COMM_WORLD);
 #else
             vector<int> r(1,0);
             vector<double> d(1,double(s)/len);
             vector<double> f(1,m_gtimer*len/s);
+            vector<int> n(1,num_rep);
             m_fm->Monitor(r,d,f);
 #endif
         }
