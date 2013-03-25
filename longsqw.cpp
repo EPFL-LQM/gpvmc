@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         // Calculation
         for(size_t m=0;m<saves;++m){
             Timer::tic("main/ranwalk");
-            varmc.Walk(L*L*N/saves,L*L,!verbose);
+            varmc.Walk(L*L*N/saves,L*L,!verbose,m);
             Timer::toc("main/ranwalk");
             rej=varmc.Rejection();
             seen.save();
