@@ -72,7 +72,7 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
             vector<double> d(1,double(s)/len);
             vector<double> f(1,m_gtimer*len/s);
             vector<int> n(1,num_rep);
-            m_fm->Monitor(r,d,f);
+            m_fm->Monitor(r,d,f,n);
 #endif
         }
     }

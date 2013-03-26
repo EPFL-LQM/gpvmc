@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
     bool jas_stag=arg.b("jas_twobodystag");
     double jr=arg.d("Jr");
     bool verbose=arg.b("verbose");
+    double cutoff=arg.d("cutoff");
 
     // Setup calculation parameters
     FileManager fm(dir,prefix);
@@ -74,6 +75,7 @@ int main(int argc, char* argv[])
     fm.FileAttribute("Jr",jr);
     fm.FileAttribute("transverse",1);
     fm.FileAttribute("channel","trans");
+    fm.FileAttribute("cutoff",cutoff);
     if(jas_stag) fm.FileAttribute("twobodystagjastrow",1);
     if(jas_stagmagn) fm.FileAttribute("onebodystagjastrow",1);
 
@@ -85,7 +87,10 @@ int main(int argc, char* argv[])
         // Setup calculation
         double rej=0;
         SpinState sp(L,L*L/2+1,L*L/2-1);
-        StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q);
+        double maxde,minde;
+        maxde=2*sqrt(1+neel*neel);
+        minde=abs(neel);
+        StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,minde+cutoff*(maxde-minde));
         Jastrow* jas=0;
         if(jastrow!=0){
             if(jas_stagmagn)

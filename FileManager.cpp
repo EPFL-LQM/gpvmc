@@ -355,7 +355,7 @@ void FileManager::Write(int isready)
                                          stratit->second.c_str());
                 stratit++;
             }
-            H5LTset_attribute_string(fout,"/","type",it->first);
+            H5LTset_attribute_string(fout,"/","type",it->first.c_str());
         } else {
             fout=H5Fopen(fn.str().c_str(),
                          H5F_ACC_RDWR,H5P_DEFAULT);
