@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
                 jas=new StagJastrow(&sp,jastrow);
         }
         StagFluxGroundState wav(L,L,phi,neel,phase_shift);
+        wav.save(&fm);
         Amplitude amp(&sp,&wav);
         FullSpaceStepper step(&amp);
         ProjHeis heisen(&step,&fm,jr);

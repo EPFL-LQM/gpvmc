@@ -85,6 +85,7 @@ int main(int argc, char* argv[])
         double rej=0;
         SpinState sp(L,L*L/2,L*L/2);
         StagFluxLongExciton wav(L,phi,neel,phase_shift,Q);
+        wav.save(&fm);
         Jastrow* jas=0;
         if(jastrow!=0){
             if(jas_stagmagn)

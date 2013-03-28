@@ -1,6 +1,12 @@
 #include "WaveFunction.h"
 #include "Amplitude.h"
+#include "FileManager.h"
+#include <hdf5_hl.h>
+#include <hdf5.h>
 #include <cstring>
+#ifdef USEMPI
+#include <mpi.h>
+#endif
 
 using namespace std;
 
@@ -150,6 +156,12 @@ void WaveFunction::add_state(const size_t* fup,
         m_excdo[i].back()=get_hop_path(
                 &state[0],fdo,m_Nfsdo);
     }
+    m_fock_states_up.push_back(vector<int>(m_Lx*m_Ly));
+    m_fock_states_do.push_back(vector<int>(m_Lx*m_Ly));
+    for(size_t f=0;f<m_Lx*m_Ly;++f){
+        m_fock_states_up.back()[f]=(fup[f]!=m_Nfsup);
+        m_fock_states_do.back()[f]=(fdo[f]!=m_Nfsdo);
+    }
 }
 
 void WaveFunction::get_hop_state(hop_path_t hop,
@@ -263,6 +275,38 @@ string WaveFunction::Fock() const
     }
     out<<">"<<endl;
     return out.str();
+}
+
+void WaveFunction::save(FileManager* fm)
+{
+    int rank=0, size=1;
+#ifdef USEMPI
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&rank);
+#endif//USEMPI
+    if(size==1 || rank==1){ //not root process except if non-mpi
+        hid_t wfile=fm->WriteSimple("WaveFunction");
+        hsize_t dims[2]={m_fock_states_up.size(),m_Lx*m_Ly};
+        int* dup=new int[m_fock_states_up.size()*m_Lx*m_Ly];
+        int* ddo=new int[m_fock_states_up.size()*m_Lx*m_Ly];
+        for(size_t s=0;s<m_fock_states_up.size();++s){
+            memcpy(&dup[s*m_Lx*m_Ly],&m_fock_states_up[s][0],m_Lx*m_Ly*sizeof(int));
+            memcpy(&ddo[s*m_Lx*m_Ly],&m_fock_states_do[s][0],m_Lx*m_Ly*sizeof(int));
+        }
+        H5LTmake_dataset_int(wfile,"/states_up",2,dims,dup);
+        H5LTmake_dataset_int(wfile,"/states_do",2,dims,ddo);
+        delete [] dup;
+        delete [] ddo;
+        /*int* rel_signs=new int[m_fock_states_up.size()];
+        for(size_t s=0; s<m_fock_states_up.size();++s){
+            hop_path_t hopup,hopdo;
+            GetHop(s,hopup,hopdo);
+            rel_signs[s]=-hop_sign(hopup,hopdo);
+        }*/
+        H5LTmake_dataset_int(wfile,"/rel_signs",1,dims,rel_signs);
+        delete [] rel_signs;
+        H5Fclose(wfile);
+    }
 }
 
 std::ostream & operator<<(std::ostream& out, const WaveFunction & wav)

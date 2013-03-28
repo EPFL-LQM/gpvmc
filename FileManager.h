@@ -1,6 +1,6 @@
 #ifndef _FILEMANAGER_H
 #define _FILEMANAGER_H
-
+#include <hdf5.h>
 #include <iostream>
 #include <fcntl.h>
 #include <fstream>
@@ -45,6 +45,7 @@ class FileManager
         void Monitor(const std::vector<int>& ranks, const std::vector<double>& percents, const std::vector<double>& total_time, const std::vector<int>& num_rep);
         void Write(int isready=0);
         static void EmergencyClose(int signum);
+        hid_t WriteSimple(std::string filename);
 };
 
 class MatStream

@@ -419,6 +419,30 @@ void FileManager::Write(int isready)
 #endif//USEMPI
 }
 
+hid_t FileManager::WriteSimple(string filename)
+{
+    ostringstream fn;
+    fn<<m_dir<<"/"<<m_num<<"-"<<filename<<".h5";
+    cout<<"creates file"<<endl;
+    hid_t fout=H5Fcreate(fn.str().c_str(),
+                         H5F_ACC_EXCL,H5P_DEFAULT,H5P_DEFAULT);
+    map<string,double>::iterator atit=m_fileattr.begin();
+    while(atit!=m_fileattr.end()){
+        H5LTset_attribute_double(fout,"/",atit->first.c_str(),
+                                 &(atit->second),1);
+        atit++;
+    }
+    map<string,string>::iterator stratit=m_file_str_attr.begin();
+    while(stratit!=m_file_str_attr.end()){
+        H5LTset_attribute_string(fout,"/",stratit->first.c_str(),
+                                 stratit->second.c_str());
+        stratit++;
+    }
+    H5LTset_attribute_string(fout,"/","type",filename.c_str());
+    cout<<"wrote attributes"<<endl;
+    return fout;
+}
+
 void FileManager::EmergencyClose(int signum)
 {
     signal(signum,FileManager::EmergencyClose);

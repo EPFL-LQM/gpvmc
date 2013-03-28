@@ -91,6 +91,7 @@ int main(int argc, char* argv[])
         maxde=2*sqrt(1+neel*neel);
         minde=abs(neel);
         StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,minde+cutoff*(maxde-minde));
+        wav.save(&fm);
         Jastrow* jas=0;
         if(jastrow!=0){
             if(jas_stagmagn)

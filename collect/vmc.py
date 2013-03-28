@@ -30,7 +30,10 @@ def GetStat(filename,Nsamp=1):
     for ih,h in enumerate(hfile):
         for r in h:
             for d in h[r]:
-                stats.append(int(h[r][d].attrs['statistics'][0]))
+                try:
+                    stats.append(int(h[r][d].attrs['statistics'][0]))
+                except KeyError as err:
+                    stats.append(1)
                 datapath.append((filename[ih],"/{0}/{1}".format(r,d)))
     bunches,args=vln.bunch(stats,Nsamp,indices=True)
     addstat=sc.array([sum(bunches[i]) for i in range(Nsamp)])
@@ -38,7 +41,36 @@ def GetStat(filename,Nsamp=1):
             .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
     return datapath,args
 
-def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
+def GetFermiSigns(filename,refstate=None):
+    attr=GetAttr(filename)
+    filetype=''
+    try:
+        filetype=attr['type']
+    except KeyError:
+        mo=re.match('.*/?[0-9]+-(.*)\.h5',filename)
+        filetype=mo.groups()[0]
+    L=attr['L']
+    if refstate==None:
+        refstate=sc.zeros(2*L*L)
+        refstate[0::2]=1
+    if filetype=='WaveFunction':
+        hfile=h5py.File(filename,'r')
+        states=sc.column_stack([hfile['states_up'],hfile['states_do']])
+        return sf.fermisigns(states,refstate)
+    else:
+        if channel==None:
+            channel=attr['channel']
+        L=attr['L']
+        shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+        q=[float(attr['qx'])/L,float(attr['qy'])/L]
+        if channel=='trans':
+            return sf.transfermisigns(L,L,shift,q)
+        elif channel=='long':
+            return sf.longfermisigns(L,L,shift,q)
+        else:
+            raise KeyError('\"channel\" must be either \"trans\" or \"long\".')
+
+def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
     if type(filename)==str:
         filename=[filename]
     hfile=h5py.File(filename[0],'r')
@@ -63,7 +95,16 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None):
             O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
         H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/len(b)
         O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/len(b)
-    H,O=sf.fixfermisigns(attr['L'],attr['L'],shift,q,H,O,channel)
+    fs=None
+    refstate=sc.zeros(2*L*L)
+    refstate[0::2]=1
+    if wavefile==None:
+        fs=GetFermiSigns(filename,refstate)
+    else:
+        fs=GetFermiSigns(wavefile,refstate)
+    for s in range(sc.shape(H)[0]):
+        H[s,:,:]=sc.dot(sc.diag(fs),sc.dot(H[s,:,:],sc.diag(fs)))
+        O[s,:,:]=sc.dot(sc.diag(fs),sc.dot(O[s,:,:],sc.diag(fs)))
     ren=sc.ones(Nsamp)
     if gsfile!=None:
         ren=RenormalizeFactor(filename,gsfile,Nsamp=1,channel=channel,O=O)
@@ -122,7 +163,7 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
         return 1.0
     return sc.real(sqq/sqe)
 
-def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,r=None):
+def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
     attrs=GetAttr(filename)
     if channel==None:
         channel=attrs['channel']
@@ -134,11 +175,11 @@ def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,r=None):
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None:
-        H,O,E,V=GetEigSys(filename,Nsamp,channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
     if r==None:
         X,Y=sc.meshgrid(range(-L/2,L/2),range(-L/2,L/2))
         r=sc.column_stack([X.flatten(),Y.flatten()])
-    return sf.transspinonoverlap(O,L,L,q,shift,phi,neel,r)
+    return sf.transspinonoverlap(O,V,L,L,q,shift,phi,neel,r)
 
 def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
@@ -159,7 +200,7 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None or V== None:
-        H,O,E,V=GetEigSys(filename,Nsamp,channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
     if channel=='long':
         return sf.sqwlongamp(V,O,L,L,q,shift,phi,neel)
     elif channel=='trans':
@@ -190,59 +231,21 @@ def GetSq(filename,Nsamp=1):
     qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
     return qx.flatten(),qy.flatten(),Sq
 
-def PlotTransSpinon(filename,Nsamp=1,V=None,O=None,E=None,S=None,\
-                    r=sc.zeros((1,2)),fig=None,width=0.1,\
-                    shift=0,w=None):
-    attrs=GetAttr(filename)
-    channel='trans'
-    try:
-        channel=attrs['channel']
-    except:
-        pass
-    if channel=='long':
-        raise NotImplementedError('longitudinal channel not supported')
-    L=attrs['L']
-    q=[float(attrs['qx']/L),float(attrs['qy'])/L]
-    if E==None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
-    if w==None:
-        w=sc.arange(-6,6,0.01)
-    if S==None:
-        S=GetSqAmpl(filename,Nsamp=Nsamp,V=V,O=O,r=r)
-    wqwr=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]))
-    for sample in range(Nsamp):
-        En,Enp=sc.meshgrid(E[sample,:],E[sample,:])
-        for ir in range(sc.shape(r)[0]):
-            W,Wp=sc.meshgrid(sc.conj(S[sample,ir,:]),S[sample,ir,:])
-            wqwr[sample,:]+=sf.gaussians(w,En.flatten()-Enp.flatten(),\
-                                         W.flatten()*Wp.flatten(),\
-                                         sc.ones(sc.shape(En.flatten()))*width)
-    wqwr=wqwr/sc.shape(r)[0]+shift
-    ax=None
-    if fig is None:
-        fig=pl.figure()
-        ax=fig.gca()
-    else:
-        ax=fig.gca()
-    for s in range(sc.shape(wqwr)[0]):
-        ax.plot(w,wqwr[s,:])
-    ax.set_xlim((sc.amin(w),sc.amax(w)))
-    return fig
-
 def GetAttr(filename):
     hfile=h5py.File(filename,'r')
     return hfile.attrs
 
 def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
             fig=None,width=0.1,shift=0,\
-            V=None,O=None,E=None,S=None,w=None,gsspinfile=None):
+            V=None,O=None,E=None,S=None,w=None,
+            gsspinfile=None, wavefile=None):
     if type(filename)==str:
         filename=[filename]
     attrs=GetAttr(filename[0])
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     if E==None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,gsfile=gsspinfile)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,gsfile=gsspinfile,wavefile=wavefile)
     if S==None:
         S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,V=V,O=O)
     if w==None:

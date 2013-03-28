@@ -121,6 +121,25 @@ def longfermisigns(Lx,Ly,shift,q):
         fsign[2*k+1]=fsign[2*k]
     return fsign
 
+def fermisigns(states,refstate):
+    fs=sc.ones(sc.shape(states)[0])
+    for s in range(sc.shape(states)[0]):
+        hole=None
+        part=None
+        ref=sc.array(refstate)
+        for i in range(sc.shape(states)[1]):
+            if ref[i]==0 and states[s,i]!=0:
+                part=i
+            if ref[i]!=0 and states[s,i]==0:
+                hole=i
+            if part!=None and hole!=None:
+                fs[s]*=(-1)**(sum(ref[min(hole,part)+1:max(hole,part)]))
+                ref[hole]=0
+                ref[part]=1
+                hole=None
+                part=None
+    return fs
+
 def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
     fs=[]
     if ori=='trans':
@@ -137,8 +156,10 @@ def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2)),rp=sc.zeros((1,2)))
     """
     sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
-    pkrp=phiktrans(kx,ky,q[0],q[1],[phi,neel],rp)
-    pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
+    pkrp=sc.zeros((sc.shape(V)[1],sc.shape(rp)[0]))
+    pkr=sc.zeros((sc.shape(V)[1],sc.shape(rp)[0]))
+    pkrp[0:len(kx),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],rp)
+    pkr[0:len(ky),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
     OV=sc.einsum('ijk,ikl->ijl',O,V)
     rhs=sc.einsum('ijk,jl->ikl',sc.conj(OV),pkrp)
     lhs=sc.einsum('ij,kil->kjl',sc.conj(pkr),OV)
@@ -150,7 +171,7 @@ def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
     kx,ky=fermisea(Lx,Ly,shift)
     pkup=phiklong(kx,ky,q[0],q[1],1,[phi,neel])
     pkdo=phiklong(kx,ky,q[0],q[1],-1,[phi,neel])
-    pk=sc.zeros((2*len(pkup)),complex)
+    pk=sc.zeros(sc.shape(V)[1],complex)
     pk[0:2*len(pkup):2]=pkup
     pk[1:2*len(pkup):2]=pkdo
     if (abs(q[0])+abs(q[1]))<1e-6 or\
@@ -161,11 +182,11 @@ def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
     sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
     return sqn
 
-def transspinonoverlap(O,Lx,Ly,q,shift,phi,neel,r):
+def transspinonoverlap(O,V,Lx,Ly,q,shift,phi,neel,r):
     kx,ky=fermisea(Lx,Ly,shift)
     pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
     ork=sc.einsum('ij,kil->kjl',sc.conj(pkr),O)
-    return sc.einsum('kil,lm->kim',ork,pkr)
+    return sc.einsum('kil,klm->kim',ork,V)
 
 def gaussians(x,x0,A,sig):
     #if sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A)))>0.01:
