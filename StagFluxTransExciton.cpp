@@ -105,7 +105,6 @@ StagFluxTransExciton::StagFluxTransExciton(size_t Lx,
                         if(pickedstates.find(strup+strdo)==pickedstates.end()){
                             add_state(&stup[0],&stdo[0]);
                             pickedstates.insert(strup+strdo);
-                            cout<<"k1=["<<k1[0]<<","<<k1[1]<<"], k2=["<<k2[0]<<","<<k2[1]<<"], k3=["<<k3[0]<<","<<k3[1]<<"], k4=["<<k4[0]<<","<<k4[1]<<"]"<<endl;
                         }
                     }
                 }

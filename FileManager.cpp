@@ -423,7 +423,6 @@ hid_t FileManager::WriteSimple(string filename)
 {
     ostringstream fn;
     fn<<m_dir<<"/"<<m_num<<"-"<<filename<<".h5";
-    cout<<"creates file"<<endl;
     hid_t fout=H5Fcreate(fn.str().c_str(),
                          H5F_ACC_EXCL,H5P_DEFAULT,H5P_DEFAULT);
     map<string,double>::iterator atit=m_fileattr.begin();
@@ -439,7 +438,6 @@ hid_t FileManager::WriteSimple(string filename)
         stratit++;
     }
     H5LTset_attribute_string(fout,"/","type",filename.c_str());
-    cout<<"wrote attributes"<<endl;
     return fout;
 }
 
