@@ -282,7 +282,7 @@ void WaveFunction::save(FileManager* fm)
     int rank=0, size=1;
 #ifdef USEMPI
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif//USEMPI
     if(size==1 || rank==1){ //not root process except if non-mpi
         hid_t wfile=fm->WriteSimple("WaveFunction");
