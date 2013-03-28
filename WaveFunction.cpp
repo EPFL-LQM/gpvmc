@@ -297,14 +297,6 @@ void WaveFunction::save(FileManager* fm)
         H5LTmake_dataset_int(wfile,"/states_do",2,dims,ddo);
         delete [] dup;
         delete [] ddo;
-        /*int* rel_signs=new int[m_fock_states_up.size()];
-        for(size_t s=0; s<m_fock_states_up.size();++s){
-            hop_path_t hopup,hopdo;
-            GetHop(s,hopup,hopdo);
-            rel_signs[s]=-hop_sign(hopup,hopdo);
-        }*/
-        H5LTmake_dataset_int(wfile,"/rel_signs",1,dims,rel_signs);
-        delete [] rel_signs;
         H5Fclose(wfile);
     }
 }
