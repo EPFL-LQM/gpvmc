@@ -7,6 +7,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctime>
 #include <iomanip>
 #include <cmath>
 #include <unistd.h>
@@ -206,6 +207,11 @@ void FileManager::Write(int isready)
                     stratit++;
                 }
                 H5LTset_attribute_string(fout,"/","type",strin);
+                time_t ti;
+                time(&ti);
+                struct tm * timeinfo;
+                timeinfo=localtime(&ti);
+                H5LTset_attribute_string(fout,"/","date",asctime(timeinfo));
             } else {
                 // make backup of file in case process is killed while writing
                 /*int src,dest;
@@ -231,7 +237,7 @@ void FileManager::Write(int isready)
 #else
                 cerr<<err.str()<<endl;
                 abort();
-#endif
+#endif//EXCEPT
             }
             // get group for rank
             ostringstream gout;
@@ -280,7 +286,7 @@ void FileManager::Write(int isready)
 #else
                 cerr<<err.str()<<endl;
                 abort();
-#endif
+#endif//EXCEPT
             }
             delete [] buff;
             // set data attributes
@@ -356,6 +362,11 @@ void FileManager::Write(int isready)
                 stratit++;
             }
             H5LTset_attribute_string(fout,"/","type",it->first.c_str());
+            time_t ti;
+            time(&ti);
+            struct tm* timeinfo;
+            timeinfo=localtime(&ti);
+            H5LTset_attribute_string(fout,"/","date",asctime(timeinfo));
         } else {
             fout=H5Fopen(fn.str().c_str(),
                          H5F_ACC_RDWR,H5P_DEFAULT);
@@ -368,7 +379,7 @@ void FileManager::Write(int isready)
 #else
             cerr<<err.str()<<endl;
             abort();
-#endif
+#endif//EXCEPT
         }
         H5G_info_t info;
         ostringstream dout;
@@ -405,7 +416,7 @@ void FileManager::Write(int isready)
 #else
             cerr<<err.str()<<endl;
             abort();
-#endif
+#endif//EXCEPT
         }
         map<string,double>::iterator datit=m_dataattr.begin();
         while(datit!=m_dataattr.end()){

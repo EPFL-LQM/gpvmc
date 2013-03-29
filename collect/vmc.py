@@ -276,18 +276,21 @@ def ScanDir(folder='.',keys=[],return_dict=False):
     out={}
     for f in os.listdir(folder):
         if re.match(".*\.h5",f) is not None:
-            out[f]=dict(GetAttr("{0}/{1}".format(folder,f)))
-            s=f
-            if len(keys):
-                s="{0}: ".format(f)
-                if keys=='*':
-                    keys=out[f].keys()
-                for k in keys:
-                    try:
-                        s="{0} {1}:{2} /".format(s,k,out[f][k])
-                    except KeyError:
-                        s="{0} None /".format(s)
-            print(s)
+            try:
+                out[f]=dict(GetAttr("{0}/{1}".format(folder,f)))
+                s=f
+                if len(keys):
+                    s="{0}: ".format(f)
+                    if keys=='*':
+                        keys=out[f].keys()
+                    for k in keys:
+                        try:
+                            s="{0} {1}:{2} /".format(s,k,out[f][k])
+                        except KeyError:
+                            s="{0} None /".format(s)
+                print(s)
+            except IOError:
+                print('Could not open \"'+f+'\".')
     if return_dict:
         return out
 
