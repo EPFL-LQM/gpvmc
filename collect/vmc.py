@@ -41,7 +41,7 @@ def GetStat(filename,Nsamp=1):
             .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
     return datapath,args
 
-def GetFermiSigns(filename,refstate=None):
+def GetFermiSigns(filename,refstate=None,channel=None):
     attr=GetAttr(filename)
     filetype=''
     try:
@@ -99,9 +99,9 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
     refstate=sc.zeros(2*L*L)
     refstate[0::2]=1
     if wavefile==None:
-        fs=GetFermiSigns(filename,refstate)
+        fs=GetFermiSigns(filename[0],refstate,channel=channel)
     else:
-        fs=GetFermiSigns(wavefile,refstate)
+        fs=GetFermiSigns(wavefile,refstate,channel=channel)
     for s in range(sc.shape(H)[0]):
         H[s,:,:]=sc.dot(sc.diag(fs),sc.dot(H[s,:,:],sc.diag(fs)))
         O[s,:,:]=sc.dot(sc.diag(fs),sc.dot(O[s,:,:],sc.diag(fs)))
@@ -266,7 +266,7 @@ def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
     #ax.hold(True)
     for s in range(sc.shape(sqw)[0]):
         ax.plot(w,sc.real(sqw[s,:]))
-        ax.plot(E[s,:]-gsen*L*L,sc.zeros(sc.shape(E)[1]),'o')
+        ax.plot(E[s,:]-gsen*L*L,sc.squeeze(S[s,:])*sc.sqrt(1/2.0/sc.pi)/width,'o')
     if Nsamp!=1:
         ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
     ax.set_xlim((sc.amin(w),sc.amax(w)))
