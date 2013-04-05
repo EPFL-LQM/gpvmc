@@ -87,10 +87,8 @@ int main(int argc, char* argv[])
         // Setup calculation
         double rej=0;
         SpinState sp(L,L*L/2+1,L*L/2-1);
-        double maxde,minde;
-        maxde=2*sqrt(1+neel*neel);
-        minde=abs(neel);
-        StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,minde+cutoff*(maxde-minde));
+        double bdwd=2*sqrt(1+neel*neel);
+        StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,cutoff*bdwd);
         wav.save(&fm);
         Jastrow* jas=0;
         if(jastrow!=0){
