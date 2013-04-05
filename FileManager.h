@@ -40,9 +40,9 @@ class FileManager
         int& StatPerSample();
         int Prefix() {return m_num;}
 #ifdef USEMPI
-        void MainLoop();
+        void MainLoop(int verbosity=3);
 #endif
-        void Monitor(const std::vector<int>& ranks, const std::vector<double>& percents, const std::vector<double>& total_time, const std::vector<int>& num_rep);
+        void Monitor(const std::vector<int>& ranks, const std::vector<double>& percents, const std::vector<double>& total_time, const std::vector<int>& num_rep, int verbosity);
         void Write(int isready=0);
         static void EmergencyClose(int signum);
         hid_t WriteSimple(std::string filename);
