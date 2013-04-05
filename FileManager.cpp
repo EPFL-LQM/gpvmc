@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctime>
+#include <limits>
 #include <iomanip>
 #include <cmath>
 #include <unistd.h>
@@ -65,7 +66,7 @@ FileManager::FileManager(const string& dir, const int& num)
 }
 
 #ifdef USEMPI
-void FileManager::MainLoop()
+void FileManager::MainLoop(int verbosity)
 {
     int rank,size;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -91,7 +92,7 @@ void FileManager::MainLoop()
             MPI_Recv(&tot[isready-1],1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
             MPI_Recv(&num[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
             ready[isready-1]=isready;
-            Monitor(ready,done,tot,num);
+            Monitor(ready,done,tot,num,verbosity);
         } else {
             MPI_Recv(&ready[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
             Write(isready);
@@ -110,42 +111,94 @@ void FileManager::MainLoop()
 void FileManager::Monitor(const vector<int>& ranks,
                           const vector<double>& percents,
                           const vector<double>& total_time,
-                          const vector<int>& num_rep)
+                          const vector<int>& num_rep,
+                          int verbosity)
 {
-    // each ranks take 12 character long
-    // get terminal width:
-    size_t colwid=80;
-    size_t nrperline=colwid/12;
-    size_t nlines=ranks.size()/nrperline+1;
-    size_t nsaves=m_fileattr["saves"];
-    ostringstream ostr;
-    for(size_t nl=0;nl<nlines;++nl){
-        size_t r0=nl*nrperline;
-        size_t re=min(ranks.size(),nrperline*(nl+1));
-        if(nl==0){
+    if(verbosity>1){
+        ostringstream ostr;
+        // each ranks take 12 character long
+        // get terminal width:
+        size_t colwid=80;
+        size_t nrperline=colwid/12;
+        size_t nlines=ranks.size()/nrperline+1;
+        size_t nsaves=m_fileattr["saves"];
+        for(size_t nl=0;nl<nlines;++nl){
+            size_t r0=nl*nrperline;
+            size_t re=min(ranks.size(),nrperline*(nl+1));
+            if(nl==0){
+                for(size_t r=r0;r<re;++r) ostr<<"____________";
+            }
+            ostr<<endl;
+            for(size_t r=r0;r<re;++r){
+                ostr.unsetf(ios_base::right);
+                ostr.setf(ios_base::left);
+                ostr<<"r-"<<setw(4)<<setfill(' ')<<ranks[r];
+                ostr.unsetf(ios_base::left);
+                ostr.setf(ios_base::right);
+                ostr<<setw(3)<<setfill(' ')<<int((num_rep[r]+percents[r])/nsaves*100.0)<<"% |";
+            }
+            ostr<<endl;
+            for(size_t r=r0;r<re;++r){
+                int d=floor(total_time[r]*nsaves/3600/24);
+                int h=floor(total_time[r]*nsaves/3600-d*24);
+                int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
+                int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
+                ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+            }
+            ostr<<endl;
             for(size_t r=r0;r<re;++r) ostr<<"____________";
         }
-        ostr<<endl;
-        for(size_t r=r0;r<re;++r){
-            ostr.unsetf(ios_base::right);
-            ostr.setf(ios_base::left);
-            ostr<<"r-"<<setw(4)<<setfill(' ')<<ranks[r];
-            ostr.unsetf(ios_base::left);
-            ostr.setf(ios_base::right);
-            ostr<<setw(3)<<setfill(' ')<<int((num_rep[r]+percents[r])/nsaves*100.0)<<"% |";
+        cout<<ostr.str()<<endl;
+    } else if(verbosity==1){
+        static int mean_adv=0;
+        double new_mav=0;
+        double minav=1;
+        double maxav=0;
+        double tav=0,tmax=0,tmin=numeric_limits<double>::infinity();
+        int far(0),slr(0);
+        int nsaves=m_fileattr["saves"];
+        for(size_t r=0;r<ranks.size();++r){
+            double av=(num_rep[r]+percents[r])/nsaves;
+            new_mav+=av;
+            tav+=total_time[r]*nsaves;
+            if(av<minav) minav=av;
+            if(av>maxav) maxav=av;
+            if(total_time[r]*nsaves<tmin){
+                tmin=total_time[r]*nsaves;
+                far=ranks[r];
+            }
+            if(total_time[r]*nsaves>tmax){
+                tmax=total_time[r]*nsaves;
+                slr=ranks[r];
+            }
         }
-        ostr<<endl;
-        for(size_t r=r0;r<re;++r){
-            int d=floor(total_time[r]*nsaves/3600/24);
-            int h=floor(total_time[r]*nsaves/3600-d*24);
-            int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
-            int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
-            ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+        new_mav/=ranks.size();
+        tav/=ranks.size();
+        if(floor(new_mav*100)!=mean_adv){
+            mean_adv=floor(new_mav*100);
+            int dav=floor(tav/3600/24);
+            int hav=floor(tav/3600-24*dav);
+            int mav=floor(tav/60-24*60*dav-60*hav);
+            int sav=floor(tav-dav*24*3600-hav*3600-mav*60);
+            int dmin=floor(tmin/3600/24);
+            int hmin=floor(tmin/3600-24*dmin);
+            int mmin=floor(tmin/60-24*60*dmin-60*hmin);
+            int smin=floor(tmin-dmin*24*3600-hmin*3600-mmin*60);
+            int dmax=floor(tmax/3600/24);
+            int hmax=floor(tmax/3600-24*dmax);
+            int mmax=floor(tmax/60-24*60*dmax-60*hmax);
+            int smax=floor(tmax-dmax*24*3600-hmax*3600-mmax*60);
+            ostringstream out;
+            out<<"Adv: (mean: "<<floor(100*new_mav)
+               <<"%, max: "<<floor(maxav*100)
+               <<"%, min: "<<floor(minav*100)
+               <<"%), Time: (mean: "<<dav<<"-"<<hav<<":"<<mav<<":"<<sav
+               <<", max: "<<dmax<<"-"<<hmax<<":"<<mmax<<":"<<smax
+               <<", min: "<<dmin<<"-"<<hmin<<":"<<mmin<<":"<<smin
+               <<"), Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
+            cout<<out.str()<<endl;
         }
-        ostr<<endl;
-        for(size_t r=r0;r<re;++r) ostr<<"____________";
     }
-    cout<<ostr.str()<<endl;
 }
 
 void FileManager::FileAttribute(string attr, double val)

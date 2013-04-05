@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     bool jas_stagmagn=arg.b("jas_onebodystag");
     bool jas_stag=arg.b("jas_twobodystag");
     double jr=arg.d("Jr");
-    bool verbose=arg.b("verbose");
+    int verbose=arg.i("verbose");
     double cutoff=arg.d("cutoff");
 
     // Setup calculation parameters
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
         if(jas) delete jas;
 #ifdef USEMPI
     } else {
-        fm.MainLoop();
+        fm.MainLoop(verbose);
     }
 #endif
     // Output
