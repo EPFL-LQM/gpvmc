@@ -80,7 +80,7 @@ void FileManager::MainLoop(int verbosity)
     for(int p=0;p<size-1;++p) ready[p]=p+1;
     bool loop=true;
     for(int p=1;p<size;++p)
-        MPI_Irecv(&ready[p-1],1,MPI_INT,p,0,MPI_COMM_WORLD,&requests[p-1]);
+        MPI_Irecv(&ready[p-1],1,MPI_INT,p,message_comm,MPI_COMM_WORLD,&requests[p-1]);
     while(loop){
         MPI_Status status;
         int isready;
@@ -88,20 +88,20 @@ void FileManager::MainLoop(int verbosity)
         int mess=ready[isready];
         isready+=1;
         if(mess==message_monitor){
-            MPI_Recv(&done[isready-1],1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
-            MPI_Recv(&tot[isready-1],1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
-            MPI_Recv(&num[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&done[isready-1],1,MPI_DOUBLE,isready,message_monitor,MPI_COMM_WORLD,&status);
+            MPI_Recv(&tot[isready-1],1,MPI_DOUBLE,isready,message_monitor,MPI_COMM_WORLD,&status);
+            MPI_Recv(&num[isready-1],1,MPI_INT,isready,message_monitor,MPI_COMM_WORLD,&status);
             ready[isready-1]=isready;
             Monitor(ready,done,tot,num,verbosity);
         } else {
-            MPI_Recv(&ready[isready-1],1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&ready[isready-1],1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
             Write(isready);
         }
         loop=false;
         for(int p=1;p<size;++p)
             if(ready[p-1]) loop=true;
         if(loop){ 
-            MPI_Irecv(&ready[isready-1],1,MPI_INT,isready,0,
+            MPI_Irecv(&ready[isready-1],1,MPI_INT,isready,message_comm,
                       MPI_COMM_WORLD,&requests[isready-1]);
         }
     }
@@ -231,13 +231,13 @@ void FileManager::Write(int isready)
     if(rank==0){
         // Get number of quantities
         int Nq;
-        MPI_Recv(&Nq,1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(&Nq,1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
         for(int nq=0;nq<Nq;++nq){
             // Get name of quantity
             char strin[128];
             int len;
-            MPI_Recv(&len,1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
-            MPI_Recv(strin,len,MPI_CHAR,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&len,1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
+            MPI_Recv(strin,len,MPI_CHAR,isready,message_save,MPI_COMM_WORLD,&status);
             // Open corresponding file
             ostringstream fn;
             fn<<m_dir<<"/"<<m_num<<'-'<<strin<<".h5";
@@ -297,7 +297,7 @@ void FileManager::Write(int isready)
             gout<<"/rank-"<<isready;
             // get current stat
             int statistics;
-            MPI_Recv(&statistics,1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&statistics,1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
             ostringstream dout;
             H5G_info_t info;
             if(H5Lexists(fout,gout.str().c_str(),H5P_DEFAULT)<=0){
@@ -315,9 +315,9 @@ void FileManager::Write(int isready)
             }
             // get data and writeo
             int dims[2];
-            MPI_Recv(dims,2,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(dims,2,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
             double *buff=new double[dims[0]*dims[1]];
-            MPI_Recv(buff,dims[0]*dims[1],MPI_DOUBLE,isready,0,
+            MPI_Recv(buff,dims[0]*dims[1],MPI_DOUBLE,isready,message_save,
                      MPI_COMM_WORLD,&status);
             hsize_t hdims[2]={dims[0],dims[1]};
             herr_t e;
@@ -345,11 +345,11 @@ void FileManager::Write(int isready)
             // set data attributes
             int Na;
             double da;
-            MPI_Recv(&Na,1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
+            MPI_Recv(&Na,1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
             for(int a=0;a<Na;++a){
-                MPI_Recv(&len,1,MPI_INT,isready,0,MPI_COMM_WORLD,&status);
-                MPI_Recv(strin,len,MPI_CHAR,isready,0,MPI_COMM_WORLD,&status);
-                MPI_Recv(&da,1,MPI_DOUBLE,isready,0,MPI_COMM_WORLD,&status);
+                MPI_Recv(&len,1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
+                MPI_Recv(strin,len,MPI_CHAR,isready,message_save,MPI_COMM_WORLD,&status);
+                MPI_Recv(&da,1,MPI_DOUBLE,isready,message_save,MPI_COMM_WORLD,&status);
                 H5LTset_attribute_double(fout,dout.str().c_str(),strin,&da,1);
             }
             e=H5Fclose(fout);
@@ -357,36 +357,36 @@ void FileManager::Write(int isready)
     } else {
         map<string,MatStream >::iterator it=m_streams.begin();
         int Nq=m_streams.size();
-        MPI_Send(&Nq,1,MPI_INT,0,0,MPI_COMM_WORLD);
+        MPI_Send(&Nq,1,MPI_INT,0,message_save,MPI_COMM_WORLD);
         while(it!=m_streams.end()){
             // send name of quantity.
             int len=it->first.size()+1;
-            MPI_Send(&len,1,MPI_INT,0,0,MPI_COMM_WORLD);
+            MPI_Send(&len,1,MPI_INT,0,message_save,MPI_COMM_WORLD);
             char *qname=new char[len];
             memcpy(qname,it->first.c_str(),len*sizeof(char));
-            MPI_Send(qname,len,MPI_CHAR,0,0,
+            MPI_Send(qname,len,MPI_CHAR,0,message_save,
                      MPI_COMM_WORLD);
             delete [] qname;
             // send stat
-            MPI_Send(&it->second.m_stat,1,MPI_INT,0,0,MPI_COMM_WORLD);
+            MPI_Send(&it->second.m_stat,1,MPI_INT,0,message_save,MPI_COMM_WORLD);
             if(it->second.m_stat==StatPerSample())
                 it->second.m_stat=0;
             int dims[2]={it->second.m_nrow,it->second.m_ncol};
-            MPI_Send(dims,2,MPI_INT,0,0,MPI_COMM_WORLD);
-            MPI_Send(it->second.m_mat,dims[0]*dims[1],MPI_DOUBLE,0,0,
+            MPI_Send(dims,2,MPI_INT,0,message_save,MPI_COMM_WORLD);
+            MPI_Send(it->second.m_mat,dims[0]*dims[1],MPI_DOUBLE,0,message_save,
                      MPI_COMM_WORLD);
             // send data attributes
             map<string,double>::iterator ait=m_dataattr.begin();
             len=m_dataattr.size();
-            MPI_Send(&len,1,MPI_INT,0,0,MPI_COMM_WORLD);
+            MPI_Send(&len,1,MPI_INT,0,message_save,MPI_COMM_WORLD);
             while(ait!=m_dataattr.end()){
                 len=ait->first.size()+1;
-                MPI_Send(&len,1,MPI_INT,0,0,MPI_COMM_WORLD);
+                MPI_Send(&len,1,MPI_INT,0,message_save,MPI_COMM_WORLD);
                 char *aname=new char[len];
                 memcpy(aname,ait->first.c_str(),len*sizeof(char));
-                MPI_Send(aname,len,MPI_CHAR,0,0,MPI_COMM_WORLD);
+                MPI_Send(aname,len,MPI_CHAR,0,message_save,MPI_COMM_WORLD);
                 delete [] aname;
-                MPI_Send(&(ait->second),1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+                MPI_Send(&(ait->second),1,MPI_DOUBLE,0,message_save,MPI_COMM_WORLD);
                 ait++;
             }
             it++;

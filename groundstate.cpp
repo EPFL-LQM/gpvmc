@@ -127,8 +127,8 @@ int main(int argc, char* argv[])
 #ifdef USEMPI
             int stop(0), mess(fm.message_save);
             if(m!=saves-1) stop=comm_rank;
-            MPI_Send(&mess,1, MPI_INT,0,0,MPI_COMM_WORLD);
-            MPI_Send(&stop,1,MPI_INT,0,0,MPI_COMM_WORLD);
+            MPI_Send(&mess,1, MPI_INT,0,fm.message_comm,MPI_COMM_WORLD);
+            MPI_Send(&stop,1,MPI_INT,0,fm.message_save,MPI_COMM_WORLD);
 #endif
             fm.Write();
             ++stat_count;

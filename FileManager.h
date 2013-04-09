@@ -32,7 +32,7 @@ class FileManager
         int m_stat_per_sample;
     public:
         FileManager(const std::string& dir="", const int& num=-1);
-        enum {message_monitor,message_save};
+        enum {message_comm=0,message_monitor=1,message_save=2};
         MatStream& FileStream(std::string basename);
         void FileAttribute(std::string attr, double val);
         void FileAttribute(std::string attr, std::string val);
