@@ -37,6 +37,8 @@ void StatSpinStruct::measure()
     size_t L=st->GetL();
     // get spin swap list
     vector<hop_path_t> hopup,hopdo;
+    hopup.reserve(2*pow(L,4));
+    hopdo.reserve(2*pow(L,4));
     for(size_t ix=0;ix<L;++ix){
         for(size_t iy=0;iy<L;++iy){
             for(size_t jx=0;jx<L;++jx){
@@ -60,13 +62,25 @@ void StatSpinStruct::measure()
             }
         }
     }
+    //chunk the hoppings as it may be an issue for memory to pass them all at once...
+    size_t chunksize =floor(hopup.size()/1e4)+1;
+    size_t nchunk=hopup.size()/chunksize;
+    vector<vector<hop_path_t> > upchunks(nchunk), dochunks(nchunk);
+    for(size_t c=0;c<nchunk;++c){
+        upchunks[c]=vector<hop_path_t>(hopup.begin()+c*chunksize,
+                                       min(hopup.begin()+(c+1)*chunksize,hopup.end()));
+        dochunks[c]=vector<hop_path_t>(hopdo.begin()+c*chunksize,
+                                       min(hopdo.begin()+(c+1)*chunksize,hopdo.end()));
+    }
     vector<BigComplex> swamps(hopup.size());
     BigComplex amp=m_stepper->GetAmp()->Amp();
     if(st->GetJas()) amp=amp*st->GetJas()->Jas();
-    m_stepper->GetAmp()->VirtUpdate(hopup,hopdo,
-                                    vector<hop_path_t>(1),
-                                    vector<hop_path_t>(1),
-                                    &swamps[0]);
+    for(size_t c=0;c<nchunk;++c){
+        m_stepper->GetAmp()->VirtUpdate(upchunks[c],dochunks[c],
+                                        vector<hop_path_t>(1),
+                                        vector<hop_path_t>(1),
+                                        &swamps[c*chunksize]);
+    }
     vector<complex<double> > sqlong(m_qs.size()/2,0);
     vector<BigComplex> sqtranspm(m_qs.size()/2,0);
     vector<BigComplex> sqtransmp(m_qs.size()/2,0);

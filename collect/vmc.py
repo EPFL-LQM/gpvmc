@@ -41,6 +41,36 @@ def GetStat(filename,Nsamp=1):
             .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
     return datapath,args
 
+def concatenate(infiles,outfile,Nsamp):
+    if type(infiles)==str:
+        infiles=[infiles]
+    attr=GetAttr(infiles[0])
+    dpath,args=GetStat(infiles,Nsamp)
+    hout=h5py.File(outfile,'w')
+    for k in attr:
+        hout.attrs.create(k,attr[k])
+    hfile=h5py.File(dpath[0][0],'r')
+    dat=hfile['/rank-1/data-0']
+    dtype=dat.dtype
+    dshape=dat.shape
+    for sample, bunch in enumerate(args):
+        sdat=sc.zeros(dshape,dtype=dtype)
+        st=0
+        for d in bunch:
+            hfile=h5py.File(dpath[d][0],'r')
+            dat=hfile[dpath[d][1]]
+            try:
+                st+=dat.attrs['statistics']
+            except:
+                st+=1
+            sdat+=dat
+        sdat/=len(bunch)
+        hdat=hout.create_dataset('/rank-1/data-{0}'.format(sample),dshape,dtype,sdat)
+        hdat.attrs.create('statistics',st)
+    hout.attrs.create('orig_files',infiles)
+    hout.close()
+
+
 def GetFermiSigns(filename,refstate=None,channel=None):
     attr=GetAttr(filename)
     filetype=''
@@ -164,7 +194,9 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
     return sc.real(sqq/sqe)
 
 def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
-    attrs=GetAttr(filename)
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
     if channel==None:
         channel=attrs['channel']
     if channel=='long':
@@ -252,8 +284,7 @@ def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
         w=sc.arange(-0.5,6,0.01)
     sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]),dtype=S.dtype)
     ax=None
-    if len(sc.shape(S))==3:
-        S=S[:,0,:]
+    S=S[:,0,0,:]
     for s in range(sc.shape(sqw)[0]):
         idx=~sc.isnan(E[s,:])
         sqw[s]=sf.gaussians(w,sc.squeeze(E[s,idx])-gsen*L*L,sc.squeeze(S[s,idx]),sc.ones(sc.shape(E[s,idx]))*width)

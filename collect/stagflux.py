@@ -152,18 +152,18 @@ def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
 
 def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
-    Returns Sq[sample,r,n]=<q,r|q,n><q,n|q,0>
+    Returns Sq[sample,r,rp,n]=<q,r|q,n><q,n|q,rp>
     """
     sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
     pkrp=sc.zeros((sc.shape(V)[1],sc.shape(rp)[0]),complex)
-    pkr=sc.zeros((sc.shape(V)[1],sc.shape(rp)[0]),complex)
+    pkr=sc.zeros((sc.shape(V)[1],sc.shape(r)[0]),complex)
     pkrp[0:len(kx),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],rp)
     pkr[0:len(ky),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
     OV=sc.einsum('ijk,ikl->ijl',O,V)
     rhs=sc.einsum('ijk,jl->ikl',sc.conj(OV),pkrp)
     lhs=sc.einsum('ij,kil->kjl',sc.conj(pkr),OV)
-    sqn=sc.einsum('ijk,ikj->ijk',lhs,rhs)
+    sqn=sc.einsum('ijk,ikl->ijlk',lhs,rhs)
     return sqn
 
 def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):

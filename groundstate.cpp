@@ -16,6 +16,7 @@
 #include "RanGen.h"
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
+#include "SpinDensity.h"
 #include "FileManager.h"
 #include "ArgParse.h"
 #include <sys/types.h>
@@ -62,13 +63,6 @@ int main(int argc, char* argv[])
     FileManager fm(dir,prefix);
     phi*=M_PI;
     double rej(0);
-    size_t* Rs=new size_t[2*(L/2+1)*(L/2+1)];
-    for(size_t x=0;x<=L/2;++x){
-        for(size_t y=0;y<=L/2;++y){
-            Rs[(x*(L/2+1)+y)*2]=x;
-            Rs[(x*(L/2+1)+y)*2+1]=y;
-        }
-    }
     fm.FileAttribute("L",L);
     fm.FileAttribute("N",N);
     fm.FileAttribute("neel",neel);
@@ -104,7 +98,10 @@ int main(int argc, char* argv[])
         MetroMC varmc(&step,&fm);
         varmc.AddQuantity(&heisen);
         varmc.AddQuantity(&stat);
-        while(amp.Amp()==0) sp.Init();
+        while(amp.Amp()==0){
+            sp.Init();
+            amp.Init();
+        }
 
         // Start calculation: thermalize
         varmc.Walk(int(therm*L*L),0);
@@ -172,7 +169,6 @@ int main(int argc, char* argv[])
         delete [] mes;
 #endif
     }
-    delete [] Rs;
 #ifdef USEMPI
     MPI_Finalize();
 #endif
