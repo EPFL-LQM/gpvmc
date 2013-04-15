@@ -303,12 +303,12 @@ def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
     ax.set_xlim((sc.amin(w),sc.amax(w)))
     return fig
 
-def ScanDir(folder='.',keys=[],return_dict=False):
+def ScanDir(folder='.',keys=[],pattern=r".*\.h5",return_dict=False):
     out={}
     for f in os.listdir(folder):
-        if re.match(".*\.h5",f) is not None:
+        if re.match(pattern,f) is not None:
             try:
-                out[f]=dict(GetAttr("{0}/{1}".format(folder,f)))
+                out[folder+'/'+f]=dict(GetAttr("{0}/{1}".format(folder,f)))
                 s=f
                 if len(keys):
                     s="{0}: ".format(f)

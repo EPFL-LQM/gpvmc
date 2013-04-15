@@ -139,11 +139,15 @@ void FileManager::Monitor(const vector<int>& ranks,
             }
             ostr<<endl;
             for(size_t r=r0;r<re;++r){
-                int d=floor(total_time[r]*nsaves/3600/24);
-                int h=floor(total_time[r]*nsaves/3600-d*24);
-                int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
-                int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
-                ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+                if(total_time[r]>0){
+                    int d=floor(total_time[r]*nsaves/3600/24);
+                    int h=floor(total_time[r]*nsaves/3600-d*24);
+                    int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
+                    int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
+                    ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+                } else {
+                    ostr<<"    N/A    |";
+                }
             }
             ostr<<endl;
             for(size_t r=r0;r<re;++r) ostr<<"____________";
@@ -154,26 +158,30 @@ void FileManager::Monitor(const vector<int>& ranks,
         double new_mav=0;
         double minav=1;
         double maxav=0;
-        double tav=0,tmax=0,tmin=numeric_limits<double>::infinity();
+        double tav=-1,tmax=-1,tmin=numeric_limits<double>::infinity();
         int far(0),slr(0);
         int nsaves=m_fileattr["saves"];
+        int nnna=0;
         for(size_t r=0;r<ranks.size();++r){
             double av=(num_rep[r]+percents[r])/nsaves;
             new_mav+=av;
-            tav+=total_time[r]*nsaves;
-            if(av<minav) minav=av;
-            if(av>maxav) maxav=av;
-            if(total_time[r]*nsaves<tmin){
-                tmin=total_time[r]*nsaves;
-                far=ranks[r];
-            }
-            if(total_time[r]*nsaves>tmax){
-                tmax=total_time[r]*nsaves;
-                slr=ranks[r];
+            if(total_time[r]>=0){
+                tav+=total_time[r]*nsaves;
+                if(av<minav) minav=av;
+                if(av>maxav) maxav=av;
+                if(total_time[r]*nsaves<tmin){
+                    tmin=total_time[r]*nsaves;
+                    far=ranks[r];
+                }
+                if(total_time[r]*nsaves>tmax){
+                    tmax=total_time[r]*nsaves;
+                    slr=ranks[r];
+                }
+                ++nnna;
             }
         }
         new_mav/=ranks.size();
-        tav/=ranks.size();
+        tav/=nnna;
         if(floor(new_mav*100)!=mean_adv){
             mean_adv=floor(new_mav*100);
             int dav=floor(tav/3600/24);
@@ -192,10 +200,16 @@ void FileManager::Monitor(const vector<int>& ranks,
             out<<"Adv: (mean: "<<floor(100*new_mav)
                <<"%, max: "<<floor(maxav*100)
                <<"%, min: "<<floor(minav*100)
-               <<"%), Time: (mean: "<<dav<<"-"<<hav<<":"<<mav<<":"<<sav
-               <<", max: "<<dmax<<"-"<<hmax<<":"<<mmax<<":"<<smax
-               <<", min: "<<dmin<<"-"<<hmin<<":"<<mmin<<":"<<smin
-               <<"), Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
+               <<"%), ";
+            if(tav>=0){
+                out<<"Time: (mean: "<<dav<<"-"<<hav<<":"<<mav<<":"<<sav
+                   <<", max: "<<dmax<<"-"<<hmax<<":"<<mmax<<":"<<smax
+                   <<", min: "<<dmin<<"-"<<hmin<<":"<<mmin<<":"<<smin
+                   <<"), ";
+            } else {
+                out<<"Time: (mean: N/A, max: N/A, min: N/A), ";
+            }
+            out<<"Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
             cout<<out.str()<<endl;
         }
     }

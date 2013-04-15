@@ -64,6 +64,7 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
             int mess=m_fm->message_monitor;
             double done=double(s)/len;
             double finishes=m_gtimer*len/s;
+            if(s==0) finishes=-1;
             MPI_Send(&mess,1,MPI_INT,0,m_fm->message_comm,MPI_COMM_WORLD);
             MPI_Send(&done,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
             MPI_Send(&finishes,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
