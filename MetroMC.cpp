@@ -11,6 +11,7 @@
 #include "Stepper.h"
 #include "Quantity.h"
 #include "Amplitude.h"// remove when cleaning up is complete
+#include <unistd.h>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ bool MetroMC::YesNo(const BigDouble& in)
     return din>1.0 ? RanGen::uniform()<1 : RanGen::uniform() < din;
 }
 
-void MetroMC::Walk(const size_t& len, size_t meas, bool silent)
+void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
 {
     double rwtimei, gtimei(0);
     m_gtimer=0;
@@ -63,14 +64,17 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent)
             int mess=m_fm->message_monitor;
             double done=double(s)/len;
             double finishes=m_gtimer*len/s;
-            MPI_Send(&mess,1,MPI_INT,0,0,MPI_COMM_WORLD);
-            MPI_Send(&done,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
-            MPI_Send(&finishes,1,MPI_DOUBLE,0,0,MPI_COMM_WORLD);
+            if(s==0) finishes=-1;
+            MPI_Send(&mess,1,MPI_INT,0,m_fm->message_comm,MPI_COMM_WORLD);
+            MPI_Send(&done,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
+            MPI_Send(&finishes,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
+            MPI_Send(&num_rep,1,MPI_INT,0,m_fm->message_monitor,MPI_COMM_WORLD);
 #else
             vector<int> r(1,0);
             vector<double> d(1,double(s)/len);
             vector<double> f(1,m_gtimer*len/s);
-            m_fm->Monitor(r,d,f);
+            vector<int> n(1,num_rep);
+            m_fm->Monitor(r,d,f,n,2);
 #endif
         }
     }

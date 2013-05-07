@@ -30,7 +30,7 @@ def phiktrans(kx,ky,qx,qy,p,r=sc.zeros((1,2))):
     """
     kqx=kx-qx
     kqy=ky-qy
-    pk=sc.zeros((sc.shape(kx)[0],sc.shape(r)[0]))
+    pk=sc.zeros((sc.shape(kx)[0],sc.shape(r)[0]),complex)
     pke=sc.conj(uk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
         sc.conj(vk(kx,ky,1,1,p))*vk(kqx,kqy,-1,-1,p)
     pko=sc.conj(vk(kx,ky,1,1,p))*uk(kqx,kqy,-1,-1,p)+\
@@ -44,8 +44,9 @@ def phiktrans(kx,ky,qx,qy,p,r=sc.zeros((1,2))):
 def phiklong(kx,ky,qx,qy,spin,p):
     kqx=kx-qx
     kqy=ky-qy
-    return 0.5*spin*(sc.conj(uk(kx,ky,spin,1,p))*uk(kqx,kqy,spin,-1,p)+\
-                     sc.conj(vk(kx,ky,spin,1,p))*vk(kqx,kqy,spin,-1,p))
+    pk=0.5*spin*(sc.conj(uk(kx,ky,spin,1,p))*uk(kqx,kqy,spin,-1,p)+\
+                 sc.conj(vk(kx,ky,spin,1,p))*vk(kqx,kqy,spin,-1,p))
+    return pk
 
 def fermisea(Lx,Ly,shift):
     fskx=sc.zeros(Lx*Ly/2)
@@ -75,6 +76,12 @@ def mbzmod(kx,ky):
     mmkx=fold(mkx+0.5*(1-inmbz(mkx,mky)))
     mmky=fold(mky+0.5*(1-inmbz(mkx,mky)))
     return mmkx,mmky
+
+def shiftmbz(kx,ky):
+    kx,ky=mbzmod(kx,ky)
+    mkx=sc.array([k-(k>0.5) for k in kx])
+    mky=sc.array([k-(k>0.5) for k in ky])
+    return mkx,mky
 
 def transfermisigns(Lx,Ly,shift,q):
     kx,ky=fermisea(Lx,Ly,shift)
@@ -114,6 +121,25 @@ def longfermisigns(Lx,Ly,shift,q):
         fsign[2*k+1]=fsign[2*k]
     return fsign
 
+def fermisigns(states,refstate):
+    fs=sc.ones(sc.shape(states)[0])
+    for s in range(sc.shape(states)[0]):
+        hole=None
+        part=None
+        ref=sc.array(refstate)
+        for i in range(sc.shape(states)[1]):
+            if ref[i]==0 and states[s,i]!=0:
+                part=i
+            if ref[i]!=0 and states[s,i]==0:
+                hole=i
+            if part!=None and hole!=None:
+                fs[s]*=(-1)**(sum(ref[min(hole,part)+1:max(hole,part)]))
+                ref[hole]=0
+                ref[part]=1
+                hole=None
+                part=None
+    return fs
+
 def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
     fs=[]
     if ori=='trans':
@@ -124,51 +150,57 @@ def fixfermisigns(Lx,Ly,shift,q,H,O,ori):
     O=sc.einsum('i,jik,k->jik',fs,O,fs)
     return H,O
 
-def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2))):
+def sqwtransamp(V,O,Lx,Ly,q,shift,phi,neel,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
-    Returns Sq[sample,r,n]=<q,r|q,n><q,n|q,0>
+    Returns Sq[sample,r,rp,n]=<q,r|q,n><q,n|q,rp>
     """
-    sqn=sc.zeros(sc.shape(V)[0:2])
+    sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
-    pk=sc.squeeze(phiktrans(kx,ky,q[0],q[1],[phi,neel]))
-    pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
+    pkrp=sc.zeros((sc.shape(V)[1],sc.shape(rp)[0]),complex)
+    pkr=sc.zeros((sc.shape(V)[1],sc.shape(r)[0]),complex)
+    pkrp[0:len(kx),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],rp)
+    pkr[0:len(ky),:]=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
     OV=sc.einsum('ijk,ikl->ijl',O,V)
-    rhs=sc.einsum('ijk,j->ik',sc.conj(OV),pk)
+    rhs=sc.einsum('ijk,jl->ikl',sc.conj(OV),pkrp)
     lhs=sc.einsum('ij,kil->kjl',sc.conj(pkr),OV)
-    sqn=sc.einsum('ijk,ik->ijk',lhs,rhs)
+    sqn=sc.einsum('ijk,ikl->ijlk',lhs,rhs)
     return sqn
 
 def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
-    sqn=sc.zeros(sc.shape(V)[0:2])
+    sqn=sc.zeros(sc.shape(V)[0:2],complex)
     kx,ky=fermisea(Lx,Ly,shift)
     pkup=phiklong(kx,ky,q[0],q[1],1,[phi,neel])
     pkdo=phiklong(kx,ky,q[0],q[1],-1,[phi,neel])
-    pk=sc.zeros((2*len(pkup)),complex)
+    pk=sc.zeros(sc.shape(V)[1],complex)
     pk[0:2*len(pkup):2]=pkup
     pk[1:2*len(pkup):2]=pkdo
     if (abs(q[0])+abs(q[1]))<1e-6 or\
        (abs(q[0]-0.5)+abs(q[1]-0.5))<1e-6:
-        pk.append([0])
+        pk=sc.append(pk,0)
         if neel!=0:
-            pk[-1]=sc.sum(neel/omega(kx,ky,p))
+            pk[-1]=sc.sum(neel/omega(kx,ky,[phi,neel]))
     sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
     return sqn
 
-def transspinonoverlap(O,Lx,Ly,q,shift,phi,neel,r):
+def transspinonoverlap(O,V,Lx,Ly,q,shift,phi,neel,r):
     kx,ky=fermisea(Lx,Ly,shift)
     pkr=phiktrans(kx,ky,q[0],q[1],[phi,neel],r)
     ork=sc.einsum('ij,kil->kjl',sc.conj(pkr),O)
-    return sc.einsum('kil,lm->kim',ork,pkr)
+    return sc.einsum('kil,klm->kim',ork,V)
 
 def gaussians(x,x0,A,sig):
-    gg=sc.zeros(sc.shape(x),A.dtype)
     #if sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A)))>0.01:
     #    warnings.warn(\
     #'Gaussian amplitude has a sizable imaginary part\(max(|Im|)/max(|Re|)={0}, mean(abs(A))={1}).'\
     #        .format(sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A))), sc.mean(abs(A))))
     amp=A*sc.sqrt(1/2.0/sc.pi)/sig
     [X,X0]=sc.meshgrid(x,x0)
-    gg=sc.einsum('i,ij',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    gg=None
+    #if len(sc.shape(amp))==1:
+    #    gg=sc.einsum('i,ij',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    #elif len(sc.shape(amp))==2:
+    #    gg=sc.einsum('ij,jk',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    gg=sc.einsum('...i,...ij->...j',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
     return gg
 
 def Renorm(sqsq,O,Lx,Ly,q,shift,p):

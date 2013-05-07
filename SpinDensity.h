@@ -21,8 +21,9 @@ class SpinDensity: public MatrixQuantity
         virtual void measure();
     private:
         std::vector<std::vector<double> > m_qs;
-        std::vector<std::vector<std::complex<double> > > m_xphases;
-        std::vector<std::vector<std::complex<double> > > m_yphases;
+        std::vector<std::vector<std::complex<double> > > m_ph; 
+        //std::vector<std::vector<std::complex<double> > > m_xphases;
+        //std::vector<std::vector<std::complex<double> > > m_yphases;
 };
 
 #endif//_SPINDENSITY_H

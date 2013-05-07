@@ -1,7 +1,11 @@
 import h5py
+import warnings
 import matplotlib.pyplot as pl
+import matplotlib.mlab as ml
 from scipy.linalg import eigh
 import scipy as sc
+from numpy.linalg import matrix_rank
+import vmc_utils as vln
 import stagflux as sf
 import os
 import re
@@ -9,77 +13,192 @@ import code
 
 class InputFileError(Exception):
     def __init__(self,errstr):
-        self.message=errstr
+        self.value=errstr
+    def __str__(self):
+        return str(self.value)
 
-def CheckStat(filename,Nsamp=1):
-    hfile=h5py.File(filename,'r')
-    sw=0
-    for r in hfile:
-        for d in hfile[r]:
-            sw+=1
-    sdat=sw/Nsamp
-    stats=sc.zeros(Nsamp)
-    astat=0
-    sample=0
-    try:
-        for r in hfile:
-            for d in hfile[r]:
-                if sample<Nsamp:
-                    stats[sample]+=hfile[r][d].attrs['statistics']
-                    astat+=1
-                    if astat==sdat:
-                        sample+=1
-                        astat=0
-        print("""{0} samples will be left out.
-    Average statistics of {1} (min: {2}, max: {3})"""\
-                .format(sc.mod(sw,Nsamp),sc.mean(stats),\
-                sc.amin(stats),sc.amax(stats)))
-    except Exception as err:
-        print(err)
-    return sdat
+def GetStat(filename,Nsamp=1):
+    hfile=[]
+    if type(filename)==list:
+        for i,f in enumerate(filename):
+            hfile.append(h5py.File(f,'r'))
+    elif type(filename)==str:
+        hfile.append(h5py.File(filename,'r'))
+        filename=[filename]
+    stats=[]
+    datapath=[]
+    for ih,h in enumerate(hfile):
+        for r in h:
+            for d in h[r]:
+                try:
+                    stats.append(int(h[r][d].attrs['statistics'][0]))
+                except KeyError as err:
+                    stats.append(1)
+                datapath.append((filename[ih],"/{0}/{1}".format(r,d)))
+    bunches,args=vln.bunch(stats,Nsamp,indices=True)
+    addstat=sc.array([sum(bunches[i]) for i in range(Nsamp)])
+    print("Average statistics of {0} (min: {1}, max: {2})"\
+            .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
+    return datapath,args
 
-def GetEigSys(filename,Nsamp=1,channel=''):
-    hfile=h5py.File(filename,'r')
+def concatenate(infiles,outfile,Nsamp):
+    if type(infiles)==str:
+        infiles=[infiles]
+    attr=GetAttr(infiles[0])
+    dpath,args=GetStat(infiles,Nsamp)
+    hout=h5py.File(outfile,'w')
+    for k in attr:
+        hout.attrs.create(k,attr[k])
+    hfile=h5py.File(dpath[0][0],'r')
+    dat=hfile['/rank-1/data-0']
+    dtype=dat.dtype
+    dshape=dat.shape
+    for sample, bunch in enumerate(args):
+        sdat=sc.zeros(dshape,dtype=dtype)
+        st=0
+        for d in bunch:
+            hfile=h5py.File(dpath[d][0],'r')
+            dat=hfile[dpath[d][1]]
+            try:
+                st+=dat.attrs['statistics']
+            except:
+                st+=1
+            sdat+=dat
+        sdat/=len(bunch)
+        hdat=hout.create_dataset('/rank-1/data-{0}'.format(sample),dshape,dtype,sdat)
+        hdat.attrs.create('statistics',st)
+    hout.attrs.create('orig_files',infiles)
+    hout.close()
+
+
+def GetFermiSigns(filename,refstate=None,channel=None):
     attr=GetAttr(filename)
-    if channel=='':
+    filetype=''
+    try:
+        filetype=attr['type']
+    except KeyError:
+        mo=re.match('.*/?[0-9]+-(.*)\.h5',filename)
+        filetype=mo.groups()[0]
+    L=attr['L']
+    if refstate==None:
+        refstate=sc.zeros(2*L*L)
+        refstate[0::2]=1
+    if filetype=='WaveFunction':
+        hfile=h5py.File(filename,'r')
+        states=sc.column_stack([hfile['states_up'],hfile['states_do']])
+        return sf.fermisigns(states,refstate)
+    else:
+        if channel==None:
+            channel=attr['channel']
+        L=attr['L']
+        shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+        q=[float(attr['qx'])/L,float(attr['qy'])/L]
+        if channel=='trans':
+            return sf.transfermisigns(L,L,shift,q)
+        elif channel=='long':
+            return sf.longfermisigns(L,L,shift,q)
+        else:
+            raise KeyError('\"channel\" must be either \"trans\" or \"long\".')
+
+def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
+    if type(filename)==str:
+        filename=[filename]
+    hfile=h5py.File(filename[0],'r')
+    attr=GetAttr(filename[0])
+    if channel==None:
         channel=attr['channel']
-    sdat=CheckStat(filename,Nsamp)
+    dpath,args=GetStat(filename,Nsamp)
     dat=hfile["/rank-1/data-0"]
     N=sc.shape(dat)[0]/2
     L=attr['L']
-    q=[float(attr['qx'])/attr['L'], float(attr['qy'])/attr['L']]
     shift=[attr['phasex']/2.0,attr['phasey']/2.0]
     H=sc.zeros([Nsamp,N,N],complex)
     O=sc.zeros([Nsamp,N,N],complex)
-    HO=sc.zeros([Nsamp,2*N,2*N])
     E=sc.zeros([Nsamp,N])
     V=sc.zeros([Nsamp,N,N],complex)
-    ns=0
-    sample=0
-    for g in hfile:
-        for d in hfile[g]:
-            if sample<sc.shape(H)[0]:
-                dat=hfile["/{0}/{1}".format(g,d)]
-                HO[sample,:,:]+=dat
-                H[sample,:,:]+=dat[0:N,0:2*N:2]+1j*dat[0:N,1:2*N:2]
-                O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
-                ns+=1
-                if ns==sdat:
-                    H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/ns
-                    O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/ns
-                    HO[sample,:,:]/=ns
-                    ns=0
-                    sample+=1
-    H,O=sf.fixfermisigns(attr['L'],attr['L'],shift,q,H,O,channel)
-    print('{0} pair of (H,O) matrices loaded, now diagonalize'.format(sc.shape(H)[0]))
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            dat=hfile[dpath[d][1]]
+            H[sample,:,:]+=dat[0:N,0:2*N:2]+1j*dat[0:N,1:2*N:2]
+            O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
+        H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/len(b)
+        O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/len(b)
+    if channel=='groundstate':
+        return H
+    fs=None
+    refstate=sc.zeros(2*L*L)
+    refstate[0::2]=1
+    if wavefile==None:
+        fs=GetFermiSigns(filename[0],refstate,channel=channel)
+    else:
+        fs=GetFermiSigns(wavefile,refstate,channel=channel)
     for s in range(sc.shape(H)[0]):
-        E[s,:],V[s,:,:]=eigh(sc.squeeze(H[s,:,:]),sc.squeeze(O[s,:,:]))
+        H[s,:,:]=sc.dot(sc.diag(fs),sc.dot(H[s,:,:],sc.diag(fs)))
+        O[s,:,:]=sc.dot(sc.diag(fs),sc.dot(O[s,:,:],sc.diag(fs)))
+    ren=sc.ones(Nsamp)
+    if gsfile!=None:
+        ren=RenormalizeFactor(filename,gsfile,Nsamp=1,channel=channel,O=O)
+    print('{0} pair of (H,O) matrices loaded, now diagonalize'.format(sc.shape(H)[0]))
+    H=sc.einsum('ijk,i->ijk',H,ren)
+    O=sc.einsum('ijk,i->ijk',O,ren)
+    for s in range(sc.shape(H)[0]):
+        E[s,:],V[s,:,:]=vln.geneigh(sc.squeeze(H[s,:,:]),sc.squeeze(O[s,:,:]))
     print('diagonalization finished')
     return H,O,E,V
 
-def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
-    attrs=GetAttr(filename)
-    if channel=='':
+def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
+    if type(excfile)==str:
+        excfile=[excfile]
+    if type(gsfile)==str:
+        gsfile=[gsfile]
+    exat=GetAttr(excfile[0])
+    gsat=GetAttr(gsfile[0])
+    L=exat['L']
+    q=sc.array([exat['qx'],exat['qy']])
+    shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
+    phi=exat['phi']
+    neel=exat['neel']
+    qx,qy,Sq=GetSq(gsfile)
+    kx,ky=sf.fermisea(L,L,shift)
+    qidx=ml.find((qx==q[0])*(qy==q[1]))
+    if O==None:
+        _,O,_,_=GetEigSys(excfile,Nsamp)
+    pk=None
+    sqq=None
+    if channel==None:
+        channel=exat['channel']
+    if channel=='trans':
+        pk=sc.squeeze(sf.phiktrans(kx,ky,q[0]/L,q[1]/L,[phi,neel]))
+        sqq=0.5*(Sq[0,1,qidx]+Sq[0,2,qidx])
+    elif channel=='long':
+        pkup=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,1,[phi,neel]))
+        pkdo=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,-1,[phi,neel]))
+        if (q[0]/L==0.5 and q[1]/L==0.5) or (q[0]/L==0 and q[1]/L==0):
+            pk=sc.zeros(2*sc.shape(pkup)[0]+1,complex)
+        else:
+            pk=sc.zeros(2*sc.shape(pkup)[0],complex)
+        pk[0:2*sc.shape(pkup)[0]:2]=pkup
+        pk[1:2*sc.shape(pkdo)[0]:2]=pkdo
+        if (qx[0]/L==0.5 and q[1]/L==0.5) or (q[0]/L==0 and q[1]/L==0):
+            if neel==0:
+                pk[-1]=0
+            else:
+                pk[-1]=sum(neel/sf.omega(kx,ky,[phi,neel]))
+        sqq=Sq[0,0,qidx]
+    else:
+        raise(InputFileError('In file \''+excfile+'\', channel=\''+str(channel)+'\'. Should be \'trans\' or \'long\''))
+    sqe=sc.einsum('i,jik,k->j',sc.conj(pk),O,pk)
+    if abs(sqq)<1e-6:
+        warnings.warn('Probably ill-defined renormalization, returns 1',UserWarning)
+        return 1.0
+    return sc.real(sqq/sqe)
+
+def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
+    if channel==None:
         channel=attrs['channel']
     if channel=='long':
         raise ValueError('Longitudinal channel not yet implemented')
@@ -89,13 +208,13 @@ def GetSpinonOverlap(filename,Nsamp=1,channel='',O=None,r=None):
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None:
-        H,O,E,V=GetEigSys(filename,Nsamp,channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
     if r==None:
         X,Y=sc.meshgrid(range(-L/2,L/2),range(-L/2,L/2))
         r=sc.column_stack([X.flatten(),Y.flatten()])
-    return sf.transspinonoverlap(O,L,L,q,shift,phi,neel,r)
+    return sf.transspinonoverlap(O,V,L,L,q,shift,phi,neel,r)
 
-def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
+def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
     """
     For the transverse channel:
     Calculates and returns Sq(sample,n,r)=<q,r|q,n><q,n|Sqp|GS>.
@@ -103,8 +222,10 @@ def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
     For the longitudinal channel: input r has no effect.
     Calculates and return Sq(sample,n)=|<q,n|Sqz|GS>|^2.
     """
-    attrs=GetAttr(filename)
-    if channel=='':
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
+    if channel==None:
         channel=attrs['channel']
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
@@ -112,17 +233,19 @@ def GetSqAmpl(filename,Nsamp=1,channel='',V=None,O=None,r=sc.zeros((1,2))):
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None or V== None:
-        H,O,E,V=GetEigSys(filename,Nsamp,channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
     if channel=='long':
         return sf.sqwlongamp(V,O,L,L,q,shift,phi,neel)
     elif channel=='trans':
-        return sf.sqwtransamp(V,O,L,L,q,shift,phi,neel,r)
+        return sf.sqwtransamp(V,O,L,L,q,shift,phi,neel,r,rp)
     pass
 
 def GetSq(filename,Nsamp=1):
-    attrs=GetAttr(filename)
-    hfile=h5py.File(filename,'r')
-    sdat=CheckStat(filename,Nsamp)
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
+    #hfile=h5py.File(filename,'r')
+    dpath,args=GetStat(filename,Nsamp)
     filetype=''
     try:
         filetype=attrs['type']
@@ -132,80 +255,40 @@ def GetSq(filename,Nsamp=1):
     if filetype!='StatSpinStruct':
         raise InputFileError('\"{0}\" is not a static structure factor file')
     N=pow(attrs['L'],2)
-    Sq=sc.zeros((Nsamp,3,N))
-    sample=0
-    ns=0
-    for r in hfile:
-        for d in hfile[r]:
-            Sq[sample,:,:]+=hfile[r][d][0:3,0::2]+1j*hfile[r][d][0:3,1::2]
-            ns+=1
-            if ns==sdat:
-                ns=0
-                sample+=1
+    Sq=sc.zeros((Nsamp,3,N),complex)
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            Sq[sample,:,:]+=hfile[dpath[d][1]][0:3,0::2]+1j*hfile[dpath[d][1]][0:3,1::2]
+        Sq[sample,:,:]/=len(b)
     qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
     return qx.flatten(),qy.flatten(),Sq
-
-def PlotTransSpinon(filename,Nsamp=1,V=None,O=None,E=None,S=None,\
-                    r=sc.zeros((1,2)),fig=None,width=0.1,\
-                    shift=0,w=None):
-    attrs=GetAttr(filename)
-    channel='trans'
-    try:
-        channel=attrs['channel']
-    except:
-        pass
-    if channel=='long':
-        raise NotImplementedError('longitudinal channel not supported')
-    L=attrs['L']
-    q=[float(attrs['qx']/L),float(attrs['qy'])/L]
-    if E==None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
-    if w==None:
-        w=sc.arange(-6,6,0.01)
-    if S==None:
-        S=GetSqAmpl(filename,Nsamp=Nsamp,V=V,O=O,r=r)
-    wqwr=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]))
-    for sample in range(Nsamp):
-        En,Enp=sc.meshgrid(E[sample,:],E[sample,:])
-        for ir in range(sc.shape(r)[0]):
-            W,Wp=sc.meshgrid(sc.conj(S[sample,ir,:]),S[sample,ir,:])
-            wqwr[sample,:]+=sf.gaussians(w,En.flatten()-Enp.flatten(),\
-                                         W.flatten()*Wp.flatten(),\
-                                         sc.ones(sc.shape(En.flatten()))*width)
-    wqwr=wqwr/sc.shape(r)[0]+shift
-    ax=None
-    if fig is None:
-        fig=pl.figure()
-        ax=fig.gca()
-    else:
-        ax=fig.gca()
-    for s in range(sc.shape(wqwr)[0]):
-        ax.plot(w,wqwr[s,:])
-    ax.set_xlim((sc.amin(w),sc.amax(w)))
-    return fig
 
 def GetAttr(filename):
     hfile=h5py.File(filename,'r')
     return hfile.attrs
 
-def PlotSqw(filename,gsen,Nsamp=1,channel='',\
+def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
             fig=None,width=0.1,shift=0,\
-            V=None,O=None,E=None,S=None,w=None):
-    attrs=GetAttr(filename)
+            V=None,O=None,E=None,S=None,w=None,
+            gsspinfile=None, wavefile=None):
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     if E==None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,gsfile=gsspinfile,wavefile=wavefile)
     if S==None:
         S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,V=V,O=O)
     if w==None:
         w=sc.arange(-0.5,6,0.01)
     sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]),dtype=S.dtype)
     ax=None
-    if len(sc.shape(S))==3:
-        S=S[:,0,:]
+    S=S[:,0,0,:]
     for s in range(sc.shape(sqw)[0]):
-        sqw[s]=sf.gaussians(w,sc.squeeze(E[s,:])-gsen*L*L,sc.squeeze(S[s,:]),sc.ones(sc.shape(E)[1])*width)
+        idx=~sc.isnan(E[s,:])
+        sqw[s]=sf.gaussians(w,sc.squeeze(E[s,idx])-gsen*L*L,sc.squeeze(S[s,idx]),sc.ones(sc.shape(E[s,idx]))*width)
     sqw+=shift
     if fig is None:
         fig=pl.figure()
@@ -214,29 +297,32 @@ def PlotSqw(filename,gsen,Nsamp=1,channel='',\
         ax=fig.gca()
     #ax.hold(True)
     for s in range(sc.shape(sqw)[0]):
-        ax.plot(w,sqw[s,:])
-        ax.plot(E[s,:]-gsen*L*L,sc.zeros(sc.shape(E)[1]),'o')
+        ax.plot(w,sc.real(sqw[s,:]))
+        ax.plot(E[s,:]-gsen*L*L,sc.squeeze(S[s,:])*sc.sqrt(1/2.0/sc.pi)/width,'o')
     if Nsamp!=1:
         ax.plot(w,sc.sum(sqw,0)/sc.shape(sqw)[0],'k--',linewidth=3)
     ax.set_xlim((sc.amin(w),sc.amax(w)))
     return fig
 
-def ScanDir(folder='.',keys=[],return_dict=False):
+def ScanDir(folder='.',keys=[],pattern=r".*\.h5",return_dict=False):
     out={}
     for f in os.listdir(folder):
-        if re.match(".*\.h5",f) is not None:
-            out[f]=dict(GetAttr("{0}/{1}".format(folder,f)))
-            s=f
-            if len(keys):
-                s="{0}: ".format(f)
-                if keys=='*':
-                    keys=out[f].keys()
-                for k in keys:
-                    try:
-                        s="{0} {1} /".format(s,out[f][k])
-                    except KeyError:
-                        s="{0} None /".format(s)
-            print(s)
+        if re.match(pattern,f) is not None:
+            try:
+                out[folder+'/'+f]=dict(GetAttr("{0}/{1}".format(folder,f)))
+                s=f
+                if len(keys):
+                    s="{0}: ".format(f)
+                    if keys=='*':
+                        keys=out[folder+'/'+f].keys()
+                    for k in keys:
+                        try:
+                            s="{0} {1}:{2} /".format(s,k,out[folder+'/'+f][k])
+                        except KeyError:
+                            s="{0} None /".format(s)
+                print(s)
+            except IOError:
+                print('Could not open \"'+f+'\".')
     if return_dict:
         return out
 

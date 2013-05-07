@@ -13,6 +13,8 @@ typedef std::vector<std::pair<size_t,size_t> > hop_path_t;
 typedef std::pair<size_t,size_t> hop_t;
 #endif
 
+class FileManager;
+
 /*! \brief Base class for trial wave functions.
  *
  */
@@ -64,6 +66,12 @@ class WaveFunction {
         /*! \brief See documentation of m_excup.
          */
         std::vector<std::vector<hop_path_t> > m_excdo;
+        /*! \brief Array of the excitations space.
+         * This is used for writing out the states
+         * (see WaveFunction::save).
+         */
+        std::vector<std::vector<int> > m_fock_states_up;
+        std::vector<std::vector<int> > m_fock_states_do;
         /*! \brief Current excitation index.*/
         size_t m_c_exc;
         size_t m_Nfsup;//!< size of up Fermi sea
@@ -119,6 +127,9 @@ class WaveFunction {
         const size_t* GetDo() const {return m_fsdo;}
         int GetSign() const {return m_sign;}
         size_t GetNExc() const {return m_excup.size();}
+
+        // Writes down the states and relative fermi signs to storage
+        void save(FileManager* fm);
 
         /*! Fill up states after initialization.
          * **st are arrays

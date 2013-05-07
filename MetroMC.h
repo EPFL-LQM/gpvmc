@@ -31,7 +31,7 @@ class MetroMC {
          * the quantity each meas steps.
          * If meas==0, no measurement is done.
          */
-        void Walk(const size_t& len, size_t meas, bool silent=false);
+        void Walk(const size_t& len, size_t meas, bool silent=false, int num_rep=0);
         /*! \bief Perform a step of the random walk.
          */
         void Step(bool meas);
