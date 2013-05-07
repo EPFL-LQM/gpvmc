@@ -195,7 +195,12 @@ def gaussians(x,x0,A,sig):
     #        .format(sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A))), sc.mean(abs(A))))
     amp=A*sc.sqrt(1/2.0/sc.pi)/sig
     [X,X0]=sc.meshgrid(x,x0)
-    gg=sc.einsum('i,ij',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    gg=None
+    #if len(sc.shape(amp))==1:
+    #    gg=sc.einsum('i,ij',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    #elif len(sc.shape(amp))==2:
+    #    gg=sc.einsum('ij,jk',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
+    gg=sc.einsum('...i,...ij->...j',amp,sc.exp(-0.5*(X-X0)**2/sc.tile(sig**2,(sc.shape(x)[0],1)).T))
     return gg
 
 def Renorm(sqsq,O,Lx,Ly,q,shift,p):

@@ -1,18 +1,18 @@
 # some example for parameters
 L=8
 phi=0.1
-neel=0.0
-jastrow=0.08
-N=131072
-s=16
-saves=16
+neel=0.055
+jastrow=0.0
+N=3000
+s=1
+saves=10
 prefix=-1
 dir=.
-qfile=qfile
-therm=4096
+therm=10
 phase_shift_x=1.0
 phase_shift_y=1.0
 jas_onebodystag=1
 jas_twobodystag=0
 Jr=0.0
-verbose=1
+verbose=2
+cutoff=0

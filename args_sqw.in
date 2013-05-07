@@ -6,20 +6,20 @@ phi=0.1
 neel=0.055
 jastrow=0
 # total number of measurements (below 2^17)
-N=300000
+N=300
 # number of samples
-s=2
+s=1
 # number of saves (must be greater or equal to s)
-saves=2
+saves=10
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)
 prefix=-1
 # output directory
-dir=/home/bastien/data/local/L8x8
+dir=/home/bastien/data/VarMC/local/L8x8
 # q-point
-qx=2
-qy=2
+qx=4
+qy=0
 # thermalization steps in units of L*L
-therm=30000
+therm=300
 # boundary conditions
 phase_shift_x=1.0
 phase_shift_y=1.0

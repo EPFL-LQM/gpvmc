@@ -25,6 +25,24 @@
 
 using namespace std;
 
+void setup_params(int argc,char* argv[],
+                  size_t& L,
+                  size_t& N,
+                  size_t& s,
+                  size_t& saves,
+                  int& prefix,
+                  int& therm,
+                  int& verbose,
+                  double& phi,
+                  double& neel,
+                  double& jastrow,
+                  double* phase_shift,
+                  double& jr,
+                  double& cutoff,
+                  bool& jas_stagmagn,
+                  bool& jas_stag,
+                  string& dir);
+
 int main(int argc, char* argv[])
 {
     // Initialize
@@ -41,23 +59,29 @@ int main(int argc, char* argv[])
     RanGen::srand(time(NULL)+100*comm_rank);
     Timer::tic("main");
 
-    // Parse input arguments
-    ArgParse arg(argc,argv);
-    size_t L=arg.i("L");
-    double phi=arg.d("phi");
-    double neel=arg.d("neel");
-    double jastrow=arg.d("jastrow");
-    double N=arg.i("N");
-    size_t s=arg.i("s");
-    size_t saves=arg.i("saves");
-    int prefix=arg.i("prefix");
-    string dir=arg.s("dir");
-    double therm=arg.i("therm");
-    double phase_shift[2]={arg.d("phase_shift_x"),arg.d("phase_shift_y")};
-    bool jas_stagmagn=arg.b("jas_onebodystag");
-    bool jas_stag=arg.b("jas_twobodystag");
-    double jr=arg.d("Jr");
-    int verbose=arg.i("verbose");
+    // calculation parameters:
+    size_t L,N,s,saves;
+    int prefix,therm,verbose;
+    double phi,neel,jastrow,phase_shift[2],jr,cutoff;
+    bool jas_stagmagn,jas_stag;
+    string dir;
+    setup_params(argc,argv,
+                 L,
+                 N,
+                 s,
+                 saves,
+                 prefix,
+                 therm,
+                 verbose,
+                 phi,
+                 neel,
+                 jastrow,
+                 phase_shift,
+                 jr,
+                 cutoff,
+                 jas_stagmagn,
+                 jas_stag,
+                 dir);
 
     // Setup calculation parameters
     FileManager fm(dir,prefix);
@@ -175,3 +199,74 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+void setup_params(int argc,char* argv[],
+                  size_t& L,
+                  size_t& N,
+                  size_t& s,
+                  size_t& saves,
+                  int& prefix,
+                  int& therm,
+                  int& verbose,
+                  double& phi,
+                  double& neel,
+                  double& jastrow,
+                  double* phase_shift,
+                  double& jr,
+                  double& cutoff,
+                  bool& jas_stagmagn,
+                  bool& jas_stag,
+                  string& dir)
+{
+    int comm_rank(0);
+#ifdef USEMPI
+    MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
+#endif
+    // Parse input arguments
+    if(comm_rank==0){
+        ArgParse arg(argc,argv);
+        L=arg.i("L");
+        phi=arg.d("phi");
+        neel=arg.d("neel");
+        jastrow=arg.d("jastrow");
+        N=arg.i("N");
+        s=arg.i("s");
+        saves=arg.i("saves");
+        prefix=arg.i("prefix");
+        dir=arg.s("dir");
+        therm=arg.i("therm");
+        phase_shift[0]=arg.d("phase_shift_x");phase_shift[1]=arg.d("phase_shift_y");
+        jas_stagmagn=arg.b("jas_onebodystag");
+        jas_stag=arg.b("jas_twobodystag");
+        jr=arg.d("Jr");
+        verbose=arg.i("verbose");
+        cutoff=arg.d("cutoff");
+    }
+#ifdef USEMPI
+    MPI_Bcast(&L,sizeof(size_t),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&phi,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&neel,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&jastrow,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&N,sizeof(size_t),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&s,sizeof(size_t),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&saves,sizeof(saves),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&prefix,1,MPI_INT,0,MPI_COMM_WORLD);
+    // send string "dir":
+    int strlen;
+    if(comm_rank==0)
+        strlen=dir.size();
+    MPI_Bcast(&strlen,1,MPI_INT,0,MPI_COMM_WORLD);
+    char* dir_c_str=new char[strlen+1];
+    if(comm_rank==0)
+        memcpy(dir_c_str,dir.c_str(),(strlen+1));
+    MPI_Bcast(dir_c_str,strlen+1,MPI_CHAR,0,MPI_COMM_WORLD);
+    dir=string(dir_c_str);
+    delete [] dir_c_str;
+    MPI_Bcast(&therm,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(phase_shift,2,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&jas_stagmagn,sizeof(bool),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&jas_stag,sizeof(bool),MPI_BYTE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&jr,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    MPI_Bcast(&verbose,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&cutoff,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+#endif
+}

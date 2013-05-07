@@ -111,7 +111,6 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
     dat=hfile["/rank-1/data-0"]
     N=sc.shape(dat)[0]/2
     L=attr['L']
-    q=[float(attr['qx'])/attr['L'], float(attr['qy'])/attr['L']]
     shift=[attr['phasex']/2.0,attr['phasey']/2.0]
     H=sc.zeros([Nsamp,N,N],complex)
     O=sc.zeros([Nsamp,N,N],complex)
@@ -125,6 +124,8 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
             O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
         H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/len(b)
         O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/len(b)
+    if channel=='groundstate':
+        return H
     fs=None
     refstate=sc.zeros(2*L*L)
     refstate[0::2]=1
@@ -313,10 +314,10 @@ def ScanDir(folder='.',keys=[],pattern=r".*\.h5",return_dict=False):
                 if len(keys):
                     s="{0}: ".format(f)
                     if keys=='*':
-                        keys=out[f].keys()
+                        keys=out[folder+'/'+f].keys()
                     for k in keys:
                         try:
-                            s="{0} {1}:{2} /".format(s,k,out[f][k])
+                            s="{0} {1}:{2} /".format(s,k,out[folder+'/'+f][k])
                         except KeyError:
                             s="{0} None /".format(s)
                 print(s)
