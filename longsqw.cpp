@@ -172,9 +172,9 @@ int main(int argc, char* argv[])
 
         // Calculation
         for(size_t m=0;m<saves;++m){
-            Timer::tic("main/ranwalk");
+            Timer::tic("main/randwalk");
             varmc.Walk(L*L*N/saves,L*L,!verbose,m);
-            Timer::toc("main/ranwalk");
+            Timer::toc("main/randwalk");
             rej=varmc.Rejection();
             seen.save();
             if(stat_count>=fm.StatPerSample()) stat_count=0;

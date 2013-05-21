@@ -2,10 +2,10 @@ DEBUG=no
 PROFILE=no
 #OPT=-O0 -g3
 #OPT=-O2 -ffast-math -mtune=generic
-OPT=-O3 -ffast-math
+OPT=-O3 -ffast-math -funroll-loops
 DEB=
 
-INSTALL_DIR=/home/bastien/vmc-run
+INSTALL_DIR=/users/dalla/vmc-run
 
 USEMPI=yes
 STATIC=no
@@ -16,12 +16,12 @@ USEEXCEPT=no
 INTEL=no
 GNU=yes
 CRAY=no
-CRAY_PLAT=no
+CRAY_PLAT=yes
 
 BLAS_MKL=no
 BLAS_ACML=no
-BLAS_ATLAS=yes
-BLAS_LIBSCI=no
+BLAS_ATLAS=no
+BLAS_LIBSCI=yes
 
 #random number generator
 RNG_GSL=yes
