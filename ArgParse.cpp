@@ -32,6 +32,11 @@ ArgParse::ArgParse(int argc, char* argv[])
     }
 }
 
+bool ArgParse::HasArg(const string& str) const
+{
+    return m_streams.find(str)!=m_streams.end();
+}    
+
 double ArgParse::d(const string& str) const
 {
     double out;

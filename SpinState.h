@@ -17,7 +17,8 @@ typedef std::vector<std::pair<size_t,size_t> > hop_path_t;
 typedef std::pair<size_t,size_t> hop_t;
 #endif
 
-enum occu_t{
+enum occu_t : char
+{
     UP=1,
     DOWN=0,
     EMPTY=2,
@@ -25,6 +26,7 @@ enum occu_t{
 };
 
 class Jastrow;
+class FileManager;
 
 /*! \brief real space spin state class
  *
@@ -52,7 +54,9 @@ class SpinState {
                   bool neel=false, bool doccu=false);
         ~SpinState();
         void Init(bool neel=false, bool doccu=false);
-        void Init(size_t * state);
+        void Init(char * state);
+
+        void save(FileManager* fm) const;
 
         size_t GetNup() const {return m_Nup;}
         size_t GetNdo() const {return m_Ndo;}

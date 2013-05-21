@@ -14,7 +14,7 @@ saves=10
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)
 prefix=-1
 # output directory
-dir=/home/bastien/data/VarMC/local/L8x8
+dir=.
 # q-point
 qx=4
 qy=0

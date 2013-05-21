@@ -1,6 +1,12 @@
 #include "SpinState.h"
 #include "Jastrow.h"
 #include "linalg.h"
+#include "FileManager.h"
+#ifdef USEMPI
+#include <mpi.h>
+#endif//USEMPI
+#include <hdf5.h>
+#include <hdf5_hl.h>
 
 using namespace std;
 
@@ -126,7 +132,7 @@ void SpinState::Init(bool neel, bool doccu)
     }
 }
 
-void SpinState::Init(size_t * state)
+void SpinState::Init(char * state)
 {
     for(size_t x=0;x<m_L;++x){
         for(size_t y=0;y<m_L;++y){
@@ -138,20 +144,60 @@ void SpinState::Init(size_t * state)
     size_t ui(0),di(0);
     for(size_t x=0; x<m_L; ++x){
         for(size_t y=0;y<m_L;++y){
-            if(state[x*m_L+y]==1){
-                m_latoc[x*m_L+y]=UP;
-                m_latupid[x*m_L+y]=ui;
+            if(state[x*m_L+y]==UP){
+                m_latoc[y*m_L+x]=UP;
+                m_latupid[y*m_L+x]=ui;
                 m_up[ui]=y*m_L+x;
                 ++ui;
             } else {
-                m_latoc[x*m_L+y]=DOWN;
-                m_latdoid[x*m_L+y]=di;
+                m_latoc[y*m_L+x]=DOWN;
+                m_latdoid[y*m_L+x]=di;
                 m_do[di]=y*m_L+x;
                 ++di;
             }
         }
     }
     //m_nn=count_nn();
+}
+
+void SpinState::save(FileManager* fm) const
+{
+    int rank=0, size=1;
+#ifdef USEMPI
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+#endif//USEMPI
+    char* recvbuf=0;
+    if(size==1 || rank==1){
+        if(size==1){
+            recvbuf=new char[m_L*m_L];
+        } else {
+            recvbuf=new char[(size-1)*m_L*m_L];
+        }
+        memcpy(recvbuf,m_latoc,m_L*m_L*sizeof(char));
+#ifdef USEMPI
+        for(int r=2;r<size;++r){
+            MPI_Recv(&recvbuf[(r-1)*m_L*m_L],m_L*m_L,MPI_CHAR,r,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        }
+#endif//USEMPI
+        hid_t ofile=fm->WriteSimple("SpinState");
+        hsize_t dims[2]={m_L,m_L};
+        if(size==1){
+            H5LTmake_dataset_char(ofile,"/rank-0",2,dims,recvbuf);
+        } else {
+            for(int r=1;r<size;++r){
+                ostringstream oname;
+                oname<<"/rank-"<<r;
+                H5LTmake_dataset_char(ofile,oname.str().c_str(),2,dims,&recvbuf[(r-1)*m_L*m_L]);
+            }
+        }
+        H5Fclose(ofile);
+        delete [] recvbuf;
+    } else {
+#ifdef USEMPI
+        MPI_Send(m_latoc,m_L*m_L,MPI_CHAR,1,0,MPI_COMM_WORLD);
+#endif//USEMPI
+    }
 }
 
 SpinState::~SpinState()

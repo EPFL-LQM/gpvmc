@@ -17,6 +17,8 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h>
+#include <hdf5.h>
+#include <hdf5_hl.h>
 
 using namespace std;
 
@@ -34,10 +36,10 @@ void setup_params(int argc,char* argv[],
                   double& jastrow,
                   double* phase_shift,
                   double& jr,
-                  double& cutoff,
                   bool& jas_stagmagn,
                   bool& jas_stag,
-                  string& dir);
+                  string& dir,
+                  string& spinstste);
 
 int main(int argc, char* argv[])
 {
@@ -58,9 +60,9 @@ int main(int argc, char* argv[])
 
     size_t L,N,s,saves,Q[2];
     int prefix,therm,verbose;
-    double phi,neel,jastrow,phase_shift[2],jr,cutoff;
+    double phi,neel,jastrow,phase_shift[2],jr;
     bool jas_stagmagn,jas_stag;
-    string dir;
+    string dir, spinstate;
     setup_params(argc,argv,
                  L,
                  N,
@@ -75,10 +77,9 @@ int main(int argc, char* argv[])
                  jastrow,
                  phase_shift,
                  jr,
-                 cutoff,
                  jas_stagmagn,
                  jas_stag,
-                 dir);
+                 dir,spinstate);
 
     // Setup calculation parameters
     FileManager fm(dir,prefix);
@@ -97,6 +98,7 @@ int main(int argc, char* argv[])
     fm.FileAttribute("phasey",phase_shift[1]);
     fm.FileAttribute("Jr",jr);
     fm.FileAttribute("channel","long");
+    fm.FileAttribute("spinstate",spinstate);
     if(jas_stag) fm.FileAttribute("twobodystagjastrow",1);
     if(jas_stagmagn) fm.FileAttribute("onebodystagjastrow",1);
 
@@ -108,6 +110,33 @@ int main(int argc, char* argv[])
         // Setup calculation
         double rej=0;
         SpinState sp(L,L*L/2,L*L/2);
+        if(spinstate!=""){
+            char* ist=new char[L*L];
+#ifdef USEMPI
+            if(comm_rank==1){
+#endif
+                hid_t ifile=H5Fopen(spinstate.c_str(),H5F_ACC_RDONLY,H5P_DEFAULT);
+#ifdef USEMPI
+                H5LTread_dataset_char(ifile,"/rank-1",ist);
+#else
+                H5LTread_dataset_char(ifile,"/rank-0",ist);
+#endif
+                sp.Init(ist);
+#ifdef USEMPI
+                for(int r=2;r<comm_size;++r){
+                    ostringstream rst;
+                    rst<<"/rank-"<<r;
+                    H5LTread_dataset_char(ifile,rst.str().c_str(),ist);
+                    MPI_Send(ist,L*L,MPI_CHAR,r,0,MPI_COMM_WORLD);
+                }
+                H5Fclose(ifile);
+            } else {
+                MPI_Recv(ist,L*L,MPI_CHAR,1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                sp.Init(ist);
+            }
+#endif
+            delete [] ist;
+        }
         StagFluxLongExciton wav(L,phi,neel,phase_shift,Q);
         wav.save(&fm);
         Jastrow* jas=0;
@@ -118,17 +147,26 @@ int main(int argc, char* argv[])
                 jas=new StagJastrow(&sp,jastrow);
         }
         Amplitude amp(&sp,&wav);
+        if(spinstate==""){
         while(amp.Amp()==0.0){
             sp.Init();
             amp.Init();
         }
+        } else {
+           amp.Init();
+           if(amp.Amp()==0.0){
+              cout<<comm_rank<<"bad starting point!"<<endl;
+           }
+        } 
         FullSpaceStepper step(&amp);
         ProjHeis seen(&step,&fm,jr);
         MetroMC varmc(&step,&fm);
         varmc.AddQuantity(&seen);
 
         // Start calculation: thermalize
-        varmc.Walk(int(therm*L*L),0);
+        if(spinstate==""){
+            varmc.Walk(int(therm*L*L),0);
+        }
         
         int stat_count=0;
 
@@ -152,7 +190,7 @@ int main(int argc, char* argv[])
             fm.Write();
             ++stat_count;
         }
-
+        sp.save(&fm);
         if(jas) delete jas;
 #ifdef USEMPI
     } else {
@@ -211,10 +249,10 @@ void setup_params(int argc,char* argv[],
                   double& jastrow,
                   double* phase_shift,
                   double& jr,
-                  double& cutoff,
                   bool& jas_stagmagn,
                   bool& jas_stag,
-                  string& dir)
+                  string& dir,
+                  string& spinstate)
 {
     int comm_rank(0);
 #ifdef USEMPI
@@ -239,7 +277,11 @@ void setup_params(int argc,char* argv[],
         jas_stag=arg.b("jas_twobodystag");
         jr=arg.d("Jr");
         verbose=arg.i("verbose");
-        cutoff=arg.d("cutoff");
+        if(arg.HasArg("spinstate")){
+            spinstate=arg.s("spinstate");
+        } else {
+            spinstate="";
+        }
     }
 #ifdef USEMPI
     MPI_Bcast(&L,sizeof(size_t),MPI_BYTE,0,MPI_COMM_WORLD);
@@ -261,6 +303,16 @@ void setup_params(int argc,char* argv[],
     MPI_Bcast(dir_c_str,strlen+1,MPI_CHAR,0,MPI_COMM_WORLD);
     dir=string(dir_c_str);
     delete [] dir_c_str;
+    // send string "spinstate":
+    if(comm_rank==0)
+        strlen=spinstate.size();
+    MPI_Bcast(&strlen,1,MPI_INT,0,MPI_COMM_WORLD);
+    char* spinstate_c_str=new char[strlen+1];
+    if(comm_rank==0)
+        memcpy(spinstate_c_str,spinstate.c_str(),(strlen+1));
+    MPI_Bcast(spinstate_c_str,strlen+1,MPI_CHAR,0,MPI_COMM_WORLD);
+    spinstate=string(spinstate_c_str);
+    delete [] spinstate_c_str;
     MPI_Bcast(Q,2*sizeof(size_t),MPI_BYTE,0,MPI_COMM_WORLD);
     MPI_Bcast(&therm,1,MPI_INT,0,MPI_COMM_WORLD);
     MPI_Bcast(phase_shift,2,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -268,6 +320,5 @@ void setup_params(int argc,char* argv[],
     MPI_Bcast(&jas_stag,sizeof(bool),MPI_BYTE,0,MPI_COMM_WORLD);
     MPI_Bcast(&jr,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
     MPI_Bcast(&verbose,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast(&cutoff,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 #endif
 }

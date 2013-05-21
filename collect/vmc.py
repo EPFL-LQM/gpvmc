@@ -189,9 +189,9 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
     else:
         raise(InputFileError('In file \''+excfile+'\', channel=\''+str(channel)+'\'. Should be \'trans\' or \'long\''))
     sqe=sc.einsum('i,jik,k->j',sc.conj(pk),O,pk)
-    if abs(sqq)<1e-6:
+    if abs(sqq)<1e-6 or abs(sqe)<1e-6:
         warnings.warn('Probably ill-defined renormalization, returns 1',UserWarning)
-        return 1.0
+        return sc.ones(Nsamp)
     return sc.real(sqq/sqe)
 
 def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
