@@ -39,6 +39,10 @@ BigDouble FullSpaceStepper::trystep()
                           "occupation "
                           "not implemented"));
 #else
+        cerr<<"FullSpaceStepper::trystep: "
+              "step for empty or double "
+              "occupation "
+              "not implemented"<<endl;
         abort();
 #endif
     pick=int(4.0*RanGen::uniform());
@@ -56,6 +60,10 @@ BigDouble FullSpaceStepper::trystep()
                           " occupation "
                           "not implemented"));
 #else
+        cerr<<"FullSpaceStepper::trystep: "
+              "step for empty or double"
+              " occupation "
+              "not implemented"<<endl;
         abort();
 #endif
     if(t1==t2){
@@ -80,6 +88,9 @@ BigDouble FullSpaceStepper::trystep()
                         "step for empty or double "
                         "occupation not implemented"));
 #else
+            cerr<<"FullSpaceStepper::trystep: "
+                  "step for empty or double "
+                  "occupation not implemented"<<endl;
             abort();
 #endif
         m_prev_up=idup;
@@ -139,6 +150,7 @@ void FullSpaceStepper::step()
         m_amp->Update(rhopup,rhopdo,khopup,khopdo);
     }
     if(m_amp->Amp()==0){
+        cerr<<"FullSpaceStepper::step(): Stepped to a zero overlap!"<<endl;
         abort();
     }
 #ifndef DEBUG
@@ -152,7 +164,7 @@ void FullSpaceStepper::step()
     m_weight=-1;
     weight();
     if(m_prev>=0.0 && abs(double(m_prev/m_weight)-1)>1e-9){
-        cout<<"error: "<<abs(double(m_prev/m_weight))<<endl;
+        cerr<<rerror: "<<abs(double(m_prev/m_weight))"<<endl;
         abort();
     }
 #endif

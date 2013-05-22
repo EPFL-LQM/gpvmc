@@ -1,6 +1,7 @@
 #include "StagFluxWaveFunction.h"
 #include <cstdlib>
 #include <stdexcept>
+#include <iostream>
 
 StagFluxWaveFunction::StagFluxWaveFunction(size_t Lx, size_t Ly,
                                            size_t Nfsup, size_t Nfsdo,
@@ -59,6 +60,7 @@ std::complex<double> StagFluxWaveFunction::matrix_element(size_t fk,
 #ifdef EXCEPT
         throw std::logic_error("StagFluxWaveFunction::matrix_element::NaN encoutered");
 #else
+        std::cerr<<"StagFluxWaveFunction::matrix_element::NaN encoutered"<<std::endl;
         abort();
 #endif
     return out;

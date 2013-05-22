@@ -21,6 +21,9 @@ SpinState::SpinState(size_t L, size_t Nup, size_t Ndown, bool neel, bool doccu)
                            "(size_t, size_t, size_t,bool): "
                            "Too many fermions to fill the lattice."));
 #else
+        cerr<<"SpinState::SpinState"
+              "(size_t, size_t, size_t,bool): "
+              "Too many fermions to fill the lattice."<<endl;
         abort();
 #endif
 #endif
@@ -50,6 +53,10 @@ void SpinState::Init(bool neel, bool doccu)
                               "Neel state require an even "
                               "number of sites."));
 #else
+            cerr<<"SpinState::SpinState"
+                  "(size_t, size_t, size_t,bool): "
+                  "Neel state require an even "
+                  "number of sites."<<endl;
             abort();
 #endif
         size_t nup=0,ndown=0;

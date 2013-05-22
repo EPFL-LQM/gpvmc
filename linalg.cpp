@@ -380,6 +380,9 @@ void linalg::DetUpdate(const std::complex<double> *A,
                                "it is required that "
                                "min(nc,nr)=1"));
 #else
+        cerr<<"linalg::DetUpdate: "
+              "it is required that "
+              "min(nc,nr)=1"<<endl;
         abort();
 #endif
     }
@@ -553,6 +556,8 @@ void linalg::InvUpdate(const std::complex<double> *A,
         throw(std::logic_error("linalg::InvUpdate: Updated matrix nearly "
                                "singular."));
 #else
+        cerr<<"linalg::InvUpdate: Updated matrix nearly "
+              "singular."<<endl;
         abort();
 #endif
     }

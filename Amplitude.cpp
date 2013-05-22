@@ -29,6 +29,10 @@ Amplitude::Amplitude(SpinState* sp, WaveFunction* wav)
                     "cannot define amplitude with different number of "
                     "spins up or down in wave-function and spin state."));
 #else
+        cerr<<"Amplitude::"
+              "Amplitude(const SpinState*, const WaveFunction*):"
+              "cannot define amplitude with different number of "
+              "spins up or down in wave-function and spin state."<<endl;
         abort();
 #endif
     m_Nup=m_sp->GetNup();
@@ -94,6 +98,9 @@ BigComplex Amplitude::VirtColUpdate(const size_t& idup,
                           " Should not be called from"
                           " a state without overlap."));
 #else
+        cerr<<"Amplitude::VirtColUpdate:"
+              " Should not be called from"
+              " a state without overlap."<<endl;
         abort();
 #endif
     }
@@ -188,6 +195,9 @@ BigComplex Amplitude::VirtRowUpdate(const size_t& idup,
                           " Should not be called from"
                           " a state without overlap."));
 #else
+        cerr<<"Amplitude::VirtRowUpdate:"
+              " Should not be called from"
+              " a state without overlap."<<endl;
         abort();
 #endif
     }
@@ -279,6 +289,9 @@ void Amplitude::VirtUpdate(
                                " Should not be called from"
                                " a state without overlap."));
 #else
+        cerr<<"Amplitude::VirtUpdate:"
+              " Should not be called from"
+              " a state without overlap."<<endl;
         abort();
 #endif
     size_t Nr=rhopup.size();
@@ -290,6 +303,10 @@ void Amplitude::VirtUpdate(
                                " and min(Nk)=1"
                                " must be fullfilled."));
 #else
+        cerr<<"Amplitude::VirtUpdate:"
+              " the condition min(Nr)=1 "
+              " and min(Nk)=1"
+              " must be fullfilled."<<endl;
         abort();
 #endif
 #ifdef PROFILE

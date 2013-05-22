@@ -5,7 +5,7 @@ PROFILE=no
 OPT=-O3 -ffast-math -funroll-loops
 DEB=
 
-INSTALL_DIR=/users/dalla/vmc-run
+INSTALL_DIR=/home/bastien/vmc-run
 
 USEMPI=yes
 STATIC=no
@@ -16,12 +16,12 @@ USEEXCEPT=no
 INTEL=no
 GNU=yes
 CRAY=no
-CRAY_PLAT=yes
+CRAY_PLAT=no
 
 BLAS_MKL=no
 BLAS_ACML=no
-BLAS_ATLAS=no
-BLAS_LIBSCI=yes
+BLAS_ATLAS=yes
+BLAS_LIBSCI=no
 
 #random number generator
 RNG_GSL=yes

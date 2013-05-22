@@ -23,6 +23,7 @@ class BigComplex
 #ifdef EXCEPT
                 throw(std::logic_error("BigComplex::bound: NaN or Inf encountered"));
 #else
+                std::cerr<<"BigComplex::bound: NaN or Inf encountered"<<std::endl;
                 abort();
 #endif
             //if(norm(m_c) < 1e8 && norm(m_c)>1e-8) return;

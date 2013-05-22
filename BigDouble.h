@@ -19,6 +19,7 @@ class BigDouble
 #ifdef EXCEPT
                 throw(std::logic_error("BigDouble::bound: NaN encountered"));
 #else
+                cerr<<"BigComplex::bound: NaN or Inf encountered"<<endl;
                 abort();
 #endif
             if(isinf(m_c)/* || (abs(m_c)<1e4 && abs(m_c)>1e-4)*/) return;
