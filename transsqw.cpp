@@ -140,6 +140,8 @@ int main(int argc, char* argv[])
             }
 #endif
             delete [] ist;
+        } else {
+            sp.Init();
         }
         double bdwd=2*sqrt(1+neel*neel);
         StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,cutoff*bdwd);

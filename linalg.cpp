@@ -19,14 +19,14 @@ bool linalg::DetInv(const std::complex<double> *A, std::complex<double>* I,
     for(size_t i=0;i<M;++i){
         d*=I[i*M+i];
     }
-    singular=norm(d)<1e-6;
+    singular=norm(d)<1e-9;
     if(!singular)
         linalg::zgetri(mi, I ,mi, ipiv, work, mi, &succ);
     else {
-        d=0.0;
 #ifdef DEBUG
-        std::cout<<"linalg::DetInv: Warning, matrix is singular"<<std::endl;
+        std::cout<<"linalg::DetInv: Warning, matrix is singular: det="<<norm(d)<<std::endl;
 #endif
+        d=0.0;
     }
 
     delete [] ipiv;

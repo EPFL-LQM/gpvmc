@@ -7,6 +7,7 @@
 #include "linalg.h"
 #include "Timer.h"
 #include "blas_lapack.h"
+#include <mpi.h>
 #ifdef USEPARA
 #include <omp.h>
 #endif
@@ -22,7 +23,9 @@ Amplitude::Amplitude(SpinState* sp, WaveFunction* wav)
     m_matdo(0),m_matido(0),
     m_amp(0), m_amp_ok(false), m_Nup(0), m_Ndo(0)
 {
-    if(sp->GetNup()!=wav->GetNup() || sp->GetNdo()!=wav->GetNdo())
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    if(sp->GetNup()!=wav->GetNup() || sp->GetNdo()!=wav->GetNdo()){
 #ifdef EXCEPT
         throw(std::logic_error("Amplitude::"
                     "Amplitude(const SpinState*, const WaveFunction*):"
@@ -35,6 +38,7 @@ Amplitude::Amplitude(SpinState* sp, WaveFunction* wav)
               "spins up or down in wave-function and spin state."<<endl;
         abort();
 #endif
+    }
     m_Nup=m_sp->GetNup();
     m_Ndo=m_sp->GetNdo();
     m_matup=new std::complex<double>[m_Nup*m_Nup];
@@ -283,7 +287,7 @@ void Amplitude::VirtUpdate(
         const std::vector<hop_path_t> khopdo,
         BigComplex* qs) const
 {
-    if(!m_amp_ok)
+    if(!m_amp_ok){
 #ifdef EXCEPT
         throw(std::logic_error("Amplitude::VirtUpdate:"
                                " Should not be called from"
@@ -294,9 +298,10 @@ void Amplitude::VirtUpdate(
               " a state without overlap."<<endl;
         abort();
 #endif
+    }
     size_t Nr=rhopup.size();
     size_t Nk=khopup.size();
-    if(Nr*Nk==0)
+    if(Nr*Nk==0){
 #ifdef EXCEPT
         throw(std::logic_error("Amplitude::VirtUpdate:"
                                " the condition min(Nr)=1 "
@@ -308,6 +313,7 @@ void Amplitude::VirtUpdate(
               " and min(Nk)=1"
               " must be fullfilled."<<endl;
         abort();
+    }
 #endif
 #ifdef PROFILE
     Timer::tic("Amplitude::VirtUpdate");

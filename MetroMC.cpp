@@ -28,7 +28,19 @@ MetroMC::MetroMC(Stepper* step, FileManager* fm)
 bool MetroMC::YesNo(const BigDouble& in)
 {
     double din(in);
+#ifdef DEBUG
+    if(din>1.0){
+        return RanGen::uniform()<1;
+    } else {
+        double r=RanGen::uniform();
+        if(r < din && din < 1e-6){
+            cout<<"MetroMC::TesNo: Warning, highly improbable event: rand="<<r<<", rho="<<din<<endl;
+        }
+        return r < din;
+    }
+#else
     return din>1.0 ? RanGen::uniform()<1 : RanGen::uniform() < din;
+#endif
 }
 
 void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)

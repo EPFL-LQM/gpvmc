@@ -32,7 +32,7 @@ BigDouble FullSpaceStepper::trystep()
         id1=st->GetLatUpId(x,y);
     else if(t1==DOWN)
         id1=st->GetLatDoId(x,y);
-    else
+    else {
 #ifdef EXCEPT
         throw(std::logic_error("FullSpaceStepper::trystep: "
                           "step for empty or double "
@@ -45,6 +45,7 @@ BigDouble FullSpaceStepper::trystep()
               "not implemented"<<endl;
         abort();
 #endif
+    }
     pick=int(4.0*RanGen::uniform());
     xp=linalg::mod(x+taus[2*pick],st->GetL());
     yp=linalg::mod(y+taus[2*pick+1],st->GetL());
@@ -53,7 +54,7 @@ BigDouble FullSpaceStepper::trystep()
         id2=st->GetLatUpId(xp,yp);
     else if(t2==DOWN)
         id2=st->GetLatDoId(xp,yp);
-    else
+    else {
 #ifdef EXCEPT
         throw(std::logic_error("FullSpaceStepper::trystep: "
                           "step for empty or double"
@@ -66,6 +67,7 @@ BigDouble FullSpaceStepper::trystep()
               "not implemented"<<endl;
         abort();
 #endif
+    }
     if(t1==t2){
         m_prev_up=-1;
         m_prev_down=-1;
@@ -81,7 +83,7 @@ BigDouble FullSpaceStepper::trystep()
         } else if(t1==DOWN){
             idup=id2;
             iddo=id1;
-        } else
+        } else {
 #ifdef EXCEPT
             throw(std::logic_error(
                         "FullSpaceStepper::trystep: "
@@ -93,6 +95,7 @@ BigDouble FullSpaceStepper::trystep()
                   "occupation not implemented"<<endl;
             abort();
 #endif
+        }
         m_prev_up=idup;
         m_prev_down=iddo;
         vector<hop_path_t> khopup,khopdo,rhopup,rhopdo;
@@ -153,6 +156,7 @@ void FullSpaceStepper::step()
         cerr<<"FullSpaceStepper::step(): Stepped to a zero overlap!"<<endl;
         abort();
     }
+    BigDouble ow=m_weight;
 #ifndef DEBUG
     if(m_prev>0.0)
         m_weight=m_prev;
@@ -163,11 +167,14 @@ void FullSpaceStepper::step()
 #else
     m_weight=-1;
     weight();
-    if(m_prev>=0.0 && abs(double(m_prev/m_weight)-1)>1e-9){
-        cerr<<rerror: "<<abs(double(m_prev/m_weight))"<<endl;
+    if(m_prev>=0.0 && abs(double(m_prev/m_weight)-1)>1e-6){
+        cerr<<"FullSpaceStepper::step: error: abs(double(m_prev/m_weight))="<<abs(double(m_prev/m_weight))-1<<" m_prev="<<m_prev<<" and m_weight="<<m_weight<<endl;
         abort();
     }
 #endif
+    if(abs(double(m_weight/ow))<1e-6){
+        cerr<<"FullSpaceStepper::step: warning, abs(double(m_weight/ow)) is VERY small! : "<<abs(double(m_weight/ow))<<endl;
+    }
     m_prev_up=-1;
     m_prev_down=-1;
     m_khop=-1;

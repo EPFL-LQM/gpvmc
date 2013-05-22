@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
 
     // Setup calculation parameters
     FileManager fm(dir,prefix);
+    MPI_Barrier(MPI_COMM_WORLD);
     if(comm_rank==0) std::cout<<Q[0]<<" "<<Q[1]<<std::endl;
     phi*=M_PI;
     fm.FileAttribute("L",L);
@@ -136,7 +137,9 @@ int main(int argc, char* argv[])
             }
 #endif
             delete [] ist;
-        }
+        } else {
+           sp.Init();
+        } 
         StagFluxLongExciton wav(L,phi,neel,phase_shift,Q);
         wav.save(&fm);
         Jastrow* jas=0;
@@ -148,14 +151,15 @@ int main(int argc, char* argv[])
         }
         Amplitude amp(&sp,&wav);
         if(spinstate==""){
-        while(amp.Amp()==0.0){
-            sp.Init();
             amp.Init();
-        }
+            while(amp.Amp()==0.0){
+                sp.Init();
+                amp.Init();
+            }
         } else {
            amp.Init();
            if(amp.Amp()==0.0){
-              cout<<comm_rank<<"bad starting point!"<<endl;
+              cerr<<comm_rank<<"bad starting point!"<<endl;
            }
         } 
         FullSpaceStepper step(&amp);

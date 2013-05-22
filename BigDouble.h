@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+using namespace std;
+
 //! A class to store complex numbers and their scale separatly to avoid under- or over-flow.
 class BigDouble
 {
@@ -15,20 +17,23 @@ class BigDouble
         void bound()
         {
 #ifdef CRAY
-            if(isnan(m_c))
+            if(isnan(m_c)){
 #ifdef EXCEPT
                 throw(std::logic_error("BigDouble::bound: NaN encountered"));
 #else
                 cerr<<"BigComplex::bound: NaN or Inf encountered"<<endl;
                 abort();
+            }
 #endif
             if(isinf(m_c)/* || (abs(m_c)<1e4 && abs(m_c)>1e-4)*/) return;
 #else
-            if(std::isnan(m_c))
+            if(std::isnan(m_c)){
 #ifdef EXCEPT
                 throw(std::logic_error("BigDouble::bound: NaN encountered"));
 #else
+                cerr<<"BigDouble::bound: NaN encountered"<<endl;
                 abort();
+            }
 #endif
             if(std::isinf(m_c)/* || (abs(m_c)<1e4 && abs(m_c)>1e-4)*/) return;
 #endif

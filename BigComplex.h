@@ -18,7 +18,7 @@ class BigComplex
 #ifdef CRAY
             if(isnan(real(m_c)) || isinf(real(m_c)) || isnan(imag(m_c)) || isinf(imag(m_c)))
 #else
-            if(std::isnan(real(m_c)) || std::isinf(real(m_c)) || std::isnan(imag(m_c)) || std::isinf(imag(m_c)))
+            if(std::isnan(real(m_c)) || std::isinf(real(m_c)) || std::isnan(imag(m_c)) || std::isinf(imag(m_c))){
 #endif
 #ifdef EXCEPT
                 throw(std::logic_error("BigComplex::bound: NaN or Inf encountered"));
@@ -26,6 +26,7 @@ class BigComplex
                 std::cerr<<"BigComplex::bound: NaN or Inf encountered"<<std::endl;
                 abort();
 #endif
+            }
             //if(norm(m_c) < 1e8 && norm(m_c)>1e-8) return;
             while(std::abs(m_c)>10.0){
                 m_c/=10.0;

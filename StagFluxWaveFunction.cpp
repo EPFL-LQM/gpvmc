@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
+#include <mpi.h>
+
+using namespace std;
 
 StagFluxWaveFunction::StagFluxWaveFunction(size_t Lx, size_t Ly,
                                            size_t Nfsup, size_t Nfsdo,
@@ -9,6 +12,8 @@ StagFluxWaveFunction::StagFluxWaveFunction(size_t Lx, size_t Ly,
     :WaveFunction(Lx,Ly,Nfsup,Nfsdo),m_qn2fock(new size_t[Lx*Ly*2]),
      m_fock2qn(new size_t[Lx*Ly*3]), m_phi(phi), m_neel(neel)
 {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     m_bc_phase[0]=bc_phase[0];
     m_bc_phase[1]=bc_phase[1];
     size_t idx=0;
@@ -57,12 +62,14 @@ std::complex<double> StagFluxWaveFunction::matrix_element(size_t fk,
 #else
     if(std::isnan(real(out)) || std::isnan(imag(out)))
 #endif
+    {
 #ifdef EXCEPT
         throw std::logic_error("StagFluxWaveFunction::matrix_element::NaN encoutered");
 #else
         std::cerr<<"StagFluxWaveFunction::matrix_element::NaN encoutered"<<std::endl;
         abort();
 #endif
+    }
     return out;
 }
 

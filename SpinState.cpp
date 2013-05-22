@@ -15,7 +15,7 @@ SpinState::SpinState(size_t L, size_t Nup, size_t Ndown, bool neel, bool doccu)
 {
 #ifdef DEBUG
     if((!doccu && m_Nup+m_Ndo>m_L*m_L) ||
-        (doccu && m_Nup+m_Ndo>2*m_L*m_L))
+        (doccu && m_Nup+m_Ndo>2*m_L*m_L)){
 #ifdef EXCEPT
         throw(std::out_of_range("SpinState::SpinState"
                            "(size_t, size_t, size_t,bool): "
@@ -26,6 +26,7 @@ SpinState::SpinState(size_t L, size_t Nup, size_t Ndown, bool neel, bool doccu)
               "Too many fermions to fill the lattice."<<endl;
         abort();
 #endif
+    }
 #endif
     m_up=new size_t[m_Nup];
     m_do=new size_t[m_Ndo];
@@ -46,7 +47,7 @@ void SpinState::Init(bool neel, bool doccu)
         }
     }
     if(neel){
-        if(m_L%2!=0)
+        if(m_L%2!=0){
 #ifdef EXCEPT
             throw(std::logic_error("SpinState::SpinState"
                               "(size_t, size_t, size_t,bool): "
@@ -59,6 +60,7 @@ void SpinState::Init(bool neel, bool doccu)
                   "number of sites."<<endl;
             abort();
 #endif
+        }
         size_t nup=0,ndown=0;
         std::vector<size_t> flip(0,m_L*m_L);
         int tf=int(m_Nup)-int(m_Ndo);
