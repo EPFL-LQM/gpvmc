@@ -176,7 +176,6 @@ def sqwlongamp(V,O,Lx,Ly,q,shift,phi,neel):
     pk[1:2*len(pkup):2]=pkdo
     if (abs(q[0])+abs(q[1]))<1e-6 or\
        (abs(q[0]-0.5)+abs(q[1]-0.5))<1e-6:
-        pk=sc.append(pk,0)
         if neel!=0:
             pk[-1]=sc.sum(neel/omega(kx,ky,[phi,neel]))
     sqn=abs(sc.einsum('ijk,ijl,l->ik',sc.conj(V),O,pk))**2
