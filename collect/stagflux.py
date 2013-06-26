@@ -70,6 +70,13 @@ def inmbz(kx,ky):
 def fold(k):
     return k-((k<0) + (k>=1))*sc.floor(k)
 
+def shiftfold(k):
+    """
+    fold back in the shifted Brillouin zone centered about (0,0).
+    """
+    k=fold(k)
+    return k-(k>0.5)
+
 def mbzmod(kx,ky):
     mkx=fold(kx)
     mky=fold(ky)
@@ -192,6 +199,9 @@ def gaussians(x,x0,A,sig):
     #    warnings.warn(\
     #'Gaussian amplitude has a sizable imaginary part\(max(|Im|)/max(|Re|)={0}, mean(abs(A))={1}).'\
     #        .format(sc.amax(abs(sc.imag(A)))/sc.amax(abs(sc.real(A))), sc.mean(abs(A))))
+    x0=sc.atleast_1d(x0)
+    A=sc.atleast_1d(A)
+    sig=sc.atleast_1d(sig)
     amp=A*sc.sqrt(1/2.0/sc.pi)/sig
     [X,X0]=sc.meshgrid(x,x0)
     gg=None

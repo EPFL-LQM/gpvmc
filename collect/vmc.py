@@ -100,7 +100,7 @@ def GetFermiSigns(filename,refstate=None,channel=None):
         else:
             raise KeyError('\"channel\" must be either \"trans\" or \"long\".')
 
-def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
+def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     if type(filename)==str:
         filename=[filename]
     hfile=h5py.File(filename[0],'r')
@@ -138,7 +138,7 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
         O[s,:,:]=sc.dot(sc.diag(fs),sc.dot(O[s,:,:],sc.diag(fs)))
     ren=sc.ones(Nsamp)
     if gsfile!=None:
-        ren=RenormalizeFactor(filename,gsfile,Nsamp=1,channel=channel,O=O)
+        ren=RenormalizeFactor(filename,gsfile,Nsamp=1,channel=channel,O=O,q=q)
     print('{0} pair of (H,O) matrices loaded, now diagonalize'.format(sc.shape(H)[0]))
     H=sc.einsum('ijk,i->ijk',H,ren)
     O=sc.einsum('ijk,i->ijk',O,ren)
@@ -147,7 +147,7 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None):
     print('diagonalization finished')
     return H,O,E,V
 
-def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
+def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None,q=None):
     if type(excfile)==str:
         excfile=[excfile]
     if type(gsfile)==str:
@@ -155,7 +155,8 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
     exat=GetAttr(excfile[0])
     gsat=GetAttr(gsfile[0])
     L=exat['L']
-    q=sc.array([exat['qx'],exat['qy']])
+    if q==None:
+        q=sc.array([exat['qx'],exat['qy']])
     shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
     phi=exat['phi']
     neel=exat['neel']
@@ -170,7 +171,7 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
         channel=exat['channel']
     if channel=='trans':
         pk=sc.squeeze(sf.phiktrans(kx,ky,q[0]/L,q[1]/L,[phi,neel]))
-        sqq=0.5*(Sq[0,1,qidx]+Sq[0,2,qidx])
+        sqq=sc.real(0.5*(Sq[0,1,qidx]+Sq[0,2,qidx]))
     elif channel=='long':
         pkup=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,1,[phi,neel]))
         pkdo=sc.squeeze(sf.phiklong(kx,ky,q[0]/L,q[1]/L,-1,[phi,neel]))
@@ -189,10 +190,14 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None):
     else:
         raise(InputFileError('In file \''+excfile+'\', channel=\''+str(channel)+'\'. Should be \'trans\' or \'long\''))
     sqe=sc.einsum('i,jik,k->j',sc.conj(pk),O,pk)
-    if abs(sqq)<1e-6 or abs(sqe)<1e-6:
-        warnings.warn('Probably ill-defined renormalization, returns 1',UserWarning)
-        return sc.ones(Nsamp)
-    return sc.real(sqq/sqe)
+    out=sc.zeros(Nsamp)
+    for n in range(Nsamp):
+        if abs(sqq)<1e-6 or abs(sqe[n])<1e-6:
+            warnings.warn('Probably ill-defined renormalization, returns 1 for sample {0} out of {1}'.format(n,Nsamp),UserWarning)
+            out[n]=1
+        else:
+            out[n]=sc.real(sqq/sqe[n])
+    return out
 
 def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
     if type(filename)==str:
@@ -214,7 +219,7 @@ def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
         r=sc.column_stack([X.flatten(),Y.flatten()])
     return sf.transspinonoverlap(O,V,L,L,q,shift,phi,neel,r)
 
-def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2))):
+def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=sc.zeros((1,2)),q=None):
     """
     For the transverse channel:
     Calculates and returns Sq(sample,n,r)=<q,r|q,n><q,n|Sqp|GS>.
@@ -228,12 +233,15 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
     if channel==None:
         channel=attrs['channel']
     L=attrs['L']
-    q=[float(attrs['qx']/L),float(attrs['qy'])/L]
+    if q==None:
+        q=[float(attrs['qx']/L),float(attrs['qy'])/L]
+    else:
+        q=[float(q[0])/L,float(q[1])/L]
     shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None or V== None:
-        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel)
+        H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,q=q)
     if channel=='long':
         return sf.sqwlongamp(V,O,L,L,q,shift,phi,neel)
     elif channel=='trans':
