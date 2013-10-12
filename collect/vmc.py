@@ -2,6 +2,7 @@ import h5py
 import warnings
 import matplotlib.pyplot as pl
 import matplotlib.mlab as ml
+from matplotlib.cbook import is_numlike
 from scipy.linalg import eigh
 import scipy as sc
 from numpy.linalg import matrix_rank
@@ -39,6 +40,8 @@ def GetStat(filename,Nsamp=1):
     addstat=sc.array([sum(bunches[i]) for i in range(Nsamp)])
     print("Average statistics of {0} (min: {1}, max: {2})"\
             .format(sc.mean(addstat),sc.amin(addstat),sc.amax(addstat)))
+    for f in hfile:
+        f.close()
     return datapath,args
 
 def concatenate(infiles,outfile,Nsamp):
@@ -64,6 +67,7 @@ def concatenate(infiles,outfile,Nsamp):
             except:
                 st+=1
             sdat+=dat
+            hfile.close()
         sdat/=len(bunch)
         hdat=hout.create_dataset('/rank-1/data-{0}'.format(sample),dshape,dtype,sdat)
         hdat.attrs.create('statistics',st)
@@ -86,6 +90,7 @@ def GetFermiSigns(filename,refstate=None,channel=None):
     if filetype=='WaveFunction':
         hfile=h5py.File(filename,'r')
         states=sc.column_stack([hfile['states_up'],hfile['states_do']])
+        hfile.close()
         return sf.fermisigns(states,refstate)
     else:
         if channel==None:
@@ -108,7 +113,8 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     if channel==None:
         channel=attr['channel']
     dpath,args=GetStat(filename,Nsamp)
-    dat=hfile["/rank-1/data-0"]
+    dat=sc.array(hfile["/rank-1/data-0"])
+    hfile.close()
     N=sc.shape(dat)[0]/2
     L=attr['L']
     shift=[attr['phasex']/2.0,attr['phasey']/2.0]
@@ -122,6 +128,7 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
             dat=hfile[dpath[d][1]]
             H[sample,:,:]+=dat[0:N,0:2*N:2]+1j*dat[0:N,1:2*N:2]
             O[sample,:,:]+=dat[N:2*N,0:2*N:2]+1j*dat[N:2*N,1:2*N:2]
+            hfile.close()
         H[sample,:,:]=0.5*(H[sample,:,:]+sc.conj(H[sample,:,:].T))/len(b)
         O[sample,:,:]=0.5*(O[sample,:,:]+sc.conj(O[sample,:,:].T))/len(b)
     if channel=='groundstate':
@@ -268,13 +275,40 @@ def GetSq(filename,Nsamp=1):
         for d in b:
             hfile=h5py.File(dpath[d][0],'r')
             Sq[sample,:,:]+=hfile[dpath[d][1]][0:3,0::2]+1j*hfile[dpath[d][1]][0:3,1::2]
+            hfile.close()
         Sq[sample,:,:]/=len(b)
     qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
     return qx.flatten(),qy.flatten(),Sq
 
+def GetStagMagn(filename,Nsamp=1):
+    if type(filename)==str:
+        filename=[filename]
+    attrs=GetAttr(filename[0])
+    #hfile=h5py.File(filename,'r')
+    dpath,args=GetStat(filename,Nsamp)
+    filetype=''
+    try:
+        filetype=attrs['type']
+    except KeyError:
+        mo=re.match('.*/?[0-9]+-(StagMagn)\.h5',filename)
+        filetype=mo.groups()[0]
+    if filetype!='StagMagn':
+        raise InputFileError('\"{0}\" is not a staggered magnetization file')
+    N=pow(attrs['L'],2)
+    Ssz=sc.zeros(Nsamp,complex)
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            Ssz[sample]+=hfile[dpath[d][1]][0,0]+1j*hfile[dpath[d][1]][0,1]
+            hfile.close()
+        Ssz[sample]/=len(b)
+    return Ssz
+
 def GetAttr(filename):
     hfile=h5py.File(filename,'r')
-    return hfile.attrs
+    attrs=dict(hfile.attrs)
+    hfile.close()
+    return attrs
 
 def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
             fig=None,width=0.1,shift=0,\
@@ -312,23 +346,36 @@ def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
     ax.set_xlim((sc.amin(w),sc.amax(w)))
     return fig
 
-def ScanDir(folder='.',keys=[],pattern=r".*\.h5",return_dict=False):
+def ScanDir(folder='.',keys=[],pattern=r".*\.h5",return_dict=False,req={}):
     out={}
     for f in os.listdir(folder):
         if re.match(pattern,f) is not None:
             try:
-                out[folder+'/'+f]=dict(GetAttr("{0}/{1}".format(folder,f)))
-                s=f
-                if len(keys):
-                    s="{0}: ".format(f)
-                    if keys=='*':
-                        keys=out[folder+'/'+f].keys()
-                    for k in keys:
+                isreq=(len(req)==0)
+                if not isreq:
+                    isreq=True
+                    fd=GetAttr("{0}/{1}".format(folder,f))
+                    for k in req.keys():
                         try:
-                            s="{0} {1}:{2} /".format(s,k,out[folder+'/'+f][k])
+                            if is_numlike(req[k]):
+                                isreq=isreq and (abs(req[k]-fd[k])<1e-9)
+                            else:
+                                isreq=isreq and (req[k]==fd[k])
                         except KeyError:
-                            s="{0} None /".format(s)
-                print(s)
+                            isreq=False
+                if isreq:
+                    out[folder+'/'+f]=dict(GetAttr("{0}/{1}".format(folder,f)))
+                    s=f
+                    if len(keys):
+                        s="{0}: ".format(f)
+                        if keys=='*':
+                            keys=out[folder+'/'+f].keys()
+                        for k in keys:
+                            try:
+                                s="{0} {1}:{2} /".format(s,k,out[folder+'/'+f][k])
+                            except KeyError:
+                                s="{0} None /".format(s)
+                    print(s)
             except IOError:
                 print('Could not open \"'+f+'\".')
     if return_dict:
