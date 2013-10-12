@@ -17,6 +17,7 @@
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
 #include "SpinDensity.h"
+#include "StagMagn.h"
 #include "FileManager.h"
 #include "ArgParse.h"
 #include <sys/types.h>
@@ -160,9 +161,11 @@ int main(int argc, char* argv[])
         FullSpaceStepper step(&amp);
         ProjHeis heisen(&step,&fm,jr);
         StatSpinStruct stat(&step,&fm);
+        StagMagn stagsz(&step,&fm);
         MetroMC varmc(&step,&fm);
         varmc.AddQuantity(&heisen);
         varmc.AddQuantity(&stat);
+        varmc.AddQuantity(&stagsz);
 
         // Start calculation: thermalize
         varmc.Walk(int(therm*L*L),0);
@@ -176,6 +179,7 @@ int main(int argc, char* argv[])
             Timer::toc("main/ranwalk");
             heisen.save();
             stat.save();
+            stagsz.save();
             rej=varmc.Rejection();
             std::stringstream ahead;
             if(stat_count>=fm.StatPerSample()) stat_count=0;
