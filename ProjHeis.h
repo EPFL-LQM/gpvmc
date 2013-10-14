@@ -8,12 +8,13 @@ class ProjHeis: public MatrixQuantity
     public:
         ProjHeis(const Stepper* stepper,
                  FileManager* fm,
-                 double jr=0);
+                 double jr=0, double hz=0);
         virtual ~ProjHeis() {}
         virtual void measure();
         std::string str() const;
     private:
         double m_jr;
+        double m_hz;
 };
 
 #endif//_PROJHEIS_H

@@ -13,11 +13,11 @@ using namespace std;
 
 ProjHeis::ProjHeis(const Stepper* stepper,
                    FileManager* fm,
-                   double jr)
+                   double jr, double hz)
     :MatrixQuantity(stepper,fm,"ProjHeis",
             2*stepper->GetAmp()->GetWaveFunction()->GetNExc(),
             stepper->GetAmp()->GetWaveFunction()->GetNExc()),
-        m_jr(jr)
+        m_jr(jr), m_hz(hz)
 {}
 
 void ProjHeis::measure()
@@ -114,6 +114,13 @@ void ProjHeis::measure()
     size_t swc=0;
     for(size_t ix=0;ix<st->GetL();++ix){
         for(size_t iy=0;iy<st->GetL();++iy){
+	    if(st->GetLatOc(ix,iy)==UP){
+                for(size_t k=0;k<Nexc;++k)
+                    heisamps[k]-=m_hz*amps[k];
+            } else if(st->GetLatOc(ix,iy)==DOWN){
+                for(size_t k=0;k<Nexc;++k)
+                    heisamps[k]+=m_hz*amps[k];
+            }
             for(size_t t=0;t<nm;++t){
                 size_t jx=linalg::mod(int(ix)+taus[2*t],
                                       st->GetL());
