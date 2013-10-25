@@ -25,13 +25,15 @@ class MetroMC {
         MetroMC(Stepper* step, FileManager* fm);
         ~MetroMC() {}
         void AddQuantity(Quantity* quantity) {m_quantity.push_back(quantity);}
+        std::vector<Quantity*> GetQuantities() {return m_quantity;}
+        const std::vector<Quantity*> GetQuantities() const {return m_quantity;}
         double GetTimer() {return m_rwtimer;}
         /*! \brief Perform a random.
          * Perform a random walk of len steps and measure 
          * the quantity each meas steps.
          * If meas==0, no measurement is done.
          */
-        void Walk(const size_t& len, size_t meas, bool silent=false, int num_rep=0);
+        void Walk(const size_t& len, size_t meas);
         /*! \bief Perform a step of the random walk.
          */
         void Step(bool meas);

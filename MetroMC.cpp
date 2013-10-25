@@ -43,7 +43,7 @@ bool MetroMC::YesNo(const BigDouble& in)
 #endif
 }
 
-void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
+void MetroMC::Walk(const size_t& len, size_t meas)
 {
     double rwtimei, gtimei(0);
     m_gtimer=0;
@@ -55,7 +55,7 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
 #else
         rwtimei=clock();
 #endif
-        if(meas && !silent) gtimei=rwtimei;
+        if(meas) gtimei=rwtimei;
         Step(meas);
 #ifdef USEPARA
         m_rwtimer+=omp_get_wtime()-rwtimei;
@@ -67,27 +67,22 @@ void MetroMC::Walk(const size_t& len, size_t meas, bool silent, int num_rep)
                m_quantity[q]->measure(); 
         }
 #ifdef USEPARA
-        if(!silent && meas) m_gtimer+=omp_get_wtime()-gtimei;
+        if(meas) m_gtimer+=omp_get_wtime()-gtimei;
 #else
-        if(!silent && meas) m_gtimer+=(clock()-gtimei)/double(CLOCKS_PER_SEC);
+        if(meas) m_gtimer+=(clock()-gtimei)/double(CLOCKS_PER_SEC);
 #endif
-        if(!silent && meas && len>=100 && s%(len/100)==0){
-#ifdef USEMPI
-            int mess=m_fm->message_monitor;
+        if(meas && len>=100 && s%(len/100)==0){
             double done=double(s)/len;
             double finishes=m_gtimer*len/s;
             if(s==0) finishes=-1;
+            int comm_rank=0;
+#ifdef USEMPI
+            int mess=m_fm->message_monitor;
+            MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
+            //cout<<"rank "<<comm_rank<<": sends message_monitor"<<endl;
             MPI_Send(&mess,1,MPI_INT,0,m_fm->message_comm,MPI_COMM_WORLD);
-            MPI_Send(&done,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
-            MPI_Send(&finishes,1,MPI_DOUBLE,0,m_fm->message_monitor,MPI_COMM_WORLD);
-            MPI_Send(&num_rep,1,MPI_INT,0,m_fm->message_monitor,MPI_COMM_WORLD);
-#else
-            vector<int> r(1,0);
-            vector<double> d(1,double(s)/len);
-            vector<double> f(1,m_gtimer*len/s);
-            vector<int> n(1,num_rep);
-            m_fm->Monitor(r,d,f,n,1);
 #endif
+            m_fm->Monitor(comm_rank,done,finishes);
         }
     }
 }
@@ -109,6 +104,9 @@ void MetroMC::Step(bool meas)
 
 double MetroMC::Rejection() const
 {
-    return double(m_rejection)/m_steps;
+    if(m_steps)
+        return double(m_rejection)/m_steps;
+    else
+        return 0;
 }
 

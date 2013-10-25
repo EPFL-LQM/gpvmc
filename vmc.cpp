@@ -6,8 +6,12 @@
 #include "MetroMC.h"
 #include "SpinState.h"
 #include "StagFluxTransExciton.h"
+#include "StagFluxLongExciton.h"
+#include "StagFluxGroundState.h"
 #include "FullSpaceStepper.h"
 #include "ProjHeis.h"
+#include "StatSpinStruct.h"
+#include "StagMagn.h"
 #include "Amplitude.h"
 #include "RanGen.h"
 #include "FileManager.h"
@@ -63,8 +67,10 @@ int main(int argc, char* argv[])
     domap["cutoff"]=0.0;
     bomap["jas_onebodystag"]=true;
     bomap["jas_twobodystag"]=false;
+    bomap["statspinstruct"]=true;
     stmap["dir"]=".";
     stmap["spinstate"]="";
+    stmap["channel"]="groundstate";
     ArgParse arg(argc,argv);
     arg.SetupParams(bomap,simap,inmap,domap,stmap);
     // Setup calculation parameters
@@ -72,7 +78,6 @@ int main(int argc, char* argv[])
     fm.Verbose()=inmap["verbose"];
     fm.MonitorTotal()=simap["samples"]*simap["samples_saves"];
     fm.StatPerSample()=simap["samples_saves"];
-    if(comm_rank==0) std::cout<<simap["qx"]<<" "<<simap["qy"]<<std::endl;
     domap["phi"]*=M_PI;
     for(map<string,bool>::iterator it=bomap.begin();it!=bomap.end();++it)
         fm.FileAttribute(it->first,it->second);
@@ -97,7 +102,12 @@ int main(int argc, char* argv[])
         phase_shift[1]=domap["phase_shift_y"];
         Q[0]=simap["qx"];
         Q[1]=simap["qy"];
-        SpinState sp(L,L*L/2+1,L*L/2-1);
+        SpinState* sp(0);
+        if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
+            sp=new SpinState(L,L*L/2,L*L/2);
+        } else if(stmap["channel"]=="trans"){
+            sp=new SpinState(L,L*L/2+1,L*L/2-1);
+        }
         if(stmap["spinstate"]!=""){
             char* ist=new char[L*L];
 #ifdef USEMPI
@@ -109,7 +119,7 @@ int main(int argc, char* argv[])
 #else
                 H5LTread_dataset_char(ifile,"/rank-0",ist);
 #endif
-                sp.Init(ist);
+                sp->Init(ist);
 #ifdef USEMPI
                 for(int r=2;r<comm_size;++r){
                     ostringstream rst;
@@ -120,36 +130,57 @@ int main(int argc, char* argv[])
                 H5Fclose(ifile);
             } else {
                 MPI_Recv(ist,L*L,MPI_CHAR,1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                sp.Init(ist);
+                sp->Init(ist);
             }
 #endif
             delete [] ist;
         } else {
-            sp.Init();
+            sp->Init();
         }
         double bdwd=2*sqrt(1+neel*neel);
-        StagFluxTransExciton wav(L,L,phi,neel,phase_shift,Q,cutoff*bdwd);
-        wav.save(&fm);
+        WaveFunction* wav(0);
+        if(stmap["channel"]=="groundstate"){
+            wav=new StagFluxGroundState(L,L,phi,neel,phase_shift);
+        } else if(stmap["channel"]=="trans"){
+            wav=new StagFluxTransExciton(L,L,phi,neel,phase_shift,Q,cutoff*bdwd);
+        } else if(stmap["channel"]=="long"){
+            wav=new StagFluxLongExciton(L,phi,neel,phase_shift,Q);
+        }
+        wav->save(&fm);
         Jastrow* jas=0;
         if(domap["jastrow"]!=0){
             if(bomap["jas_onebodystag"])
-                jas=new StaggMagnJastrow(&sp,domap["jastrow"]);
+                jas=new StaggMagnJastrow(sp,domap["jastrow"]);
             else if(bomap["jas_twobodystag"])
-                jas=new StagJastrow(&sp,domap["jastrow"]);
+                jas=new StagJastrow(sp,domap["jastrow"]);
         }
-        Amplitude amp(&sp,&wav);
+        Amplitude amp(sp,wav);
         if(stmap["spinstate"]==""){
             while(amp.Amp()==0.0){
-                sp.Init();
+                sp->Init();
                 amp.Init();
             }
         } else {
             amp.Init();
         }
         FullSpaceStepper step(&amp);
-        ProjHeis seen(&step,&fm,domap["jr"]);
         MetroMC varmc(&step,&fm);
-        varmc.AddQuantity(&seen);
+        if(stmap["channel"]=="groundstate"){
+            ProjHeis* heisen=new ProjHeis(&step,&fm,domap["jr"]);
+            varmc.AddQuantity(heisen);
+            StagMagn* stagsz=new StagMagn(&step,&fm);
+            varmc.AddQuantity(stagsz);
+            if(bomap["statspinstruct"]){
+                StatSpinStruct* stat=new StatSpinStruct(&step,&fm);
+                varmc.AddQuantity(stat);
+            }
+        } else if(stmap["channel"]=="trans"){
+            ProjHeis* seen= new ProjHeis(&step,&fm,domap["jr"]);
+            varmc.AddQuantity(seen);
+        } else if(stmap["channel"]=="long"){
+            ProjHeis* seen= new ProjHeis(&step,&fm,domap["jr"]);
+            varmc.AddQuantity(seen);
+        }
 
         // Start calculation: thermalize
         cout<<"rank "<<comm_rank<<": thermalize"<<endl;
@@ -167,7 +198,8 @@ int main(int argc, char* argv[])
                 varmc.Walk(L*L*simap["samples_saves_stat"],L*L);
                 Timer::toc("main/ranwalk");
                 rej=varmc.Rejection();
-                seen.save();
+                for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)
+                    varmc.GetQuantities()[qu]->save();
                 fm.DataAttribute("rej",rej);
                 fm.DataAttribute("time",Timer::timer("randwalk"));
                 fm.DataAttribute("statistics",(m+1)*simap["samples_saves_stat"]);
@@ -185,8 +217,12 @@ int main(int argc, char* argv[])
         MPI_Send(&mess,1,MPI_INT,0,fm.message_comm,MPI_COMM_WORLD);
         MPI_Send(&stop,1,MPI_INT,0,fm.message_loop,MPI_COMM_WORLD);
 #endif
-        sp.save(&fm);
+        sp->save(&fm);
         if(jas) delete jas;
+        delete wav;
+        delete sp;
+        for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)
+            delete varmc.GetQuantities()[qu];
 #ifdef USEMPI
     } else {
         fm.MainLoop();

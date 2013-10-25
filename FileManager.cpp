@@ -19,7 +19,7 @@
 using namespace std;
 
 FileManager::FileManager(const string& dir, const int& num)
-    :m_dir(dir)
+    :m_dir(dir), m_compl(0), m_verbose(1), m_total(1)
 {
     if(num>=0){
         m_num=num;
@@ -66,151 +66,169 @@ FileManager::FileManager(const string& dir, const int& num)
 }
 
 #ifdef USEMPI
-void FileManager::MainLoop(int verbosity)
+void FileManager::MainLoop()
 {
     int rank,size;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     if(rank!=0) return;
-    vector<MPI_Request> requests(size-1);
-    vector<int> ready(size-1);
+    vector<MPI_Request> requests(size);
+    vector<int> finished(size,0);
+    vector<int> mess(size);
     vector<double> done(size-1);
     vector<double> tot(size-1);
     vector<int> num(size-1);
-    for(int p=0;p<size-1;++p) ready[p]=p+1;
     bool loop=true;
     for(int p=1;p<size;++p)
-        MPI_Irecv(&ready[p-1],1,MPI_INT,p,message_comm,MPI_COMM_WORLD,&requests[p-1]);
+        MPI_Irecv(&mess[p],1,MPI_INT,p,message_comm,MPI_COMM_WORLD,&requests[p]);
     while(loop){
         MPI_Status status;
         int isready;
-        MPI_Waitany(size-1,&requests[0],&isready,&status);
-        int mess=ready[isready];
+        MPI_Waitany(size-1,&requests[1],&isready,&status);
         isready+=1;
-        if(mess==message_monitor){
-            MPI_Recv(&done[isready-1],1,MPI_DOUBLE,isready,message_monitor,MPI_COMM_WORLD,&status);
-            MPI_Recv(&tot[isready-1],1,MPI_DOUBLE,isready,message_monitor,MPI_COMM_WORLD,&status);
-            MPI_Recv(&num[isready-1],1,MPI_INT,isready,message_monitor,MPI_COMM_WORLD,&status);
-            ready[isready-1]=isready;
-            Monitor(ready,done,tot,num,verbosity);
-        } else {
-            MPI_Recv(&ready[isready-1],1,MPI_INT,isready,message_save,MPI_COMM_WORLD,&status);
+        if(mess[isready]==message_monitor){
+            //cout<<"rank 0 recieved message_monitor from"<<isready<<endl;
+            Monitor(isready);
+        } else if(mess[isready]==message_save){
+            //cout<<"rank 0 recieved message_save from"<<isready<<endl;
             Write(isready);
+        } else if(mess[isready]==message_loop){
+            //cout<<"rank 0 received message_loop from"<<isready<<endl;
+            MPI_Recv(&finished[isready],1,MPI_INT,isready,message_loop,MPI_COMM_WORLD,&status);
+            loop=false;
+            for(int p=1;p<size;++p)
+                if(!finished[p]) loop=true;
         }
-        loop=false;
-        for(int p=1;p<size;++p)
-            if(ready[p-1]) loop=true;
-        if(loop){ 
-            MPI_Irecv(&ready[isready-1],1,MPI_INT,isready,message_comm,
-                      MPI_COMM_WORLD,&requests[isready-1]);
+        if(!finished[isready]){ 
+            MPI_Irecv(&mess[isready],1,MPI_INT,isready,message_comm,
+                      MPI_COMM_WORLD,&requests[isready]);
         }
     }
 }
 #endif
 
-void FileManager::Monitor(const vector<int>& ranks,
-                          const vector<double>& percents,
-                          const vector<double>& total_time,
-                          const vector<int>& num_rep,
-                          int verbosity)
+void FileManager::Monitor(int rank,double done, double tottime)
 {
-    if(verbosity>1){
-        ostringstream ostr;
-        // each ranks take 12 character long
-        // get terminal width:
-        size_t colwid=80;
-        size_t nrperline=colwid/12;
-        size_t nlines=ranks.size()/nrperline+1;
-        size_t nsaves=m_fileattr["saves"];
-        for(size_t nl=0;nl<nlines;++nl){
-            size_t r0=nl*nrperline;
-            size_t re=min(ranks.size(),nrperline*(nl+1));
-            if(nl==0){
+    int comm_rank=0;
+    int comm_size=1;
+#ifdef USEMPI
+    MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
+#endif
+    static vector<double> done_vec(comm_size,0), time_vec(comm_size,0), compl_vec(comm_size,0);
+#ifdef USEMPI
+    if(comm_rank!=0){
+        MPI_Send(&done,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
+        MPI_Send(&tottime,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
+        MPI_Send(&m_compl,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
+    } else {
+        MPI_Recv(&done_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Recv(&time_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Recv(&compl_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    }
+#else
+    done_vec[0]=done;
+    time_vec[0]=tottime;
+    compl_vec[0]=m_compl;
+#endif
+    if(comm_rank==0){
+        if(m_verbose>1){
+            ostringstream ostr;
+            // each ranks take 12 character long
+            // get terminal width:
+            size_t colwid=80;
+            size_t nrperline=colwid/12;
+            size_t nlines=(comm_size-1)/nrperline+1;
+            for(size_t nl=0;nl<nlines;++nl){
+                size_t r0=nl*nrperline+(comm_size>0);
+                size_t re=min(size_t(comm_size),nrperline*(nl+1));
+                if(nl==0){
+                    for(size_t r=r0;r<re;++r) ostr<<"____________";
+                }
+                ostr<<endl;
+                for(size_t r=r0;r<re;++r){
+                    ostr.unsetf(ios_base::right);
+                    ostr.setf(ios_base::left);
+                    ostr<<"r-"<<setw(4)<<setfill(' ')<<r+1;
+                    ostr.unsetf(ios_base::left);
+                    ostr.setf(ios_base::right);
+                    ostr<<setw(3)<<setfill(' ')<<100*(compl_vec[r]+done_vec[r]/m_total)<<"% |";
+                }
+                ostr<<endl;
+                for(size_t r=r0;r<re;++r){
+                    if(time_vec[r]>0){
+                        int d=floor(time_vec[r]*m_total/3600/24);
+                        int h=floor(time_vec[r]*m_total/3600-d*24);
+                        int m=floor(time_vec[r]*m_total/60-d*24*60-h*60);
+                        int s=floor(time_vec[r]*m_total-d*24*3600-h*3600-m*60);
+                        ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+                    } else {
+                        ostr<<"    N/A    |";
+                    }
+                }
+                ostr<<endl;
                 for(size_t r=r0;r<re;++r) ostr<<"____________";
             }
-            ostr<<endl;
-            for(size_t r=r0;r<re;++r){
-                ostr.unsetf(ios_base::right);
-                ostr.setf(ios_base::left);
-                ostr<<"r-"<<setw(4)<<setfill(' ')<<ranks[r];
-                ostr.unsetf(ios_base::left);
-                ostr.setf(ios_base::right);
-                ostr<<setw(3)<<setfill(' ')<<int((num_rep[r]+percents[r])/nsaves*100.0)<<"% |";
+            cout<<ostr.str()<<endl;
+        } else if(m_verbose==1){
+            static int mean_adv=0;
+            double new_mav=0;
+            double minav=1;
+            double maxav=0;
+            double tav=-1,tmax=-1,tmin=numeric_limits<double>::infinity();
+            int far(0),slr(0);
+            int nnna=0;
+            for(size_t r=(comm_size>1);r<size_t(comm_size);++r){
+                double av=compl_vec[r]+done_vec[r]/m_total;
+                new_mav+=av;
+                if(time_vec[r]>=0){
+                    tav+=time_vec[r]*m_total;
+                    if(av<minav) minav=av;
+                    if(av>maxav) maxav=av;
+                    if(time_vec[r]*m_total<tmin){
+                        tmin=time_vec[r]*m_total;
+                        far=r;
+                    }
+                    if(time_vec[r]*m_total>tmax){
+                        tmax=time_vec[r]*m_total;
+                        slr=r;
+                    }
+                    ++nnna;
+                }
             }
-            ostr<<endl;
-            for(size_t r=r0;r<re;++r){
-                if(total_time[r]>0){
-                    int d=floor(total_time[r]*nsaves/3600/24);
-                    int h=floor(total_time[r]*nsaves/3600-d*24);
-                    int m=floor(total_time[r]*nsaves/60-d*24*60-h*60);
-                    int s=floor(total_time[r]*nsaves-d*24*3600-h*3600-m*60);
-                    ostr<<setw(2)<<d<<"-"<<setw(2)<<h<<":"<<setw(2)<<m<<":"<<setw(2)<<s<<"|";
+            if(comm_size>1)
+                new_mav/=(comm_size-1);
+            tav/=nnna;
+            if(floor(new_mav*100)!=mean_adv){
+                mean_adv=floor(new_mav*100);
+                int dav=floor(tav/3600/24);
+                int hav=floor(tav/3600-24*dav);
+                int mav=floor(tav/60-24*60*dav-60*hav);
+                int sav=floor(tav-dav*24*3600-hav*3600-mav*60);
+                int dmin=floor(tmin/3600/24);
+                int hmin=floor(tmin/3600-24*dmin);
+                int mmin=floor(tmin/60-24*60*dmin-60*hmin);
+                int smin=floor(tmin-dmin*24*3600-hmin*3600-mmin*60);
+                int dmax=floor(tmax/3600/24);
+                int hmax=floor(tmax/3600-24*dmax);
+                int mmax=floor(tmax/60-24*60*dmax-60*hmax);
+                int smax=floor(tmax-dmax*24*3600-hmax*3600-mmax*60);
+                ostringstream out;
+                out<<"Adv: (mean: "<<floor(100*new_mav)
+                   <<"%, max: "<<floor(maxav*100)
+                   <<"%, min: "<<floor(minav*100)
+                   <<"%), ";
+                if(tav>=0){
+                    out<<"Time: (mean: "<<dav<<"-"<<hav<<":"<<mav<<":"<<sav
+                       <<", max: "<<dmax<<"-"<<hmax<<":"<<mmax<<":"<<smax
+                       <<", min: "<<dmin<<"-"<<hmin<<":"<<mmin<<":"<<smin
+                       <<"), ";
                 } else {
-                    ostr<<"    N/A    |";
+                    out<<"Time: (mean: N/A, max: N/A, min: N/A), ";
                 }
+                out<<"Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
+                cout<<out.str()<<endl;
             }
-            ostr<<endl;
-            for(size_t r=r0;r<re;++r) ostr<<"____________";
-        }
-        cout<<ostr.str()<<endl;
-    } else if(verbosity==1){
-        static int mean_adv=0;
-        double new_mav=0;
-        double minav=1;
-        double maxav=0;
-        double tav=-1,tmax=-1,tmin=numeric_limits<double>::infinity();
-        int far(0),slr(0);
-        int nsaves=m_fileattr["saves"];
-        int nnna=0;
-        for(size_t r=0;r<ranks.size();++r){
-            double av=(num_rep[r]+percents[r])/nsaves;
-            new_mav+=av;
-            if(total_time[r]>=0){
-                tav+=total_time[r]*nsaves;
-                if(av<minav) minav=av;
-                if(av>maxav) maxav=av;
-                if(total_time[r]*nsaves<tmin){
-                    tmin=total_time[r]*nsaves;
-                    far=ranks[r];
-                }
-                if(total_time[r]*nsaves>tmax){
-                    tmax=total_time[r]*nsaves;
-                    slr=ranks[r];
-                }
-                ++nnna;
-            }
-        }
-        new_mav/=ranks.size();
-        tav/=nnna;
-        if(floor(new_mav*100)!=mean_adv){
-            mean_adv=floor(new_mav*100);
-            int dav=floor(tav/3600/24);
-            int hav=floor(tav/3600-24*dav);
-            int mav=floor(tav/60-24*60*dav-60*hav);
-            int sav=floor(tav-dav*24*3600-hav*3600-mav*60);
-            int dmin=floor(tmin/3600/24);
-            int hmin=floor(tmin/3600-24*dmin);
-            int mmin=floor(tmin/60-24*60*dmin-60*hmin);
-            int smin=floor(tmin-dmin*24*3600-hmin*3600-mmin*60);
-            int dmax=floor(tmax/3600/24);
-            int hmax=floor(tmax/3600-24*dmax);
-            int mmax=floor(tmax/60-24*60*dmax-60*hmax);
-            int smax=floor(tmax-dmax*24*3600-hmax*3600-mmax*60);
-            ostringstream out;
-            out<<"Adv: (mean: "<<floor(100*new_mav)
-               <<"%, max: "<<floor(maxav*100)
-               <<"%, min: "<<floor(minav*100)
-               <<"%), ";
-            if(tav>=0){
-                out<<"Time: (mean: "<<dav<<"-"<<hav<<":"<<mav<<":"<<sav
-                   <<", max: "<<dmax<<"-"<<hmax<<":"<<mmax<<":"<<smax
-                   <<", min: "<<dmin<<"-"<<hmin<<":"<<mmin<<":"<<smin
-                   <<"), ";
-            } else {
-                out<<"Time: (mean: N/A, max: N/A, min: N/A), ";
-            }
-            out<<"Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
-            cout<<out.str()<<endl;
         }
     }
 }

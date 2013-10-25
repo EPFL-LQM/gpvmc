@@ -323,11 +323,12 @@ def PlotSqw(filename,gsen,Nsamp=1,channel=None,\
         H,O,E,V=GetEigSys(filename,Nsamp=Nsamp,channel=channel,gsfile=gsspinfile,wavefile=wavefile)
     if S==None:
         S=GetSqAmpl(filename,Nsamp=Nsamp,channel=channel,V=V,O=O)
+        if len(sc.shape(S))==4:
+            S=S[:,0,0,:]
     if w==None:
         w=sc.arange(-0.5,6,0.01)
     sqw=sc.zeros((sc.shape(E)[0],sc.shape(w)[0]),dtype=S.dtype)
     ax=None
-    S=S[:,0,0,:]
     for s in range(sc.shape(sqw)[0]):
         idx=~sc.isnan(E[s,:])
         sqw[s]=sf.gaussians(w,sc.squeeze(E[s,idx])-gsen*L*L,sc.squeeze(S[s,idx]),sc.ones(sc.shape(E[s,idx]))*width)
