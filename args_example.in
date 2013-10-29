@@ -1,0 +1,65 @@
+# ###############################################################
+# example of input arguments for the vmc executable
+# ###############################################################
+#
+# arguments can be passed either in a file such than this one, for instance:
+#
+# mpirun -np 4 ./vmc args_example.in
+#
+# or enumerated with format
+#
+# mpirun -np 4 ./vmc -channel=trans -samples=10
+#
+# All arguments must not be provided as they have default value (look at vmc.cpp to find which)
+# mixed format is possible:
+#
+# mpirun -np 4 ./vmc args_example.in -L=16 -therm=1000
+#
+# values coming after the argument filename will override previously defined values.
+#
+# ################################################################
+# Here follows a description of the available parameters so far
+# ################################################################
+#
+# channel can be:
+# channel=groundstate (groundstate calc)
+# channel=long (longitudinal excitation subspace calc)
+# channel=trans (transverse excitation subspace calc)
+channel=trans
+# results in 10 samples of the quantities
+samples=10
+# each made of 10 saves (i.e. written on permamnent storage during calculation)
+samples_saves=10
+# each done after a stat of 1000 measurements.
+samples_saves_stat=1000
+# lattice (square) size
+L=8
+# Some variational parameters
+phi=0.1
+neel=0.055
+jastrow=0
+# calculation prefix to avoid overwriting (keep negative for auto-incrementation)
+prefix=-1
+# output directory
+dir=.
+# excitation subspace momentum (relevant only for trans and long channels
+qx=4
+qy=0
+# thermalization steps in units of L*L
+therm=300
+# boundary conditions
+phase_shift_x=1.0
+phase_shift_y=1.0
+# jastrow factor selection
+jas_onebodystag=1
+jas_twobodystag=0
+# select or not the measurement of the instantenuous spin-spin correlation function
+# relevant only for groundstate channel.
+# Expensive (makes L^6 complexity rather than L^4. Excited subspace calculations are always L^6)
+statspinstruct=1
+# second neighbour exchange
+Jr=0.0
+# verbosity
+verbose=1
+# experimental: an energy  cutoff for the selection of the excitations.
+cutoff=0.0
