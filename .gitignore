@@ -2,12 +2,11 @@
 *~
 *.h5
 core
-test
-transsqw
-gentranssqw
-longsqw
-groundstate
 .runfile
 local.mak
 *.swp
 *.pyc
+vmc
+collect/MANIFEST
+collect/build
+collect/dist

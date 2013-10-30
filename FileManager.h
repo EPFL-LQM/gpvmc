@@ -64,7 +64,7 @@ class MatStream
         MatStream()
             :m_nrow(0), m_ncol(0), m_mat(0),m_stat(0) {}
         ~MatStream() {delete [] m_mat;}
-        void Write(const int& m, const int& n, double* mat)
+        void Write(const int& m, const int& n, const double* mat)
         {
             if(m_mat) {
                 if(!m_stat){

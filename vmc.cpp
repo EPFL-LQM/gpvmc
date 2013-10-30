@@ -12,6 +12,8 @@
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
 #include "StagMagn.h"
+#include "OverlapTrack.h"
+#include "StagMagnTrack.h"
 #include "Amplitude.h"
 #include "RanGen.h"
 #include "FileManager.h"
@@ -55,6 +57,7 @@ int main(int argc, char* argv[])
     simap["samples_saves_stat"]=100;
     simap["qx"]=0;
     simap["qy"]=0;
+    simap["meas_interv"]=0;
     inmap["prefix"]=-1;
     inmap["therm"]=100;
     inmap["verbose"]=1;
@@ -67,12 +70,18 @@ int main(int argc, char* argv[])
     domap["cutoff"]=0.0;
     bomap["jas_onebodystag"]=true;
     bomap["jas_twobodystag"]=false;
-    bomap["statspinstruct"]=true;
+    bomap["track_stagmagn"]=false;
+    bomap["track_overlap"]=false;
+    bomap["meas_projheis"]=true;
+    bomap["meas_stagmagn"]=true;
+    bomap["meas_statspinstruct"]=true;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
     ArgParse arg(argc,argv);
     arg.SetupParams(bomap,simap,inmap,domap,stmap);
+    if(!simap["meas_interv"])
+        simap["meas_interv"]=pow(simap["L"],2);
     // Setup calculation parameters
     FileManager fm(stmap["dir"],inmap["prefix"]);
     fm.Verbose()=inmap["verbose"];
@@ -165,21 +174,27 @@ int main(int argc, char* argv[])
         }
         FullSpaceStepper step(&amp);
         MetroMC varmc(&step,&fm);
-        if(stmap["channel"]=="groundstate"){
+        if(bomap["meas_projheis"]){
             ProjHeis* heisen=new ProjHeis(&step,&fm,domap["jr"]);
             varmc.AddQuantity(heisen);
-            StagMagn* stagsz=new StagMagn(&step,&fm);
-            varmc.AddQuantity(stagsz);
-            if(bomap["statspinstruct"]){
+        }
+        if(stmap["channel"]=="groundstate"){
+            if(bomap["meas_stagmagn"]){
+                StagMagn* stagsz=new StagMagn(&step,&fm);
+                varmc.AddQuantity(stagsz);
+            }
+            if(bomap["meas_statspinstruct"]){
                 StatSpinStruct* stat=new StatSpinStruct(&step,&fm);
                 varmc.AddQuantity(stat);
             }
-        } else if(stmap["channel"]=="trans"){
-            ProjHeis* seen= new ProjHeis(&step,&fm,domap["jr"]);
-            varmc.AddQuantity(seen);
-        } else if(stmap["channel"]=="long"){
-            ProjHeis* seen= new ProjHeis(&step,&fm,domap["jr"]);
-            varmc.AddQuantity(seen);
+        }
+        if(bomap["track_stagmagn"]){
+            StagMagnTrack* stt=new StagMagnTrack(&step,&fm);
+            varmc.AddQuantity(stt);
+        }
+        if(bomap["track_overlap"]){
+            OverlapTrack* ovt=new OverlapTrack(&step,&fm);
+            varmc.AddQuantity(ovt);
         }
 
         // Start calculation: thermalize
@@ -189,13 +204,14 @@ int main(int argc, char* argv[])
             varmc.Walk(int(simap["therm"]*L*L),0);
             Timer::toc("main/thermalize");
         }
+        cout<<"rank "<<comm_rank<<": thermalized"<<endl;
         fm.MonitorTotal()=simap["samples"]*simap["samples_saves"];         
         // Calculation
         for(size_t sample=0;sample<simap["samples"];++sample){
             for(size_t m=0;m<simap["samples_saves"];++m){
                 fm.MonitorCompletion()=double(sample*simap["samples_saves"]+m)/(simap["samples"]*simap["samples_saves"]);
                 Timer::tic("main/ranwalk");
-                varmc.Walk(L*L*simap["samples_saves_stat"],L*L);
+                varmc.Walk(simap["meas_interv"]*simap["samples_saves_stat"],simap["meas_interv"]);
                 Timer::toc("main/ranwalk");
                 rej=varmc.Rejection();
                 for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)

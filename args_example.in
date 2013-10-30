@@ -32,6 +32,9 @@ samples=10
 samples_saves=10
 # each done after a stat of 1000 measurements.
 samples_saves_stat=1000
+# number of random walk steps between two measurements.
+# A value of 0 makes defaults to L^2 (safe)
+meas_interv=0
 # lattice (square) size
 L=8
 # Some variational parameters
@@ -56,7 +59,15 @@ jas_twobodystag=0
 # select or not the measurement of the instantenuous spin-spin correlation function
 # relevant only for groundstate channel.
 # Expensive (makes L^6 complexity rather than L^4. Excited subspace calculations are always L^6)
-statspinstruct=1
+meas_statspinstruct=1
+# measure the Projected Heisenberg Matrix (for ground state this gives the variational energy)
+meas_projheis=1
+# measure the staggered magnetization
+meas_stagmagn=1
+# track the Monte Carlo weight evolution during the random walk. Useful for thermalization checks
+track_overlap=0
+# track the staggered magnetization during the random walk. Usefule for thermalization checking
+track_stagmagn=0
 # second neighbour exchange
 Jr=0.0
 # verbosity

@@ -5,7 +5,7 @@ PROFILE=no
 OPT=-O3 -ffast-math -funroll-loops
 DEB=
 
-INSTALL_DIR=/home/bastien/vmc-run
+INSTALL_DIR=/home/balabare/vmc-run
 
 USEMPI=yes
 STATIC=no
