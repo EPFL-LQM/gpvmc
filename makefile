@@ -47,8 +47,8 @@ clean:
 cleaner: clean
 	rm -f $(BIN)
 
-install: $(BIN)
-	mkdir -p $(INSTALL_DIR); cp $(BIN) $(INSTALL_DIR); cd collect; make install
+install: $(BIN) wrap_vmc_debug.sh
+	mkdir -p $(INSTALL_DIR); cp $(BIN) wrap_vmc_debug.sh $(INSTALL_DIR); cd collect; make install
 
 showme:
 	mpicxx -showme

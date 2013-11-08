@@ -41,8 +41,6 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
 #endif
     signal(SIGTERM,FileManager::EmergencyClose);
-    int seed=time(NULL)+100*comm_rank;
-    RanGen::srand(seed);
     Timer::tic("main");
 
     // calculation parameters:
@@ -61,6 +59,7 @@ int main(int argc, char* argv[])
     inmap["prefix"]=-1;
     inmap["therm"]=100;
     inmap["verbose"]=1;
+    inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
     domap["neel"]=0.0;
     domap["jastrow"]=0.0;
@@ -82,6 +81,8 @@ int main(int argc, char* argv[])
     arg.SetupParams(bomap,simap,inmap,domap,stmap);
     if(!simap["meas_interv"])
         simap["meas_interv"]=pow(simap["L"],2);
+    if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
+    RanGen::srand(inmap["seed"]+100*comm_rank);
     // Setup calculation parameters
     FileManager fm(stmap["dir"],inmap["prefix"]);
     fm.Verbose()=inmap["verbose"];
@@ -198,13 +199,11 @@ int main(int argc, char* argv[])
         }
 
         // Start calculation: thermalize
-        cout<<"rank "<<comm_rank<<": thermalize"<<endl;
         if(simap["therm"]){
             Timer::tic("main/thermalize");
             varmc.Walk(int(simap["therm"]*L*L),0);
             Timer::toc("main/thermalize");
         }
-        cout<<"rank "<<comm_rank<<": thermalized"<<endl;
         fm.MonitorTotal()=simap["samples"]*simap["samples_saves"];         
         // Calculation
         for(size_t sample=0;sample<simap["samples"];++sample){
