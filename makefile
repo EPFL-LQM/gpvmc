@@ -7,10 +7,7 @@ OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
 
-groundstate.o: $(HDR)
-transsqw.o: $(HDR)
-test.o: $(HDR)
-longsqw.o: $(HDR)
+vmc.o: $(HDR) gitversion.h
 zdotu_sub.o: zdotu_sub.f
 	$(OFORT) -c -o $@ $< -O3
 MetroMC.o: RanGen.h SpinState.h Stepper.h Quantity.h BigDouble.h Timer.h
@@ -34,6 +31,10 @@ StagJastrow.o: StagJastrow.h Jastrow.h linalg.h
 ArgParse.o: ArgParse.h
 SpinSpinCorr.o: SpinSpinCorr.h VectorQuantity.h Quantity.h Stepper.h
 StaggMagnJastrow.o: StaggMagnJastrow.h Jastrow.h linalg.h SpinState.h
+
+.PHONY: gitversion.h
+gitversion.h:
+	echo "#ifndef _GITVERSION_H\n#define _GITVERSION_H\n\tconst string gitversion=\"`git rev-parse --short HEAD`\";\n#endif//_GITVERSION_H\n" > gitversion.h
 
 vmc: vmc.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)

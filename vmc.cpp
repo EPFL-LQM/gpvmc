@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include "gitversion.h"
 
 using namespace std;
 
@@ -99,6 +100,7 @@ int main(int argc, char* argv[])
         fm.FileAttribute(it->first,it->second);
     for(map<string,string>::iterator it=stmap.begin();it!=stmap.end();++it)
         fm.FileAttribute(it->first,it->second);
+    fm.FileAttribute("gitversion",gitversion);
 
 #ifdef USEMPI
     if(comm_rank){

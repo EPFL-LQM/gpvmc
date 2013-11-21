@@ -10,3 +10,4 @@ vmc
 collect/MANIFEST
 collect/build
 collect/dist
+gitversion.h

@@ -96,7 +96,10 @@ def GetFermiSigns(filename,refstate=None,channel=None):
         if channel==None:
             channel=attr['channel']
         L=attr['L']
-        shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+        if 'phasex' in attr.keys():
+            shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+        else:
+            shift=[attr['phase_shift_x']/2.0,attr['phase_shift_y']/2.0]
         q=[float(attr['qx'])/L,float(attr['qy'])/L]
         if channel=='trans':
             return sf.transfermisigns(L,L,shift,q)
@@ -117,7 +120,11 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     hfile.close()
     N=sc.shape(dat)[0]/2
     L=attr['L']
-    shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+    shift=None
+    if 'phasex' in attr.keys():
+        shift=[attr['phasex']/2.0,attr['phasey']/2.0]
+    else:
+        shift=[attr['phase_shift_x']/2.0,attr['phase_shift_y']/2.0]
     H=sc.zeros([Nsamp,N,N],complex)
     O=sc.zeros([Nsamp,N,N],complex)
     E=sc.zeros([Nsamp,N])
@@ -216,7 +223,11 @@ def GetSpinonOverlap(filename,Nsamp=1,channel=None,O=None,V=None,r=None):
         raise ValueError('Longitudinal channel not yet implemented')
     L=attrs['L']
     q=[float(attrs['qx']/L),float(attrs['qy'])/L]
-    shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
+    shift=None
+    if 'phasex' in attrs.keys():
+        shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
+    else:
+        shift=[attrs['phase_shift_x']/2.0,attrs['phase_shift_y']/2.0]
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None:
@@ -244,7 +255,11 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
         q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     else:
         q=[float(q[0])/L,float(q[1])/L]
-    shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
+    shift=None
+    if 'phasex' in attrs.keys():
+        shift=[attrs['phasex']/2.0,attrs['phasey']/2.0]
+    else:
+        shift=[attrs['phase_shift_x']/2.0,attrs['phase_shift_y']/2.0]
     phi=attrs['phi']
     neel=attrs['neel']
     if O==None or V== None:
