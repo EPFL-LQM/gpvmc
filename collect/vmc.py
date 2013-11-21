@@ -171,7 +171,10 @@ def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None,q=None):
     L=exat['L']
     if q==None:
         q=sc.array([exat['qx'],exat['qy']])
-    shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
+    if 'phasex' in exat.keys():
+        shift=sc.array([exat['phasex']/2.0,exat['phasey']/2.0])
+    else:
+        shift=sc.array([exat['phase_shift_x']/2.0,exat['phase_shift_y']/2.0])
     phi=exat['phi']
     neel=exat['neel']
     qx,qy,Sq=GetSq(gsfile)
