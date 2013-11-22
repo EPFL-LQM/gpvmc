@@ -34,7 +34,7 @@ StaggMagnJastrow.o: StaggMagnJastrow.h Jastrow.h linalg.h SpinState.h
 
 .PHONY: gitversion.h
 gitversion.h:
-	echo "#ifndef _GITVERSION_H\n#define _GITVERSION_H\n\tconst string gitversion=\"`git rev-parse --short HEAD`\";\n#endif//_GITVERSION_H\n" > gitversion.h
+	sed "s/\".*\"/\"`git rev-parse --short HEAD`\"/" <gitversion.h >gitversion_temp.h && mv gitversion_temp.h gitversion.h
 
 vmc: vmc.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)

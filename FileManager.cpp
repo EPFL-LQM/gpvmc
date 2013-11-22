@@ -116,15 +116,23 @@ void FileManager::Monitor(int rank,double done, double tottime)
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
 #endif
     static vector<double> done_vec(comm_size,0), time_vec(comm_size,0), compl_vec(comm_size,0);
+    static vector<string> hostnames(comm_size,"");
 #ifdef USEMPI
     if(comm_rank!=0){
         MPI_Send(&done,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
         MPI_Send(&tottime,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
         MPI_Send(&m_compl,1,MPI_DOUBLE,0,message_monitor,MPI_COMM_WORLD);
+        char hostname[1024];
+        hostname[1023]='\0';
+        gethostname(hostname,1023);
+        MPI_Send(hostname,1024,MPI_CHAR,0,message_monitor,MPI_COMM_WORLD);
     } else {
         MPI_Recv(&done_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
         MPI_Recv(&time_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
         MPI_Recv(&compl_vec[rank],1,MPI_DOUBLE,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        char hostname[1024];
+        MPI_Recv(hostname,1024,MPI_CHAR,rank,message_monitor,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        hostnames[rank]=hostname;
     }
 #else
     done_vec[0]=done;
@@ -226,7 +234,8 @@ void FileManager::Monitor(int rank,double done, double tottime)
                 } else {
                     out<<"Time: (mean: N/A, max: N/A, min: N/A), ";
                 }
-                out<<"Rnk: (slowest: "<<slr<<", fastest: "<<far<<")";
+                out<<"Rnk: (slowest: "<<slr<<", fastest: "<<far<<") ";
+                out<<"Host: (slowest: "<<hostnames[slr]<<", fastest: "<<hostnames[far]<<")";
                 cout<<out.str()<<endl;
             }
         }
@@ -351,7 +360,7 @@ void FileManager::Write(int isready)
             double *buff=new double[dims[0]*dims[1]];
             MPI_Recv(buff,dims[0]*dims[1],MPI_DOUBLE,isready,message_save,
                      MPI_COMM_WORLD,&status);
-            hsize_t hdims[2]={dims[0],dims[1]};
+            hsize_t hdims[2]={hsize_t(dims[0]),hsize_t(dims[1])};
             herr_t e;
             if(H5Lexists(fout,dout.str().c_str(),H5P_DEFAULT)<=0)
                 e=H5LTmake_dataset_double(fout,dout.str().c_str(),
