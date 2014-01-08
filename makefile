@@ -1,8 +1,8 @@
 include config.mak
 
 BIN=vmc
-SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StatSpinStruct.cpp
-HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StatSpinStruct.h StagMagn.h
+SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp WaveFunction_1.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StatSpinStruct.cpp
+HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h WaveFunction_1.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StatSpinStruct.h StagMagn.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
