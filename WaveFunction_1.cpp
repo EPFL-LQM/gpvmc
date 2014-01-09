@@ -9,22 +9,35 @@
 
 using namespace std;
 
-WaveFunction_1::WaveFunction_1(size_t Lx, size_t Ly,
-                               std::vector<size_t> Nby,
+WaveFunction_1::WaveFunction_1()
+    : m_sign(1)
+{}
+
+WaveFunction_1::WaveFunction_1(std::vector<size_t> Nby,
                                std::vector<size_t> Nfs)
-    : m_fs(Nby.size()), m_fock(Nby.size()), m_cache(Nby.size()),
-      m_exc(Nby.size()), m_fock_states(Nby.size()),
-      m_Nflav(Nby.size()), m_Nfs(Nfs), m_Nby(Nby),
-      m_Lx(Lx), m_Ly(Ly), m_sign(1)
+    : m_sign(1)
 {
     // Lx and Ly specify real space lattice
     // size which generate a complete
     // basis. The Fock space size is thus 2*Lx*Ly.
+    build_base(Nby,Nfs);
+}
+
+void WaveFunction_1::build_base(vector<size_t> Nby,vector<size_t> Nfs)
+{
+    m_fs=vector<size_t*>(Nby.size());
+    m_fock=vector<size_t*>(Nby.size());
+    m_cache=vector<complex<double>* >(Nby.size());
+    m_exc=vector<vector<vector<hop_path_t> > >(Nby.size());
+    m_fock_states=vector<vector<vector<int> > >(Nby.size());
+    m_Nflav=Nby.size();
+    m_Nfs=Nfs;
+    m_Nby=Nby;
     for(size_t flav=0;flav<m_Nflav;++flav){
         m_fs[flav]=new size_t[Nby[flav]];
         m_fock[flav]=new size_t[m_Nfs[flav]];
         m_cache[flav]=new complex<double>[int(std::pow(m_Nfs[flav],2))];
-        for(size_t s=0;s<Lx*Ly;++s){
+        for(size_t s=0;s<m_Nfs[flav];++s){
             m_fock[flav][s]=m_Nby[flav];
         }
     }
@@ -204,7 +217,7 @@ string WaveFunction_1::Fock() const
     ostringstream out;
     for(size_t flav=0;flav<m_Nflav;++flav){
         out<<"flavor="<<flav<<"  : |";
-        for(size_t f=0;f<m_Lx*m_Ly;++f){
+        for(size_t f=0;f<m_Nfs[flav];++f){
             if(m_fock[flav][f]==m_Nby[flav])
                 out<<std::setw(2)<<"."<<" ";
             else

@@ -1,5 +1,6 @@
 #include "FullSpaceStepper.h"
 #include "SpinState.h"
+#include "WaveFunction.h"
 #include "Jastrow.h"
 
 using namespace std;

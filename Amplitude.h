@@ -2,8 +2,10 @@
 #define _AMPLITUDE_H
 #include "BigDouble.h"
 #include "BigComplex.h"
-#include "WaveFunction.h"
-#include "SpinState.h"
+#include "defs.h"
+
+class WaveFunction;
+class SpinState;
 
 /*! \brief scalar product \f$\langle \{R_i,\sigma_i\}|\Psi\rangle\f$
  *

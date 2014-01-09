@@ -1,4 +1,6 @@
 #include "Amplitude.h"
+#include "WaveFunction.h"
+#include "SpinState.h"
 #include <limits>
 #include <complex>
 #include <string>

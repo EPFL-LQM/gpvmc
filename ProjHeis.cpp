@@ -4,6 +4,8 @@
 #endif
 
 #include "Stepper.h"
+#include "WaveFunction.h"
+#include "SpinState.h"
 #include "Jastrow.h"
 #include "linalg.h"
 #include <vector>

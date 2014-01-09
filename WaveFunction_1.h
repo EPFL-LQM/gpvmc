@@ -7,11 +7,7 @@
 #include <iomanip>
 #include <vector>
 #include <utility>
-
-#ifndef _HOP_PATH_T
-typedef std::vector<std::pair<size_t,size_t> > hop_path_t;
-typedef std::pair<size_t,size_t> hop_t;
-#endif
+#include "defs.h"
 
 class FileManager;
 
@@ -45,9 +41,9 @@ class WaveFunction_1 {
         size_t m_Nflav;//!< Number of spin flavours
         std::vector<size_t> m_Nfs;
         std::vector<size_t> m_Nby;
-        size_t m_Lx; //!< x size of real space lattice
-        size_t m_Ly; //!< y size of real space lattice
         int m_sign; //!< fermion sign of the wavefunction
+
+        void build_base(std::vector<size_t> Nby,std::vector<size_t> Nfs);
 
         /*! Initialize m_cacheup and m_cachedo with the derived
          * class matrix_element method. This function must be
@@ -80,8 +76,9 @@ class WaveFunction_1 {
      **************/
     public:
         /*! Base constructor*/
-        WaveFunction_1(size_t Lx, size_t Ly,
-                       std::vector<size_t> Nby,
+        WaveFunction_1();
+
+        WaveFunction_1(std::vector<size_t> Nby,
                        std::vector<size_t> Nfs);
 
         virtual ~WaveFunction_1();
@@ -90,7 +87,7 @@ class WaveFunction_1 {
                                    const size_t& r,
                                    const size_t& s) const
         {
-            return m_cache[s][f*m_Lx*m_Ly+r];
+            return m_cache[s][f*m_Nfs[s]+r];
         }
         size_t GetN(const size_t& s) const {return m_Nfs[s];}
         const size_t* GetFs(const size_t& s) const {return m_fs[s];}
