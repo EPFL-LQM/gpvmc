@@ -1,13 +1,8 @@
 #ifndef _WAVEFUNCTION_1_H
 #define _WAVEFUNCTION_1_H
 
-#include <limits>
+#include "State_1.h"
 #include <complex>
-#include <omp.h>
-#include <iomanip>
-#include <vector>
-#include <utility>
-#include "defs.h"
 
 class FileManager;
 
@@ -15,35 +10,23 @@ class FileManager;
  *
  */
 
-class WaveFunction_1 {
+class WaveFunction_1 : public State_1{
 
     /**************
      * protected: *
      **************/
     protected:
-        /*! \brief Enumerated particles Fock states.
-         * Fock state index in which the enumerated particles
-         * are in. Organized in a block form if the spin (flavour)
-         * is a good quantum number. m_fs[f,p] is the Fock state index
-         * of the p'th particle of conserved spin (flavour) f.*/
-        std::vector<size_t*> m_fs;
-        /*! \brief Many particle state written in Fock space.
-         * m_fock[f,st] is the index of the enumerated particle
-         * with conserved spin (flavour) f in state st or m_Nfs[f]
-         * if the state is unoccupied.*/
-        std::vector<size_t*> m_fock;
         /*! \brief cache of all matrix elements.*/
-        std::vector<std::complex<double>* > m_cache;
+        std::vector<std::vector<std::complex<double> > > m_cache;
+        /*! \brief matrix of paths linking all the added states together.
+         * m_exc[i][f][fl] is the hoppings particles of flavour fl must do
+         * such that one goes from state i to state f.
+         */
         std::vector<std::vector<std::vector<hop_path_t> > > m_exc;
-        std::vector<std::vector<std::vector<int> > > m_fock_states;
         /*! \brief Current excitation index.*/
         size_t m_c_exc;
-        size_t m_Nflav;//!< Number of spin flavours
-        std::vector<size_t> m_Nfs;
-        std::vector<size_t> m_Nby;
-        int m_sign; //!< fermion sign of the wavefunction
 
-        void build_base(std::vector<size_t> Nby,std::vector<size_t> Nfs);
+        void build_base(const std::vector<size_t>& Nby, const std::vector<size_t>& Nfs);
 
         /*! Initialize m_cacheup and m_cachedo with the derived
          * class matrix_element method. This function must be
@@ -59,27 +42,12 @@ class WaveFunction_1 {
         virtual std::complex<double>
             matrix_element(size_t f, size_t r, size_t s)=0;
 
-        hop_path_t get_hop_path(
-                const size_t* src,
-                const size_t* dest,
-                size_t Nby,
-                size_t Nfs) const;
-
-        void get_hop_state(hop_path_t hop,
-                             const size_t* src,
-                             size_t Nby,
-                             size_t Nfs,
-                             std::vector<size_t>& dest) const;
-
     /**************
      * public:    *
      **************/
     public:
         /*! Base constructor*/
         WaveFunction_1();
-
-        WaveFunction_1(std::vector<size_t> Nby,
-                       std::vector<size_t> Nfs);
 
         virtual ~WaveFunction_1();
 
@@ -89,19 +57,10 @@ class WaveFunction_1 {
         {
             return m_cache[s][f*m_Nfs[s]+r];
         }
-        size_t GetN(const size_t& s) const {return m_Nfs[s];}
-        const size_t* GetFs(const size_t& s) const {return m_fs[s];}
-        int GetSign() const {return m_sign;}
         size_t GetNExc() const {return m_exc[0].size();}
 
         // Writes down the states and relative fermi signs to storage
         void Save(FileManager* fm);
-
-        /*! Fill up states after initialization.
-         * **st are arrays
-         * of Nidx*Nfs** elements specifying all the single
-         * particle states.*/
-        void fill(std::vector<size_t*> st);
 
         /*! Add a state to the wavefunction, defining
          * the hop path from and to the other already defined
@@ -110,27 +69,12 @@ class WaveFunction_1 {
          * integer for occupied. The size of fup and fdo must
          * be m_Lx*m_Ly.
          */
-        void AddState(const std::vector<const size_t*> f);
+        void AddState(const std::vector<uint_vec_t>& f);
 
-        void GetHops(std::vector<std::vector<hop_path_t> >& hop) const;
+        const std::vector<std::vector<hop_path_t> >& GetHops() const;
 
-        void GetHop(size_t k, std::vector<hop_path_t>& hop) const;
+        const std::vector<hop_path_t>& GetHop(size_t k) const;
 
-        /*! do \f$|\Psi\rangle\rightarrow\
-         * c^\dagger_{k_\uparrow'}\
-         * c_{k_\uparrow}c^\dagger_{k_\downarrow'}\
-         * c_{k_\downarrow}\
-         * |\Psi\rangle\f$,
-         * update matrix elements and determinant.*/
-        void Hop(size_t khop);
-
-        /* \brief Calculate the hopping fermionic sign */
-        virtual int HopSign(const std::vector<hop_path_t>& hop) const;
-
-        std::string Fock() const;
-        friend std::ostream &
-            operator<<(std::ostream& left,
-                       const WaveFunction_1 & right);
 };
 
 #endif//_WAVEFUNCTION_H

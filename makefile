@@ -1,8 +1,8 @@
 include config.mak
 
 BIN=vmc
-SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp WaveFunction_1.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxWaveFunction_1.cpp StagFluxTransExciton.cpp StagFluxTransExciton_1.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StagFluxLongExciton_1.cpp StatSpinStruct.cpp
-HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h WaveFunction_1.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxWaveFunction_1.h StagFluxGroundState.h StagFluxTransExciton.h StagFluxTransExciton_1.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StagFluxLongExciton_1.h StatSpinStruct.h StagMagn.h
+SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp WaveFunction_1.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxWaveFunction_1.cpp StagFluxTransExciton.cpp StagFluxTransExciton_1.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StagFluxLongExciton_1.cpp StatSpinStruct.cpp State_1.cpp
+HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h WaveFunction_1.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxWaveFunction_1.h StagFluxGroundState.h StagFluxTransExciton.h StagFluxTransExciton_1.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StagFluxLongExciton_1.h StatSpinStruct.h StagMagn.h State_1.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
