@@ -49,9 +49,9 @@ class State_1 {
         /*! \brief Defines a sequence of hoppings to go from Fock state src to Fock state dest.
          */
         void get_hop_path(const uint_vec_t& src,
-                                const uint_vec_t& dest,
-                                const std::size_t& Npt,
-                                hop_path_t& hop) const;
+                          const uint_vec_t& dest,
+                          const std::size_t& Npt,
+                          hop_path_t& hop) const;
         /*! \brief Execute the hoppings defined in hop on Fock state src and modifies dest.
          */
         void get_hop_state(const hop_path_t& hop,
@@ -66,8 +66,16 @@ class State_1 {
 
         virtual ~State_1();
 
+        /*! \brief Initialize the state with st.
+         * st[f][p] is the state the f'th flavour
+         * p'th particle is in.
+         */
+        void Init(std::vector<uint_vec_t> st);
+
         const uint_vec_t& GetNfs() const;
         const uint_vec_t& GetNpt() const;
+        const std::vector<uint_vec_t>& Getfs() const;
+        const std::vector<uint_vec_t>& Getpt() const;
         int GetSign() const;
 
         /*! \brief Perform a sequence of hoppings

@@ -10,6 +10,16 @@ State_1::State_1()
 State_1::~State_1()
 {}
 
+void State_1::Init(vector<uint_vec_t> st)
+{
+    m_part=st;
+    for(size_t fl=0;fl<m_Nfl;++fl){
+        for(size_t p=0;p<m_Npt[fl];++p){
+            m_fock[fl][m_part[fl][p]]=p;
+        }
+    }
+}
+
 const uint_vec_t& State_1::GetNfs() const
 {
     return m_Nfs;
@@ -18,6 +28,16 @@ const uint_vec_t& State_1::GetNfs() const
 const uint_vec_t& State_1::GetNpt() const
 {
     return m_Npt;
+}
+
+const vector<uint_vec_t>& Getfs() const
+{
+    return m_fock;
+}
+
+const vector<uint_vec_t>& Getpt() const
+{
+    return m_part;
 }
 
 int State_1::GetSign() const
