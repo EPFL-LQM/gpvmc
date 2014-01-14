@@ -66,11 +66,15 @@ class State_1 {
 
         virtual ~State_1();
 
-        /*! \brief Initialize the state with st.
+        /*! \brief Initialize the state with the particle state st.
          * st[f][p] is the state the f'th flavour
          * p'th particle is in.
          */
-        void Init(std::vector<uint_vec_t> st);
+        void InitPart(const std::vector<uint_vec_t>& st);
+        /*! \brief Initialize the state with the fock state st.
+         * st[f][s]<m_Npt[f] if state s of flavour f is occupied.
+         */
+        void InitFock(const std::vector<uint_vec_t>& st);
 
         const uint_vec_t& GetNfs() const;
         const uint_vec_t& GetNpt() const;

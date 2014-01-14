@@ -1,13 +1,14 @@
 include config.mak
 
-BIN=vmc
-SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp WaveFunction_1.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxWaveFunction_1.cpp StagFluxTransExciton.cpp StagFluxTransExciton_1.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StagFluxLongExciton_1.cpp StatSpinStruct.cpp State_1.cpp LatticeState_1.cpp
-HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h WaveFunction_1.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxWaveFunction_1.h StagFluxGroundState.h StagFluxTransExciton.h StagFluxTransExciton_1.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StagFluxLongExciton_1.h StatSpinStruct.h StagMagn.h State_1.h LatticeState_1.h Lattice.h
+BIN=vmc test_1
+SRC=SpinState.cpp Amplitude.cpp SpinOp.cpp SpinDensity.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp WaveFunction_1.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxWaveFunction_1.cpp StagFluxTransExciton.cpp StagFluxTransExciton_1.cpp Jastrow.cpp ArgParse.cpp SpinSpinCorr.cpp StagJastrow.cpp StaggMagnJastrow.cpp ScalarQuantity.cpp VectorQuantity.cpp MatrixQuantity.cpp FullSpaceStepper.cpp ProjHeis.cpp StagFluxLongExciton.cpp StagFluxLongExciton_1.cpp StatSpinStruct.cpp State_1.cpp LatticeState_1.cpp SquareLattice.cpp
+HDR=MetroMC.h SpinState.h Amplitude.h Quantity.h ScalarQuantity.h linalg.h RanGen.h Timer.h WaveFunction.h WaveFunction_1.h VectorQuantity.h SpinOp.h MatrixQuantity.h SpinDensity.h FileManager.h Stepper.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxWaveFunction_1.h StagFluxGroundState.h StagFluxTransExciton.h StagFluxTransExciton_1.h Jastrow.h ArgParse.h SpinSpinCorr.h StagJastrow.h StaggMagnJastrow.h FullSpaceStepper.h ProjHeis.h StagFluxLongExciton.h StagFluxLongExciton_1.h StatSpinStruct.h StagMagn.h State_1.h LatticeState_1.h Lattice.h SquareLattice.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
 
 vmc.o: $(HDR) gitversion.h
+test_1.o: $(HDR)
 zdotu_sub.o: zdotu_sub.f
 	$(OFORT) -c -o $@ $< -O3
 MetroMC.o: RanGen.h SpinState.h Stepper.h Quantity.h BigDouble.h Timer.h
@@ -33,10 +34,13 @@ SpinSpinCorr.o: SpinSpinCorr.h VectorQuantity.h Quantity.h Stepper.h
 StaggMagnJastrow.o: StaggMagnJastrow.h Jastrow.h linalg.h SpinState.h
 
 .PHONY: gitversion.h
-gitversion.h:
-	sed "s/\".*\"/\"`git rev-parse --short HEAD`\"/" <gitversion.h >gitversion_temp.h && mv gitversion_temp.h gitversion.h
+gitversion.h: gitversion.h.tpl
+	sh check_gitversion.sh
 
 vmc: vmc.o $(OBJ)
+	$(OCXX) -o $@ $^ $(LDFLAGS)
+
+test_1: test_1.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp makefile config.mak local.mak

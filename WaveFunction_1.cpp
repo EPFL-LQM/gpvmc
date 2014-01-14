@@ -37,7 +37,7 @@ void WaveFunction_1::init_matrices()
 
 void WaveFunction_1::AddState(const vector<uint_vec_t>& f)
 {
-    if(!m_exc[0].size()){
+    if(!m_exc.size()){
         for(size_t fl=0;fl<m_Nfl;++fl){
             size_t sti=0;
             for(size_t s=0;s<m_Nfs[fl];++s){
@@ -53,7 +53,7 @@ void WaveFunction_1::AddState(const vector<uint_vec_t>& f)
     hop_path_t em;// empty hop
     // span hop path matrix with empty hops
     m_exc.push_back(vector<vector<hop_path_t> >(m_exc.size()+1,vector<hop_path_t>(m_Nfl,em)));
-    for(size_t i=0;i<m_exc.size();++i)
+    for(size_t i=0;i<m_exc.size()-1;++i)
         m_exc[i].push_back(vector<hop_path_t>(m_Nfl,em));
     for(size_t flav=0;flav<m_Nfl;++flav){
         uint_vec_t state(m_Nfs[flav],0);

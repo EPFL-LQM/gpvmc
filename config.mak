@@ -1,8 +1,8 @@
 DEBUG=no
 PROFILE=no
-#OPT=-O0 -g3
+OPT=-O0 -g3
 #OPT=-O2 -ffast-math -mtune=generic
-OPT=-O3 -g3 -ffast-math -funroll-loops
+#OPT=-O3 -g3 -ffast-math -funroll-loops
 DEB=
 
 INSTALL_DIR=/home/bastien/vmc-run

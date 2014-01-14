@@ -5,7 +5,7 @@
 #include "defs.h"
 
 class WaveFunction_1;
-class SpinState;
+class LatticeState_1;
 
 /*! \brief scalar product \f$\langle \{R_i,\sigma_i\}|\Psi\rangle\f$
  *
@@ -43,62 +43,36 @@ class SpinState;
 
 class Amplitude_1 {
     public:
-        Amplitude_1(SpinState* sp, WaveFunction_1* wav);//!< Constructor
+        Amplitude_1(LatticeState_1* sp, WaveFunction_1* wav);//!< Constructor
         ~Amplitude_1();//!< Destructor
         /*! Initialize or reinitialize the matrices
          * Calculate determinant and inverse matrices.*/
         void Init();
-        //! update matrices after a spin swap.
-        void ColUpdate(const size_t& idup,
-                       const size_t& iddo);
-        /*! calculate the new determinant without updating
-         * the inverse matrices*/
-        BigComplex VirtColUpdate(const size_t& idup,
-                                 const size_t& fup,
-                                 const size_t& iddo,
-                                 const size_t& fdo) const;
-        //! update matrices after a hop in reciprocal space.
-        void RowUpdate(const size_t& idup,
-                       const size_t& iddo);
-        /*! calculate the new determinant without updating
-         * the inverse matrices*/
-        BigComplex VirtRowUpdate(const size_t& idup,
-                                 const size_t& rup,
-                                 const size_t& iddo,
-                                 const size_t& rdo) const;
         /*! gives the new determinants after the row update
          * specified by r(...) for all subsequent column updates
          * specified by k(...)*/
-        void VirtUpdate(const std::vector<hop_path_t> rhopup,
-                        const std::vector<hop_path_t> rhopdo,
-                        const std::vector<hop_path_t> khopup,
-                        const std::vector<hop_path_t> khopdo,
+        void VirtUpdate(
+                        const std::vector<std::vector<hop_path_t> >& rhop,
+                        const std::vector<std::vector<hop_path_t> >& khop,
                         BigComplex* qs) const;
 
-        void Update(const hop_path_t rhopup,
-                    const hop_path_t rhopdo,
-                    const hop_path_t khopup,
-                    const hop_path_t khopdo);
+        void Update(const std::vector<hop_path_t> rhop,
+                    const std::vector<hop_path_t> khop);
 
         //! returns \f$\langle \{R_i,\sigma\}|\Psi\rangle\f$.
         BigComplex Amp() const;
-        const SpinState* GetSpinState() const {return m_sp;}
-        SpinState* GetSpinState() {return m_sp;}
+        const LatticeState_1* GetLatticeState() const {return m_lst;}
+        LatticeState_1* GetLatticeState() {return m_lst;}
         const WaveFunction_1* GetWaveFunction() const {return m_wav;}
         WaveFunction_1* GetWaveFunction() {return m_wav;}
     private:
-        SpinState* m_sp;
+        LatticeState_1* m_lst;
         WaveFunction_1* m_wav;
-        std::complex<double>* m_matup;
-        std::complex<double>* m_matiup;
-        std::complex<double>* m_matdo;
-        std::complex<double>* m_matido;
+        std::vector<std::vector<std::complex<double> > > m_mat;
+        std::vector<std::vector<std::complex<double> > > m_mati;
         BigComplex m_amp;
         bool m_amp_ok;
-        size_t m_Nup; //!< size of the up (square) matrices.
-        size_t m_Ndo; //!< size of the down (square) matrices.
-
-
+        uint_vec_t m_N;
 };
 
 #endif//_AMPLITUDE_H

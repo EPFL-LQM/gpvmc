@@ -11,3 +11,5 @@ collect/MANIFEST
 collect/build
 collect/dist
 gitversion.h
+doc/
+gitversion.h

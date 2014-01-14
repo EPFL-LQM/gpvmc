@@ -10,12 +10,26 @@ State_1::State_1()
 State_1::~State_1()
 {}
 
-void State_1::Init(vector<uint_vec_t> st)
+void State_1::InitPart(const vector<uint_vec_t>& st)
 {
     m_part=st;
     for(size_t fl=0;fl<m_Nfl;++fl){
         for(size_t p=0;p<m_Npt[fl];++p){
             m_fock[fl][m_part[fl][p]]=p;
+        }
+    }
+}
+
+void State_1::InitFock(const vector<uint_vec_t>& st)
+{
+    for(size_t fl=0;fl<m_Nfl;++fl){
+        size_t pi(0);
+        for(size_t s=0;s<m_Nfs[fl];++s){
+            if(st[fl][s]<m_Npt[fl]){
+                m_fock[fl][s]=pi;
+                m_part[fl][pi]=s;
+                ++pi;
+            }
         }
     }
 }
@@ -30,12 +44,12 @@ const uint_vec_t& State_1::GetNpt() const
     return m_Npt;
 }
 
-const vector<uint_vec_t>& Getfs() const
+const vector<uint_vec_t>& State_1::Getfs() const
 {
     return m_fock;
 }
 
-const vector<uint_vec_t>& Getpt() const
+const vector<uint_vec_t>& State_1::Getpt() const
 {
     return m_part;
 }

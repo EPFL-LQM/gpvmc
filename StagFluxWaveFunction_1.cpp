@@ -8,11 +8,11 @@ using namespace std;
 
 StagFluxWaveFunction_1::StagFluxWaveFunction_1(size_t Lx, size_t Ly,
                                            size_t Nbyup, size_t Nbydo,
-                                           double phi, double neel, double *bc_phase)
+                                           double phi, double neel, vector<double> bc_phase)
     :m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*2]),
      m_fock2qn(new size_t[Lx*Ly*3]),
-     m_phi(phi), m_neel(neel)
+     m_phi(phi), m_neel(neel), m_bc_phase(bc_phase)
 {
     vector<size_t> Nby(2);
     vector<size_t> Nfs(2,Lx*Ly);
@@ -21,8 +21,6 @@ StagFluxWaveFunction_1::StagFluxWaveFunction_1(size_t Lx, size_t Ly,
     build_base(Nby,Nfs);
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    m_bc_phase[0]=bc_phase[0];
-    m_bc_phase[1]=bc_phase[1];
     size_t idx=0;
     for(size_t i=0;i<2*Lx*Ly;++i) m_qn2fock[i]=Lx*Ly;
     for(size_t kx=0;kx<Lx;++kx){

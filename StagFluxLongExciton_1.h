@@ -4,11 +4,11 @@
 class StagFluxLongExciton_1: public StagFluxWaveFunction_1
 {
     public:
-        StagFluxLongExciton_1(size_t L,
+        StagFluxLongExciton_1(size_t Lx,size_t Ly,
                               double phi, double neel,
-                              double *bc_phase, size_t *q);
+                              std::vector<double> bc_phase, std::vector<size_t> q);
         virtual ~StagFluxLongExciton_1();
     private:
-        size_t m_q[2];
+        std::vector<size_t> m_q;
 };
 #endif//_STAGFLUXLONGEXCITON_H

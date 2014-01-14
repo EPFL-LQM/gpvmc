@@ -1,6 +1,6 @@
 #include "Amplitude_1.h"
 #include "WaveFunction_1.h"
-#include "SpinState.h"
+#include "LatticeState_1.h"
 #include <limits>
 #include <complex>
 #include <string>
@@ -10,17 +10,14 @@
 #include "Timer.h"
 #include "blas_lapack.h"
 #include <mpi.h>
-#ifdef USEPARA
-#include <omp.h>
-#endif
 
 using namespace std;
 
 #define EPS -8
 #define DEPS 1e-8
 
-Amplitude_1::Amplitude_1(SpinState* sp, WaveFunction_1* wav)
-    :m_sp(sp), m_wav(wav),
+Amplitude_1::Amplitude_1(LatticeState_1* sp, WaveFunction_1* wav)
+    :m_lst(sp), m_wav(wav),
     m_matup(0),m_matiup(0),
     m_matdo(0),m_matido(0),
     m_amp(0), m_amp_ok(false), m_Nup(0), m_Ndo(0)

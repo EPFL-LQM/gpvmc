@@ -57,7 +57,7 @@ class WaveFunction_1 : public State_1{
         {
             return m_cache[s][f*m_Nfs[s]+r];
         }
-        size_t GetNExc() const {return m_exc[0].size();}
+        size_t GetNExc() const {return m_exc.size();}
 
         // Writes down the states and relative fermi signs to storage
         void Save(FileManager* fm);

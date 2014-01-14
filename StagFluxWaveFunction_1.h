@@ -20,7 +20,7 @@ class StagFluxWaveFunction_1 : public WaveFunction_1 {
         StagFluxWaveFunction_1(size_t Lx, size_t Ly,
                                size_t Nbyup, size_t Nbydo,
                                double phi, double neel,
-                               double *bc_phase);
+                               std::vector<double> bc_phase);
         virtual ~StagFluxWaveFunction_1();
         virtual std::complex<double>
             matrix_element(size_t f, size_t r, size_t up);
@@ -32,7 +32,7 @@ class StagFluxWaveFunction_1 : public WaveFunction_1 {
         size_t *m_fock2qn;
         double m_phi;
         double m_neel;
-        double m_bc_phase[2];
+        std::vector<double> m_bc_phase;
 
         /*! utility function to tell whether k is inside
          * or outside of the Magmetic Zone Boundary.*/

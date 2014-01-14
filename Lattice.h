@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <iostream>
 
 class Edge;
 
@@ -11,7 +12,7 @@ class Vertex {
     public:
         std::vector<double> pos;
         std::vector<Edge*> edges;
-        Vertex(std::vector<double> pos, size_t state=0)
+        Vertex(std::vector<double> pos)
             : pos(pos)
         {}
         ~Vertex()
@@ -37,8 +38,8 @@ class Edge {
 
 class Lattice {
     public:
-        std::vector<Vertex*> vertices;
-        std::vector<Edge*> edges;
+        std::vector<const Vertex*> vertices;
+        std::vector<const Edge*> edges;
         Lattice()
         {}
         ~Lattice()
@@ -47,6 +48,20 @@ class Lattice {
                 delete edges[e];
             for(size_t v=0;v<vertices.size();++v)
                 delete vertices[v];
+        }
+        const std::vector<const Vertex*>& GetVertices() const
+        {
+            return vertices;
+        }
+        const std::vector<const Edge*>& GetEdges() const
+        {
+            return edges;
+        }
+        virtual std::string str(std::vector<std::string> st) const =0;
+        friend std::ostream& operator<<(std::ostream& out,const Lattice& lat)
+        {
+            out<<(&lat)->str(std::vector<std::string>(lat.vertices.size()));
+            return out;
         }
 };
 

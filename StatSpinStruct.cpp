@@ -2,6 +2,7 @@
 #include "StatSpinStruct.h"
 #include "Stepper.h"
 #include "Jastrow.h"
+#include "SpinState.h"
 
 using namespace std;
 
