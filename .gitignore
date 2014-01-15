@@ -13,3 +13,4 @@ collect/dist
 gitversion.h
 doc/
 gitversion.h
+test*

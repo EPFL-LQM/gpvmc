@@ -78,6 +78,7 @@ class State_1 {
 
         const uint_vec_t& GetNfs() const;
         const uint_vec_t& GetNpt() const;
+        size_t GetNfl() const;
         const std::vector<uint_vec_t>& Getfs() const;
         const std::vector<uint_vec_t>& Getpt() const;
         int GetSign() const;

@@ -44,6 +44,11 @@ const uint_vec_t& State_1::GetNpt() const
     return m_Npt;
 }
 
+size_t State_1::GetNfl() const
+{
+    return m_Nfl;
+}
+
 const vector<uint_vec_t>& State_1::Getfs() const
 {
     return m_fock;

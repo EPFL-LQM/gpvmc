@@ -124,7 +124,7 @@ std::complex<double> StagFluxWaveFunction_1::Uk(double* k, bool up, size_t band)
 {
     double om=omega(k);
     std::complex<double> d=delta(k);
-    int sig=2*int(up)-1;
+    int sig=2*int(!up)-1;
     if(band==0){
         return sqrt(0.5*std::complex<double>(1+sig*m_neel/om));
     } else {
@@ -136,7 +136,7 @@ std::complex<double> StagFluxWaveFunction_1::Vk(double* k, bool up, size_t band)
 {
     double om=omega(k);
     std::complex<double> d=delta(k);
-    int sig=2*int(up)-1;
+    int sig=2*int(!up)-1;
     if(band==0){
         return d/abs(d)*sqrt(0.5*std::complex<double>(1-sig*m_neel/om));
     } else {

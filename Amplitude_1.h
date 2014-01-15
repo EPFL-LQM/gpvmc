@@ -51,13 +51,12 @@ class Amplitude_1 {
         /*! gives the new determinants after the row update
          * specified by r(...) for all subsequent column updates
          * specified by k(...)*/
-        void VirtUpdate(
-                        const std::vector<std::vector<hop_path_t> >& rhop,
+        void VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
                         const std::vector<std::vector<hop_path_t> >& khop,
-                        BigComplex* qs) const;
+                        vector<BigComplex>& qs) const;
 
-        void Update(const std::vector<hop_path_t> rhop,
-                    const std::vector<hop_path_t> khop);
+        void Update(const std::vector<hop_path_t>& rhop,
+                    const std::vector<hop_path_t>& khop);
 
         //! returns \f$\langle \{R_i,\sigma\}|\Psi\rangle\f$.
         BigComplex Amp() const;
@@ -73,6 +72,7 @@ class Amplitude_1 {
         BigComplex m_amp;
         bool m_amp_ok;
         uint_vec_t m_N;
+        size_t m_Nfl;
 };
 
 #endif//_AMPLITUDE_H
