@@ -71,6 +71,10 @@ class WaveFunction_1 : public State_1{
          */
         void AddState(const std::vector<uint_vec_t>& f);
 
+        /*! \brief hop to khop'th state
+         */
+        void Hop(size_t khop);
+
         const std::vector<std::vector<hop_path_t> >& GetHops() const;
 
         const std::vector<hop_path_t>& GetHop(size_t k) const;

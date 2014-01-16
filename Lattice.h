@@ -11,9 +11,10 @@ class Edge;
 class Vertex {
     public:
         std::vector<double> pos;
+        size_t idx;
         std::vector<Edge*> edges;
-        Vertex(std::vector<double> pos)
-            : pos(pos)
+        Vertex(const std::vector<double>& pos, size_t idx)
+            : pos(pos), idx(idx)
         {}
         ~Vertex()
         {}
@@ -32,6 +33,10 @@ class Edge {
             first->edges.push_back(this);
             second->edges.push_back(this);
         }
+        const Vertex* GetOther(const Vertex* v) const
+        {
+            return v==first? second : first;
+        }
         ~Edge()
         {}
 };
@@ -48,6 +53,10 @@ class Lattice {
                 delete edges[e];
             for(size_t v=0;v<vertices.size();++v)
                 delete vertices[v];
+        }
+        size_t GetNv() const
+        {
+            return vertices.size();
         }
         const std::vector<const Vertex*>& GetVertices() const
         {

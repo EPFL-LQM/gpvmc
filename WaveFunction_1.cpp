@@ -65,6 +65,12 @@ void WaveFunction_1::AddState(const vector<uint_vec_t>& f)
     }
 }
 
+void WaveFunction_1::Hop(size_t khop)
+{
+    State_1::Hop(m_exc[m_c_exc][khop]);
+    m_c_exc=khop;
+}
+
 const vector<vector<hop_path_t> >& WaveFunction_1::GetHops() const
 {
     return m_exc[m_c_exc];

@@ -15,11 +15,12 @@ class LatticeState_1: public State_1{
                        const uint_vec_t& Npt,
                        const uint_vec_t& Nifs);
         size_t GetNsites() const;
+        const uint_vec_t& GetNifs() const;
         const Lattice* GetLattice() const;
         /*! \brief st[f][:] lists the occupied internal states at vertex v.
          */
         void GetLatOc(size_t v,
-                      std::vector<uint_vec_t>& st);
+                      std::vector<uint_vec_t>& st) const;
 
         friend std::ostream& operator<<(std::ostream& out,const LatticeState_1& lst);
 };

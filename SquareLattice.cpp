@@ -14,7 +14,7 @@ SquareLattice::SquareLattice(size_t Lx, size_t Ly)
     vector<Vertex*> non_const;
     for(size_t y=0;y<Ly;++y){
         for(size_t x=0;x<Lx;++x){
-            non_const.push_back(new Vertex({ double(x), double(y) }));
+            non_const.push_back(new Vertex({ double(x), double(y) },non_const.size()));
             vertices.push_back(non_const.back());
         }
     }
@@ -34,7 +34,7 @@ string SquareLattice::str(std::vector<string> st) const
     ostringstream out;
     for(size_t y=0;y<m_Ly;++y){
         for(size_t x=0;x<m_Lx;++x){
-            out<<setfill('#')<<setw(3)<<st[y*m_Lx+x];
+            out<<setfill('.')<<setw(3)<<st[y*m_Lx+x];
             if(x!=m_Lx-1) out<<'-';
         }
         if(y!=m_Ly-1){
