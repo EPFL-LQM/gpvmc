@@ -9,7 +9,7 @@
 #include "FileManager.h"
 #include "RanGen.h"
 #include "Stepper_1.h"
-#include "Quantity.h"
+#include "Quantity_1.h"
 #include <unistd.h>
 
 using namespace std;
@@ -46,8 +46,9 @@ void MetroMC_1::Walk(const size_t& len, size_t meas)
 {
     double rwtimei, gtimei(0);
     m_gtimer=0;
-    if(meas!=0) for(size_t q=0;q<m_quantity.size();++q)
-        m_quantity[q]->init();
+    if(meas!=0)
+        for(size_t q=0;q<m_quantity.size();++q)
+            m_quantity[q]->init();
     for(size_t s=0;s<len;++s){
 #ifdef USEPARA
         rwtimei=omp_get_wtime();
@@ -61,7 +62,7 @@ void MetroMC_1::Walk(const size_t& len, size_t meas)
 #else
         m_rwtimer+=(clock()-rwtimei)/double(CLOCKS_PER_SEC);
 #endif
-        if(meas && s%meas==0){
+        if(meas && (meas==1 || s%meas==0)){
             for(size_t q=0; q<m_quantity.size();++q)
                m_quantity[q]->measure(); 
         }

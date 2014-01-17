@@ -10,11 +10,12 @@ class Edge;
 
 class Vertex {
     public:
-        std::vector<double> pos;
         size_t idx;
+        std::vector<int> uc; //!< Unit cell coordinates
+        std::vector<double> pos; //!< Position within unit cell
         std::vector<Edge*> edges;
-        Vertex(const std::vector<double>& pos, size_t idx)
-            : pos(pos), idx(idx)
+        Vertex(size_t idx, const std::vector<int>& uc, const std::vector<double>& pos)
+            : idx(idx), uc(uc), pos(pos) 
         {}
         ~Vertex()
         {}

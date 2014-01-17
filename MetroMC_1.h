@@ -4,7 +4,7 @@
 #include <vector>
 #include "BigDouble.h"
 
-class Quantity;
+class Quantity_1;
 class Stepper_1;
 class FileManager;
 
@@ -19,14 +19,14 @@ class MetroMC_1 {
         size_t m_rejection;
         Stepper_1* m_stepper;
         FileManager* m_fm;
-        std::vector<Quantity*> m_quantity;
+        std::vector<Quantity_1*> m_quantity;
     public:
         //! \brief The constructor takes the stepper kernel. 
         MetroMC_1(Stepper_1* step, FileManager* fm);
         ~MetroMC_1() {}
-        void AddQuantity(Quantity* quantity) {m_quantity.push_back(quantity);}
-        std::vector<Quantity*> GetQuantities() {return m_quantity;}
-        const std::vector<Quantity*> GetQuantities() const {return m_quantity;}
+        void AddQuantity(Quantity_1* quantity) {m_quantity.push_back(quantity);}
+        std::vector<Quantity_1*>& GetQuantities() {return m_quantity;}
+        const std::vector<Quantity_1*>& GetQuantities() const {return m_quantity;}
         double GetTimer() {return m_rwtimer;}
         /*! \brief Perform a random.
          * Perform a random walk of len steps and measure 
