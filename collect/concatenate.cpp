@@ -32,9 +32,6 @@ int main(int argc, char *argv[]){
     if(!success) return 1;
     success=open_files(infile,outfile,fin,fout);
     if(!success) return 2;
-    for(size_t fi=0;fi<infile.size();++fi)
-        cout<<infile[fi]<<endl;
-    cout<<Nsamp<<endl;
     vector<int> statsin,statsout;
     vector<vector<int> > args;
     vector<hid_t> idin;
@@ -174,11 +171,28 @@ herr_t copy_att_cb(hid_t loc, const char* attr_name, const H5A_info_t* ainfo, vo
     hid_t attr=H5Aopen(loc,attr_name,H5P_DEFAULT);
     hid_t type=H5Aget_type(attr);
     hid_t space=H5Aget_space(attr);
+    if(attr<0 || type<0 || space<0){
+        cerr<<"Error opening attribute \""<<attr_name<<"\"."<<endl;
+        return -1;
+    }
     hid_t oattr=H5Acreate(((struct attr_op_data*)op_data)->oid,attr_name,type,space,H5P_DEFAULT,H5P_DEFAULT);
+    if(oattr<0){
+        cerr<<"Error creating attribute \""<<attr_name<<"\"."<<endl;
+        return -1;
+    }
     hsize_t size=H5Aget_storage_size(attr);
     char* buf=new char[size];
-    H5Aread(attr,type,buf);
-    H5Awrite(oattr,type,buf);
+    herr_t status;
+    status=H5Aread(attr,type,buf);
+    if(status<0){
+        cerr<<"Error reading attribute \""<<attr_name<<"\"."<<endl;
+        return -1;
+    }
+    status=H5Awrite(oattr,type,buf);
+    if(status<0){
+        cerr<<"Error writing attribute \""<<attr_name<<"\"."<<endl;
+        return -1;
+    }
     delete [] buf;
     H5Aclose(attr);
     H5Aclose(oattr);
