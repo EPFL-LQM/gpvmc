@@ -163,7 +163,7 @@ void copy_attributes(hid_t iid,hid_t oid)
 {
     struct attr_op_data op;
     op.oid=oid;
-    H5Aiterate(iid,H5_INDEX_NAME,H5_ITER_NATIVE,NULL,copy_att_cb,(void*)&op);
+    H5Aiterate2(iid,H5_INDEX_NAME,H5_ITER_NATIVE,NULL,copy_att_cb,(void*)&op);
 }
 
 herr_t copy_att_cb(hid_t loc, const char* attr_name, const H5A_info_t* ainfo, void* op_data)
@@ -175,7 +175,7 @@ herr_t copy_att_cb(hid_t loc, const char* attr_name, const H5A_info_t* ainfo, vo
         cerr<<"Error opening attribute \""<<attr_name<<"\"."<<endl;
         return -1;
     }
-    hid_t oattr=H5Acreate(((struct attr_op_data*)op_data)->oid,attr_name,type,space,H5P_DEFAULT,H5P_DEFAULT);
+    hid_t oattr=H5Acreate2(((struct attr_op_data*)op_data)->oid,attr_name,type,space,H5P_DEFAULT,H5P_DEFAULT);
     if(oattr<0){
         cerr<<"Error creating attribute \""<<attr_name<<"\"."<<endl;
         return -1;
@@ -203,12 +203,12 @@ herr_t copy_att_cb(hid_t loc, const char* attr_name, const H5A_info_t* ainfo, vo
 
 void concatenate(const vector<hid_t> idin, const vector<string>& pathin, const vector<int>& statsout, const vector<vector<int > > args, hid_t fout)
 {
-    hid_t g=H5Gcreate(fout,"/rank-1",H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+    hid_t g=H5Gcreate2(fout,"/rank-1",H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     for(size_t s=0;s<args.size();++s){
         string pathout=string("/rank-1/data-")+to_string(s);
         hid_t din,dout,space,type;
         hsize_t dims[2];
-        din=H5Dopen(idin[args[s][0]],pathin[args[s][0]].c_str(),H5P_DEFAULT);
+        din=H5Dopen2(idin[args[s][0]],pathin[args[s][0]].c_str(),H5P_DEFAULT);
         space=H5Dget_space(din);
         H5Sget_simple_extent_dims(space,dims,NULL);
         vector<double> buf(dims[0]*dims[1]),conc(dims[0]*dims[1]);
@@ -217,13 +217,13 @@ void concatenate(const vector<hid_t> idin, const vector<string>& pathin, const v
         conc=buf;
         H5Dclose(din);
         for(size_t si=1;si<args[s].size();++si){
-            din=H5Dopen(idin[args[s][si]],pathin[args[s][si]].c_str(),H5P_DEFAULT);
+            din=H5Dopen2(idin[args[s][si]],pathin[args[s][si]].c_str(),H5P_DEFAULT);
             H5Dread(din,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,buf.data());
             for(size_t d=0;d<buf.size();++d) conc[d]+=buf[d];
             H5Dclose(din);
         }
         for(size_t d=0;d<conc.size();++d) conc[d]/=args[s].size();
-        dout=H5Dcreate(fout,pathout.c_str(),type,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        dout=H5Dcreate2(fout,pathout.c_str(),type,space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
         H5Dwrite(dout,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,conc.data());
         H5Dclose(dout);
         H5LTset_attribute_int(fout,pathout.c_str(),"statistics",&statsout[s],1);
