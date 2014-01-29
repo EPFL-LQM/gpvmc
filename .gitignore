@@ -4,6 +4,7 @@
 core
 .runfile
 local.mak
+config.mak
 *.swp
 *.pyc
 vmc
@@ -12,5 +13,5 @@ collect/build
 collect/dist
 gitversion.h
 doc/
-gitversion.h
 test*
+tags

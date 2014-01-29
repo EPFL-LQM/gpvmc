@@ -70,7 +70,7 @@ int WaveFunction::hop_sign(const hop_path_t& hopup,
             std::memcpy(sup,m_fockup,m_Lx*m_Ly*sizeof(size_t));
             sup[m_fsup[hopup[0].first]]=m_Nfsup;
             sup[hopup[0].second]=hopup[0].first;
-            for(size_t h=0;h<hopup.size();++h){
+            for(size_t h=1;h<hopup.size();++h){
                 mn=min(hopup[h].second,m_fsup[hopup[h].first])+1;
                 mx=max(hopup[h].second,m_fsup[hopup[h].first]);
                 for(size_t s=mn;s<mx;++s)
@@ -91,7 +91,7 @@ int WaveFunction::hop_sign(const hop_path_t& hopup,
             std::memcpy(sdo,m_fockdo,m_Lx*m_Ly*sizeof(size_t));
             sdo[m_fsdo[hopdo[0].first]]=m_Nfsdo;
             sdo[hopdo[0].second]=hopdo[0].first;
-            for(size_t h=0;h<hopdo.size();++h){
+            for(size_t h=1;h<hopdo.size();++h){
                 mn=min(hopdo[h].second,m_fsdo[hopdo[h].first])+1;
                 mx=max(hopdo[h].second,m_fsdo[hopdo[h].first]);
                 for(size_t s=mn;s<mx;++s)
