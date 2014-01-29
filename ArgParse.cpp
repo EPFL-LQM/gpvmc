@@ -1,5 +1,6 @@
 #include "ArgParse.h"
 #include <stdexcept>
+#include <cstring>
 #ifdef USEMPI
 #include <mpi.h>
 #endif
