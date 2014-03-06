@@ -25,12 +25,10 @@ class Edge {
     public:
         Vertex* first;
         Vertex* second;
-        std::map<std::string,double> prop;
-        Edge(Vertex* first, Vertex* second, std::string propname="", double prop=0)
-            : first(first), second(second)
+        double Jprop;
+        Edge(Vertex* first, Vertex* second, double Jprop=1)
+            : first(first), second(second), Jprop(Jprop)
         {
-            if(propname.size())
-                this->prop[propname]=prop;
             first->edges.push_back(this);
             second->edges.push_back(this);
         }
@@ -43,11 +41,14 @@ class Edge {
 };
 
 class Lattice {
-    public:
+    protected:
         std::vector<const Vertex*> vertices;
         std::vector<const Edge*> edges;
-        Lattice()
-        {}
+        size_t m_Lx; //!< number of unit cells in x direction
+        size_t m_Ly; //!< number of unit cells in y direction
+    public:
+        Lattice(size_t Lx,size_t Ly)
+            :m_Lx(Lx), m_Ly(Ly) {}
         ~Lattice()
         {
             for(size_t e=0;e<edges.size();++e)
@@ -58,6 +59,14 @@ class Lattice {
         size_t GetNv() const
         {
             return vertices.size();
+        }
+        size_t GetLx() const
+        {
+            return m_Lx;
+        }
+        size_t GetLy() const
+        {
+            return m_Ly;
         }
         const std::vector<const Vertex*>& GetVertices() const
         {

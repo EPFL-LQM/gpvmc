@@ -34,7 +34,7 @@ class MetroMC_1 {
          * If meas==0, no measurement is done.
          */
         void Walk(const size_t& len, size_t meas);
-        /*! \bief Perform a step of the random walk.
+        /*! \brief Perform a step of the random walk.
          */
         void Step(bool meas);
         /*! \brief Return the proportion of rejected states.

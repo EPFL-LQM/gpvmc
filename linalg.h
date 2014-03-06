@@ -32,11 +32,11 @@ namespace linalg
      * @param[in] C The set(s) of columns to replace in A, size(C)=(N,rc,nc).
      * @param[in] ci The indices of the columns to replace in A, size(ci)=(nc,rc).
      * @param[in] rc The number of columns to replace at ones.
-     * @param[in] nc The number of sets of columns to successively replace in A (see below for in-depth explanation).
+     * @param[in] Nc The number of sets of columns to successively replace in A (see below for in-depth explanation).
      * @param[in] R The set(s) of rows to replace in A, size(R)=(nr,rr,N).
      * @param[in] ri The indices of the rows to replace in A, size(ri)=(nr,rr).
      * @param[in] rr The number of rows to replace at ones.
-     * @param[in] nr The number of sets of rows to successively replace in A.
+     * @param[in] Nr The number of sets of rows to successively replace in A.
      * @param[out] dets the updated determinants for each sets of columns/rows, size(dets)=max(nr,nc).
      *
      * An determinant update is calculated for a replacement of rr rows and rc columns at once.

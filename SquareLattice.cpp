@@ -7,9 +7,9 @@
 using namespace std;
 
 SquareLattice::SquareLattice(size_t Lx, size_t Ly)
-    : m_Lx(Lx), m_Ly(Ly)
+    :Lattice(Lx,Ly)
 {
-    // By convention we store the lattice sites raw-wise
+    // By convention we store the lattice sites row-wise
     // create vertices
     vector<Vertex*> non_const;
     for(size_t y=0;y<Ly;++y){
