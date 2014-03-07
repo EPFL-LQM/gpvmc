@@ -8,6 +8,7 @@ config.mak
 *.swp
 *.pyc
 vmc
+vmc_1
 collect/MANIFEST
 collect/build
 collect/dist

@@ -17,6 +17,9 @@ class LatticeState_1: public State_1{
         size_t GetNsites() const;
         const uint_vec_t& GetNifs() const;
         const Lattice* GetLattice() const;
+        /*! \brief Initialize at random the state
+         */
+        void RanInit();
         /*! \brief st[f][:] lists the occupied internal states at vertex v.
          */
         void GetLatOc(size_t v,

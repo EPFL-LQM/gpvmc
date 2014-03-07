@@ -16,7 +16,7 @@ class StagMagn_1: public ScalarQuantity_1 {
         {
             Quantity_1::measure();
             const LatticeState_1* st=m_stepper->GetAmp()->GetLatticeState();
-            double msz(0);
+            complex<double> msz(0);
             if((st->GetNfl()==1 && st->GetNifs()[0]==2) ||
                     (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]))
             {
@@ -38,7 +38,7 @@ class StagMagn_1: public ScalarQuantity_1 {
                         if(vst[0][0]==0)
                             up=1;
                     }
-                    msz+=double(2*up-1)*ph;
+                    msz+=ph*double(2*up-1);
                 }
                 msz/=st->GetNsites();
             }
