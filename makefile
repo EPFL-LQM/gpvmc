@@ -1,29 +1,29 @@
 include config.mak
 
-BIN=vmc_1 test_1
-SRC=Amplitude_1.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction_1.cpp linalg.cpp MetroMC_1.cpp Quantity_1.cpp StagFluxWaveFunction_1.cpp StagFluxTransExciton_1.cpp ArgParse.cpp LatticeStepper_1.cpp StagFluxLongExciton_1.cpp State_1.cpp LatticeState_1.cpp SquareLattice.cpp VectorQuantity_1.cpp ScalarQuantity_1.cpp MatrixQuantity_1.cpp StatSpinStruct_1.cpp ProjHeis_1.cpp defs.cpp
-HDR=MetroMC_1.h Amplitude_1.h Quantity_1.h linalg.h RanGen.h Timer.h WaveFunction_1.h FileManager.h BigComplex.h BigDouble.h StagFluxWaveFunction_1.h StagFluxGroundState_1.h StagFluxTransExciton_1.h ArgParse.h LatticeStepper_1.h StagFluxLongExciton_1.h State_1.h LatticeState_1.h Lattice.h SquareLattice.h OverlapTrack_1.h StagMagnTrack_1.h VectorQuantity_1.h ScalarQuantity_1.h MatrixQuantity_1.h StatSpinStruct_1.h ProjHeis_1.h
+BIN=vmc test
+SRC=Amplitude.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp ArgParse.cpp LatticeStepper.cpp StagFluxLongExciton.cpp State.cpp LatticeState.cpp SquareLattice.cpp VectorQuantity.cpp ScalarQuantity.cpp MatrixQuantity.cpp StatSpinStruct.cpp ProjHeis.cpp defs.cpp StagMagn.cpp StagMagnTrack.cpp
+HDR=MetroMC.h Amplitude.h Quantity.h linalg.h RanGen.h Timer.h WaveFunction.h FileManager.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h ArgParse.h LatticeStepper.h StagFluxLongExciton.h State.h LatticeState.h Lattice.h SquareLattice.h OverlapTrack.h StagMagnTrack.h VectorQuantity.h ScalarQuantity.h MatrixQuantity.h StatSpinStruct.h ProjHeis.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
 
 vmc.o: $(HDR) gitversion.h
-vmc_1.o: $(HDR) gitversion.h
-test_1.o: $(HDR)
+vmc.o: $(HDR) gitversion.h
+test.o: $(HDR)
 test.o: $(HDR)
 zdotu_sub.o: zdotu_sub.f
 	$(OFORT) -c -o $@ $< -O3
 defs.o: defs.h
-ProjHeis_1.o: ProjHeis_1.h Quantity_1.h VectorQuantity_1.h MatrixQuantity_1.h LatticeState_1.h Timer.h WaveFunction_1.h Stepper_1.h Amplitude_1.h BigComplex.h BigDouble.h
-ScalarQuantity_1.o: Quantity_1.h Timer.h
-VectorQuantity_1.o: Quantity_1.h Timer.h
-MatrixQuantity_1.o: Quantity_1.h VectorQuantity_1.h Timer.h
-StatSpinStruct_1.o: Quantity_1.h VectorQuantity_1.h MatrixQuantity_1.h Stepper_1.h Amplitude_1.h LatticeState_1.h Lattice.h
+ProjHeis.o: ProjHeis.h Quantity.h VectorQuantity.h MatrixQuantity.h LatticeState.h Timer.h WaveFunction.h Stepper.h Amplitude.h BigComplex.h BigDouble.h
+ScalarQuantity.o: Quantity.h Timer.h
+VectorQuantity.o: Quantity.h Timer.h
+MatrixQuantity.o: Quantity.h VectorQuantity.h Timer.h
+StatSpinStruct.o: Quantity.h VectorQuantity.h MatrixQuantity.h Stepper.h Amplitude.h LatticeState.h Lattice.h
 linalg.o: linalg.h BigComplex.h BigDouble.h blas_lapack.h
 RanGen.o: RanGen.h Timer.h
-StagFluxWaveFunction_1.o: StagFluxWaveFunction_1.h WaveFunction_1.h linalg.h
-StagFluxTransExciton_1.o: StagFluxTransExciton_1.h StagFluxWaveFunction_1.h linalg.h
-StagFluxLongExciton_1.o: StagFluxLongExciton_1.h StagFluxWaveFunction_1.h linalg.h
+StagFluxWaveFunction.o: StagFluxWaveFunction.h WaveFunction.h linalg.h
+StagFluxTransExciton.o: StagFluxTransExciton.h StagFluxWaveFunction.h linalg.h
+StagFluxLongExciton.o: StagFluxLongExciton.h StagFluxWaveFunction.h linalg.h
 ArgParse.o: ArgParse.h
 SquareLattice.o: Lattice.h
 
@@ -31,10 +31,10 @@ SquareLattice.o: Lattice.h
 gitversion.h: gitversion.h.tpl
 	sh check_gitversion.sh
 
-vmc_1: vmc_1.o $(OBJ)
+vmc: vmc.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)
 
-test_1: test_1.o $(OBJ)
+test: test.o $(OBJ)
 	$(OCXX) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cpp makefile config.mak local.mak
