@@ -3,8 +3,6 @@
 #include "Stepper_1.h"
 #include "Amplitude_1.h"
 #include "LatticeState_1.h"
-#include "Jastrow.h"
-#include "SpinState.h"
 
 using namespace std;
 
