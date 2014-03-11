@@ -25,11 +25,11 @@
 # channel=groundstate (groundstate calc)
 # channel=long (longitudinal excitation subspace calc)
 # channel=trans (transverse excitation subspace calc)
-channel=trans
+channel=groundstate
 # results in 10 samples of the quantities
-samples=10
+samples=1
 # each made of 10 saves (i.e. written on permamnent storage during calculation)
-samples_saves=10
+samples_saves=1
 # each done after a stat of 1000 measurements.
 samples_saves_stat=1000
 # number of random walk steps between two measurements.
@@ -39,7 +39,7 @@ meas_interv=0
 L=8
 # Some variational parameters
 phi=0.1
-neel=0.055
+neel=0.0
 jastrow=0
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)
 prefix=-1

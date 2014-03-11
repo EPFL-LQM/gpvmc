@@ -18,7 +18,7 @@ class StagMagn_1: public ScalarQuantity_1 {
             const LatticeState_1* st=m_stepper->GetAmp()->GetLatticeState();
             complex<double> msz(0);
             if((st->GetNfl()==1 && st->GetNifs()[0]==2) ||
-                    (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]))
+                    (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]==1))
             {
                 const Lattice* lat=st->GetLattice();
                 for(size_t v=0;v<st->GetNsites();++v){
@@ -26,8 +26,8 @@ class StagMagn_1: public ScalarQuantity_1 {
                             complex<double>(0,1)*M_PI*(
                                 lat->GetVertices()[v]->uc[0]
                                 +lat->GetVertices()[v]->pos[0]
-                                +lat->GetVertices()[v]->uc[0]
-                                +lat->GetVertices()[v]->pos[0]));
+                                +lat->GetVertices()[v]->uc[1]
+                                +lat->GetVertices()[v]->pos[1]));
                     vector<uint_vec_t> vst;
                     st->GetLatOc(v,vst);
                     int up=0;

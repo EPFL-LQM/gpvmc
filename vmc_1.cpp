@@ -40,6 +40,14 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
 #endif
+    //int wait=0;
+    //if(comm_rank!=0){
+    //    cout<<getpid()<<endl;
+    //    wait=1;
+    //    while(wait)
+    //        sleep(5);
+    //}
+    //MPI_Barrier(MPI_COMM_WORLD);
     signal(SIGTERM,FileManager::EmergencyClose);
     Timer::tic("main");
 

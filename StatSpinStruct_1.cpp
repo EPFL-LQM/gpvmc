@@ -28,7 +28,7 @@ StatSpinStruct_1::StatSpinStruct_1(const Stepper_1* stepper,
     for(size_t q=0;q<m_qs.size()/2;++q){
         for(size_t x=0;x<Lx;++x){
             for(size_t y=0;y<Ly;++y){
-                double phase=2*M_PI*double(m_qs[2*q]*x)/Lx+double(m_qs[2*q+1]*y)/Ly;
+                double phase=2*M_PI*(double(m_qs[2*q]*x)/Lx+double(m_qs[2*q+1]*y)/Ly);
                 m_ph[(q*Lx+x)*Ly+y]=1.0/sqrt(Lx*Ly)*(cos(phase)+I*sin(phase));
             }
         }
@@ -57,7 +57,7 @@ void StatSpinStruct_1::measure()
     vector<uint_vec_t> sti,stj;
     uint_vec_t Nifs=st->GetNifs();
     for(size_t vi=0;vi<st->GetNsites();++vi){
-        for(size_t vj=0;vj<st->GetNsites();++vj){
+        for(size_t vj=vi;vj<st->GetNsites();++vj){
             st->GetLatOc(vi,sti);
             st->GetLatOc(vj,stj);
             const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
@@ -85,26 +85,37 @@ void StatSpinStruct_1::measure()
     for(size_t q=0;q<m_qs.size()/2;++q){
         size_t sw=0;
         for(size_t vi=0;vi<st->GetNsites();++vi){
-            for(size_t vj=0;vj<st->GetNsites();++vj){
+            for(size_t vj=vi;vj<st->GetNsites();++vj){
                 st->GetLatOc(vi,sti);
                 st->GetLatOc(vj,stj);
                 const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
                 const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
                 if(isup(sti)){
                     if(isup(stj)){
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                        0.25*
-                                        m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
                         if(vi==vj){
                             sqtranspm[q]+=norm(amp)/double(Lx*Ly);
+                            sqlong[q]+=0.25/double(Lx*Ly);
+                        } else {
+                            sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                            0.25*
+                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                            sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                            0.25*
+                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         }
                     } else {
                         sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                         (-0.25)*
                                         m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                        sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                        (-0.25)*
+                                        m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         sqtransmp[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                            conj(amp)*swamps[sw]*
                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                        sqtranspm[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                           amp*conj(swamps[sw])*
+                                           m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         ++sw;
                     }
                 } else {
@@ -112,16 +123,27 @@ void StatSpinStruct_1::measure()
                         sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                         (-0.25)*
                                         m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                        sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                        (-0.25)*
+                                        m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         sqtranspm[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                            conj(amp)*swamps[sw]*
                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                        sqtransmp[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                           amp*conj(swamps[sw])*
+                                           m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         ++sw;
                     } else {
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                        0.25*
-                                        m_ph[(q*Lx+vxi->uc[0])*Ly+vxj->uc[1]];
                         if(vi==vj){
                             sqtransmp[q]+=norm(amp)/double(Lx*Ly);
+                            sqlong[q]+=0.25/double(Lx*Ly);
+                        } else {
+                            sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                            0.25*
+                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                            sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
+                                            0.25*
+                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         }
                     }
                 }

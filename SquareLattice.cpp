@@ -14,7 +14,7 @@ SquareLattice::SquareLattice(size_t Lx, size_t Ly)
     vector<Vertex*> non_const;
     for(size_t y=0;y<Ly;++y){
         for(size_t x=0;x<Lx;++x){
-            non_const.push_back(new Vertex(non_const.size(),{ int(x), int(y) },{ double(x), double(y) }));
+            non_const.push_back(new Vertex(non_const.size(),{ int(x), int(y) },{ double(0), double(0) }));
             vertices.push_back(non_const.back());
         }
     }

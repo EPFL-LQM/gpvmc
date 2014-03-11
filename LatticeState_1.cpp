@@ -36,6 +36,8 @@ void LatticeState_1::RanInit()
     vector<uint_vec_t> fst(m_Nfl);
     for(size_t f=0; f<m_Nfl;++f){
         fst[f]=uint_vec_t(m_Nfs[f],m_Npt[f]);
+    }
+    for(size_t f=0; f<m_Nfl;++f){
         size_t np=0;
         while(np!=m_Npt[f]){
             size_t v=size_t(RanGen::uniform()*m_lattice->GetNv());
@@ -60,6 +62,7 @@ void LatticeState_1::RanInit()
 void LatticeState_1::GetLatOc(size_t v,
                               vector<uint_vec_t>& st) const
 {
+    st.clear();
     st.resize(m_Nfl);
     for(size_t fl=0;fl<m_Nfl;++fl){
         for(size_t i=0;i<m_Nifs[fl];++i){
