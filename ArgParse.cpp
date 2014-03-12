@@ -130,6 +130,7 @@ void ArgParse::SetupParams(std::map<std::string,bool>& map_bool,
             itst++;
         }
     }
+#ifdef USEMPI
     map<string,bool>::iterator itb=map_bool.begin();
     while(itb!=map_bool.end()){
         MPI_Bcast(&(itb->second),sizeof(bool),MPI_BYTE,0,MPI_COMM_WORLD);
@@ -164,4 +165,5 @@ void ArgParse::SetupParams(std::map<std::string,bool>& map_bool,
         delete [] c_str;
         itst++;
     }
+#endif//USEMPI
 }

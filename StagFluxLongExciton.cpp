@@ -1,6 +1,5 @@
 #include "StagFluxLongExciton.h"
 #include "linalg.h"
-#include <mpi.h>
 
 using namespace std;
 
@@ -15,8 +14,6 @@ StagFluxLongExciton::StagFluxLongExciton(size_t Lx,
                             phi,neel,bc_phase),
      m_q(q)
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     for(size_t fe=0;fe<Lx*Ly/2;++fe){
         size_t kx=m_fock2qn[3*(2*fe+1)];
         size_t ky=m_fock2qn[3*(2*fe+1)+1];

@@ -9,7 +9,9 @@
 #include "linalg.h"
 #include "Timer.h"
 #include "blas_lapack.h"
+#ifdef USEMPI
 #include <mpi.h>
+#endif
 
 using namespace std;
 

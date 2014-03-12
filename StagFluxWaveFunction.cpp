@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
-#include <mpi.h>
 
 using namespace std;
 
@@ -19,8 +18,6 @@ StagFluxWaveFunction::StagFluxWaveFunction(size_t Lx, size_t Ly,
     Nby[0]=Nbyup;
     Nby[1]=Nbydo;
     build_base(Nby,Nfs);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     size_t idx=0;
     for(size_t i=0;i<2*Lx*Ly;++i) m_qn2fock[i]=Lx*Ly;
     for(size_t kx=0;kx<Lx;++kx){
