@@ -1,7 +1,7 @@
 include config.mak
 
 BIN=vmc test
-SRC=Amplitude.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp ArgParse.cpp LatticeStepper.cpp StagFluxLongExciton.cpp State.cpp LatticeState.cpp SquareLattice.cpp VectorQuantity.cpp ScalarQuantity.cpp MatrixQuantity.cpp StatSpinStruct.cpp ProjHeis.cpp defs.cpp StagMagn.cpp StagMagnTrack.cpp
+SRC=Amplitude.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp ArgParse.cpp LatticeStepper.cpp StagFluxLongExciton.cpp State.cpp LatticeState.cpp SquareLattice.cpp VectorQuantity.cpp ScalarQuantity.cpp MatrixQuantity.cpp StatSpinStruct.cpp ProjHeis.cpp defs.cpp StagMagn.cpp StagMagnTrack.cpp OverlapTrack.cpp StagFluxGroundState.cpp
 HDR=MetroMC.h Amplitude.h Quantity.h linalg.h RanGen.h Timer.h WaveFunction.h FileManager.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h ArgParse.h LatticeStepper.h StagFluxLongExciton.h State.h LatticeState.h Lattice.h SquareLattice.h OverlapTrack.h StagMagnTrack.h VectorQuantity.h ScalarQuantity.h MatrixQuantity.h StatSpinStruct.h ProjHeis.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 

@@ -16,3 +16,4 @@ gitversion.h
 doc/
 test*
 tags
+build/
