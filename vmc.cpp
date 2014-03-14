@@ -9,10 +9,14 @@
 #include "StagFluxTransExciton.h"
 #include "StagFluxLongExciton.h"
 #include "StagFluxGroundState.h"
+#include "SFpNpHxWaveFunction.h"
+#include "SFpNpHxGroundState.h"
+#include "SFpNpHxExciton.h"
 #include "LatticeStepper.h"
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
 #include "StagMagn.h"
+#include "Magnetization.h"
 #include "OverlapTrack.h"
 #include "StagMagnTrack.h"
 #include "Amplitude.h"
@@ -47,7 +51,7 @@ int main(int argc, char* argv[])
     //    while(wait)
     //        sleep(5);
     //}
-    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     signal(SIGTERM,FileManager::EmergencyClose);
     Timer::tic("main");
 
@@ -70,14 +74,18 @@ int main(int argc, char* argv[])
     inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
     domap["neel"]=0.0;
+    domap["hx"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
+    domap["Bx"]=0.0;
     bomap["track_stagmagn"]=false;
     bomap["track_overlap"]=false;
     bomap["meas_projheis"]=true;
     bomap["meas_stagmagn"]=true;
     bomap["meas_statspinstruct"]=true;
+    bomap["meas_magnetization"]=false;
+    bomap["Sztot_conserved"]=true;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
@@ -120,10 +128,14 @@ int main(int argc, char* argv[])
         Q[1]=simap["qy"];
         SquareLattice slat(L,L);
         LatticeState* sp(0);
-        if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
-            sp=new LatticeState(&slat,{L*L/2,L*L/2},{1,1});
-        } else if(stmap["channel"]=="trans"){
-            sp=new LatticeState(&slat,{L*L/2+1,L*L/2-1},{1,1});
+        if(bomap["Sztot_conserved"]){
+            if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
+                sp=new LatticeState(&slat,{L*L/2,L*L/2},{1,1});
+            } else if(stmap["channel"]=="trans"){
+                sp=new LatticeState(&slat,{L*L/2+1,L*L/2-1},{1,1});
+            }
+        } else {
+            sp=new LatticeState(&slat,{L*L},{2});
         }
 //        if(stmap["spinstate"]!=""){
 //            char* ist=new char[L*L];
@@ -155,18 +167,34 @@ int main(int argc, char* argv[])
 //            sp->Init();
 //        }
         WaveFunction* wav(0);
-        if(stmap["channel"]=="groundstate"){
-            wav=new StagFluxGroundState(L,L,phi,neel,phase_shift);
-        } else if(stmap["channel"]=="trans"){
-            wav=new StagFluxTransExciton(L,L,phi,neel,phase_shift,Q);
-        } else if(stmap["channel"]=="long"){
-            wav=new StagFluxLongExciton(L,L,phi,neel,phase_shift,Q);
+        if(domap["Bx"]==0 && bomap["Sztot_conserved"]){
+            if(stmap["channel"]=="groundstate"){
+                wav=new StagFluxGroundState(L,L,phi,neel,phase_shift);
+            } else if(stmap["channel"]=="trans"){
+                wav=new StagFluxTransExciton(L,L,phi,neel,phase_shift,Q);
+            } else if(stmap["channel"]=="long"){
+                wav=new StagFluxLongExciton(L,L,phi,neel,phase_shift,Q);
+            }
+        } else {
+            if(stmap["channel"]=="groundstate"){
+                wav=new SFpNpHxGroundState(L,L,phi,neel,domap["hx"],phase_shift);
+            } else {//trans and long are mixed
+                wav=new SFpNpHxExciton(L,L,phi,neel,domap["hx"],phase_shift,Q);
+            }
         }
         wav->Save(&fm);
         Amplitude amp(sp,wav);
+        vector<vector<size_t> > pop;
+        // for now start with a Sztot=0 state always
+        if(bomap["Sztot_conserved"]){
+            pop.push_back(vector<size_t>(1,L*L/2));
+            pop.push_back(vector<size_t>(1,L*L/2));
+        } else {
+            pop.push_back({L*L/2,L*L/2});
+        }
         if(stmap["spinstate"]==""){
             while(amp.Amp()==0.0){
-                sp->RanInit();
+                sp->RanInit(pop);
                 amp.Init();
             }
         } else {
@@ -175,7 +203,7 @@ int main(int argc, char* argv[])
         LatticeStepper step(&amp);
         MetroMC varmc(&step,&fm);
         if(bomap["meas_projheis"]){
-            ProjHeis* heisen=new ProjHeis(&step,&fm,&slat);
+            ProjHeis* heisen=new ProjHeis(&step,&fm,&slat,domap["Bx"]);
             varmc.AddQuantity(heisen);
         }
         if(stmap["channel"]=="groundstate"){
@@ -186,6 +214,10 @@ int main(int argc, char* argv[])
             if(bomap["meas_statspinstruct"]){
                 StatSpinStruct* stat=new StatSpinStruct(&step,&fm);
                 varmc.AddQuantity(stat);
+            }
+            if(bomap["meas_magnetization"] && (domap["Bx"]!=0 || !bomap["Sztot_conserved"])){
+                Magnetization* magn=new Magnetization(&step,&fm);
+                varmc.AddQuantity(magn);
             }
         }
         if(bomap["track_stagmagn"]){

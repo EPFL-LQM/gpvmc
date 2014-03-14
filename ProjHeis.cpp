@@ -21,7 +21,21 @@ ProjHeis::ProjHeis(const Stepper* stepper,
             2*stepper->GetAmp()->GetWaveFunction()->GetNExc(),
             stepper->GetAmp()->GetWaveFunction()->GetNExc()),
      m_lat(lat), m_Bx(Bx)
-{}
+{
+    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();
+    if(Bx!=0 && !(st->GetNfl()==1 && st->GetNifs()[0]==2))
+    {
+        string err="ProjHeis::ProjHeis: only defined with non-zero "
+                   "transverse field for a system "
+                   "of spin-1/2 particles with Sztot not conserved.";
+#ifdef EXCEPT
+        throw(std::logic_error(err.c_str()));
+#else
+        cerr<<err<<endl;
+        abort();
+#endif
+    }
+}
 
 void ProjHeis::measure()
 {
@@ -54,6 +68,22 @@ void ProjHeis::measure()
                                            vj->idx*Nifs[fi]+sti[fi][0]));
             rhop.back()[fj].push_back(hop_t(vj->idx*Nifs[fj]+stj[fj][0],
                                             vi->idx*Nifs[fj]+stj[fj][0]));
+        }
+    }
+    if(m_Bx!=0){
+        // if Bx neq 0, then we are in situation
+        // Nfl=1 and Nifs[0]=2 (enforced in constructor).
+        for(size_t v=0;v<m_lat->GetVertices().size();++v){
+            vector<uint_vec_t> sti;
+            const Vertex* vi=m_lat->GetVertices()[v];
+            st->GetLatOc(vi->idx,sti);
+            if(sti[0][0]==0){//up
+                rhop.push_back(vector<hop_path_t>(1));
+                rhop.back()[0].push_back(hop_t(vi->idx*2,vi->idx*2+1));
+            } else {//down
+                rhop.push_back(vector<hop_path_t>(1));
+                rhop.back()[0].push_back(hop_t(vi->idx*2+1,vi->idx*2));
+            }
         }
     }
     // add the no swap empty hop path
@@ -94,6 +124,14 @@ void ProjHeis::measure()
         } else {
             for(size_t k=0;k<Nexc;++k)
                 heisamps[k]+=m_lat->GetEdges()[e]->Jprop*0.25*amps[k];
+        }
+    }
+    if(m_Bx!=0){
+        for(size_t v=0;v<m_lat->GetVertices().size();++v){
+            for(size_t k=0;k<Nexc;++k){
+                heisamps[k]+=0.5*m_Bx*qs[k*Nsw+swc];
+            }
+            ++swc;
         }
     }
     // now fill the H and O matrices

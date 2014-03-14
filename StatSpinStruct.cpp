@@ -57,10 +57,10 @@ void StatSpinStruct::measure()
     uint_vec_t Nifs=st->GetNifs();
     for(size_t vi=0;vi<st->GetNsites();++vi){
         for(size_t vj=vi;vj<st->GetNsites();++vj){
-            st->GetLatOc(vi,sti);
-            st->GetLatOc(vj,stj);
             const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
             const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
+            st->GetLatOc(vxi->idx,sti);
+            st->GetLatOc(vxj->idx,stj);
             // assuming single occupancy
             size_t fi=max_element(sti.begin(),sti.end(),uint_vec_t_comp)-sti.begin();
             size_t fj=max_element(stj.begin(),stj.end(),uint_vec_t_comp)-stj.begin();
@@ -85,10 +85,10 @@ void StatSpinStruct::measure()
         size_t sw=0;
         for(size_t vi=0;vi<st->GetNsites();++vi){
             for(size_t vj=vi;vj<st->GetNsites();++vj){
-                st->GetLatOc(vi,sti);
-                st->GetLatOc(vj,stj);
                 const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
                 const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
+                st->GetLatOc(vxi->idx,sti);
+                st->GetLatOc(vxj->idx,stj);
                 if(isup(sti)){
                     if(isup(stj)){
                         if(vi==vj){

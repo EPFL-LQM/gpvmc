@@ -40,6 +40,7 @@ L=8
 # Some variational parameters
 phi=0.1
 neel=0.0
+Bx=0.0
 jastrow=0
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)
 prefix=-1
@@ -64,10 +65,15 @@ meas_statspinstruct=1
 meas_projheis=1
 # measure the staggered magnetization
 meas_stagmagn=1
+# measure bulk magnetization. Only makes sense if Bx != 0 (error thrown is not)
+meas_magnetization=0
 # track the Monte Carlo weight evolution during the random walk. Useful for thermalization checks
 track_overlap=0
 # track the staggered magnetization during the random walk. Usefule for thermalization checking
 track_stagmagn=0
+# Whether Sztot is conserved or not (if transverse field on, not conserved by default, switch
+# used for debugging with Bx=0 but without Sztot conservation assumption)
+Sztot_conserved=1
 # second neighbour exchange
 Jr=0.0
 # verbosity

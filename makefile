@@ -1,8 +1,8 @@
 include config.mak
 
 BIN=vmc test
-SRC=Amplitude.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp ArgParse.cpp LatticeStepper.cpp StagFluxLongExciton.cpp State.cpp LatticeState.cpp SquareLattice.cpp VectorQuantity.cpp ScalarQuantity.cpp MatrixQuantity.cpp StatSpinStruct.cpp ProjHeis.cpp defs.cpp StagMagn.cpp StagMagnTrack.cpp OverlapTrack.cpp StagFluxGroundState.cpp
-HDR=MetroMC.h Amplitude.h Quantity.h linalg.h RanGen.h Timer.h WaveFunction.h FileManager.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h ArgParse.h LatticeStepper.h StagFluxLongExciton.h State.h LatticeState.h Lattice.h SquareLattice.h OverlapTrack.h StagMagnTrack.h VectorQuantity.h ScalarQuantity.h MatrixQuantity.h StatSpinStruct.h ProjHeis.h
+SRC=Amplitude.cpp Timer.cpp RanGen.cpp FileManager.cpp WaveFunction.cpp linalg.cpp MetroMC.cpp Quantity.cpp StagFluxWaveFunction.cpp StagFluxTransExciton.cpp ArgParse.cpp LatticeStepper.cpp StagFluxLongExciton.cpp State.cpp LatticeState.cpp SquareLattice.cpp VectorQuantity.cpp ScalarQuantity.cpp MatrixQuantity.cpp StatSpinStruct.cpp ProjHeis.cpp defs.cpp StagMagn.cpp StagMagnTrack.cpp OverlapTrack.cpp StagFluxGroundState.cpp SFpNpHxWaveFunction.cpp SFpNpHxGroundState.cpp SFpNpHxExciton.cpp Magnetization.cpp
+HDR=MetroMC.h Amplitude.h Quantity.h linalg.h RanGen.h Timer.h WaveFunction.h FileManager.h BigComplex.h BigDouble.h StagFluxWaveFunction.h StagFluxGroundState.h StagFluxTransExciton.h ArgParse.h LatticeStepper.h StagFluxLongExciton.h State.h LatticeState.h Lattice.h SquareLattice.h OverlapTrack.h StagMagnTrack.h VectorQuantity.h ScalarQuantity.h MatrixQuantity.h StatSpinStruct.h ProjHeis.h SFpNpHxWaveFunction.h SFpNpHxGroundState.h SFpNpHxExciton.h Magnetization.h
 OBJ=$(SRC:.cpp=.o) zdotu_sub.o
 
 all: $(BIN)
@@ -17,6 +17,7 @@ defs.o: defs.h
 ProjHeis.o: ProjHeis.h Quantity.h VectorQuantity.h MatrixQuantity.h LatticeState.h Timer.h WaveFunction.h Stepper.h Amplitude.h BigComplex.h BigDouble.h
 ScalarQuantity.o: Quantity.h Timer.h
 VectorQuantity.o: Quantity.h Timer.h
+Magnetization.o: Quantity.h VectorQuantity.h Magnetization.h
 MatrixQuantity.o: Quantity.h VectorQuantity.h Timer.h
 StatSpinStruct.o: Quantity.h VectorQuantity.h MatrixQuantity.h Stepper.h Amplitude.h LatticeState.h Lattice.h
 linalg.o: linalg.h BigComplex.h BigDouble.h blas_lapack.h
@@ -24,6 +25,9 @@ RanGen.o: RanGen.h Timer.h
 StagFluxWaveFunction.o: StagFluxWaveFunction.h WaveFunction.h linalg.h
 StagFluxTransExciton.o: StagFluxTransExciton.h StagFluxWaveFunction.h linalg.h
 StagFluxLongExciton.o: StagFluxLongExciton.h StagFluxWaveFunction.h linalg.h
+SFpNpHxWaveFunction.o: SFpNpHxWaveFunction.h WaveFunction.h linalg.h
+SFpNpHxGroundState.o: SFpNpHxGroundState.h SFpNpHxWaveFunction.h WaveFunction.h linalg.h
+SFpNpHxExciton.o: SFpNpHxExciton.h SFpNpHxWaveFunction.h WaveFunction.h linalg.h
 ArgParse.o: ArgParse.h
 SquareLattice.o: Lattice.h
 

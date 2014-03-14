@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include "RanGen.h"
 #include "Lattice.h"
 
@@ -32,7 +33,7 @@ const Lattice* LatticeState::GetLattice() const
     return m_lattice;
 }
 
-void LatticeState::RanInit()
+void LatticeState::RanInit(const vector<vector<size_t> >& pop)
 {
     vector<uint_vec_t> fst(m_Nfl);
     for(size_t f=0; f<m_Nfl;++f){
@@ -40,20 +41,39 @@ void LatticeState::RanInit()
     }
     for(size_t f=0; f<m_Nfl;++f){
         size_t np=0;
-        while(np!=m_Npt[f]){
-            size_t v=size_t(RanGen::uniform()*m_lattice->GetNv());
-            // check whether any particle occupies site v.
-            bool occupied=false;
-            for(size_t fp=0;fp<m_Nfl;++fp){
-                for(size_t si=0;si<m_Nifs[fp];++si){
-                    if(fst[fp][v*m_Nifs[fp]+si]<m_Npt[fp])
-                        occupied=true;
+        for(size_t ni=0;ni<m_Nifs[f];++ni){
+            size_t NTpt=0;
+            for_each(m_Npt.begin(),m_Npt.end(),[&](size_t n){NTpt+=n;});
+            if(f==m_Nfl-1 && ni==m_Nifs[f]-1 && NTpt==m_lattice->GetNv()){
+                for(size_t v=0;v<m_lattice->GetNv();++v){
+                    bool occupied=false;
+                    for(size_t fp=0;fp<m_Nfl;++fp){
+                        for(size_t si=0;si<m_Nifs[fp];++si){
+                            if(fst[fp][v*m_Nifs[fp]+si]<m_Npt[fp])
+                                occupied=true;
+                        }
+                    }
+                    if(!occupied){
+                        fst[f][v*m_Nifs[f]+ni]=np;
+                        ++np;
+                    }
                 }
-            }
-            if(!occupied){
-                size_t s=size_t(RanGen::uniform()*m_Nifs[f]);
-                fst[f][v*m_Nifs[f]+s]=np;
-                ++np;
+            } else {
+                while(np!=pop[f][ni]){
+                    size_t v=size_t(RanGen::uniform()*m_lattice->GetNv());
+                    // check whether any particle occupies site v.
+                    bool occupied=false;
+                    for(size_t fp=0;fp<m_Nfl;++fp){
+                        for(size_t si=0;si<m_Nifs[fp];++si){
+                            if(fst[fp][v*m_Nifs[fp]+si]<m_Npt[fp])
+                                occupied=true;
+                        }
+                    }
+                    if(!occupied){
+                        fst[f][v*m_Nifs[f]+ni]=np;
+                        ++np;
+                    }
+                }
             }
         }
     }

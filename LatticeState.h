@@ -20,7 +20,7 @@ class LatticeState: public State{
         const Lattice* GetLattice() const;
         /*! \brief Initialize at random the state
          */
-        void RanInit();
+        void RanInit(const std::vector<std::vector<size_t> >& pop);
         /*! \brief st[f][:] lists the occupied internal states at vertex v.
          */
         void GetLatOc(size_t v,
