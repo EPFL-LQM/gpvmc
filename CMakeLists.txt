@@ -63,7 +63,18 @@ if ( USE_PROFILING )
     add_definitions( -DPROFILE )
 endif( USE_PROFILING )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -ffast-math -funroll-loops -march=native")
+exec_program(
+    "git"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ARGS "describe"
+    OUTPUT_VARIABLE VERSION )
+
+string( REGEX MATCH "-g.*$" VERSION_SHA1 ${VERSION} )
+string( REGEX REPLACE "[-g]" "" VERSION_SHA1 ${VERSION_SHA1} )
+
+add_definitions( -DGIT_SHA1="${VERSION_SHA1}" )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -ffast-math -funroll-loops -march=native" CACHE STRING "Compile flags" FORCE)
 
 install(TARGETS vmc DESTINATION .)
 
