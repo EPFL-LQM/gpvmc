@@ -40,6 +40,7 @@ L=8
 # Some variational parameters
 phi=0.1
 neel=0.0
+hx=0.0
 Bx=0.0
 jastrow=0
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)

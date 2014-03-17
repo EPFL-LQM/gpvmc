@@ -1,2 +1,2 @@
 from distutils.core import setup
-setup(name='vmc-utils',version='${PACKAGE_VERSION}',package_dir={'':'${CMAKE_CURRENT_SOURCE_DIR}'},py_modules=['vmc','stagflux','vmc_utils'])
+setup(name='vmc-utils',version='1.0',py_modules=['vmc','stagflux','vmc_utils'])
