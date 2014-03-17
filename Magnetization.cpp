@@ -64,5 +64,5 @@ void Magnetization::measure()
     BigDouble w=m_stepper->weight();
     m_vals[0]+=complex<double>((S[0]+S[1])/w);
     m_vals[1]+=complex<double>(mI*(S[0]-S[1])/w);
-    m_vals[2]+=complex<double>(S[3]);
+    m_vals[2]+=complex<double>(S[2]);
 }

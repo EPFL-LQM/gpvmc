@@ -4,6 +4,7 @@ project(vmc CXX Fortran)
 
 add_executable(vmc Amplitude.h Amplitude.cpp ArgParse.h ArgParse.cpp BigComplex.h BigDouble.h blas_lapack.h defs.h defs.cpp FileManager.h FileManager.cpp Lattice.h LatticeState.h LatticeState.cpp LatticeStepper.h LatticeStepper.cpp linalg.h linalg.cpp Magnetization.h Magnetization.cpp MatrixQuantity.h MatrixQuantity.cpp MetroMC.h MetroMC.cpp OverlapTrack.h OverlapTrack.cpp ProjHeis.h ProjHeis.cpp Quantity.h Quantity.cpp RanGen.h RanGen.cpp ScalarQuantity.h ScalarQuantity.cpp SFpNpHxExciton.h SFpNpHxExciton.cpp SFpNpHxGroundState.h SFpNpHxGroundState.cpp SFpNpHxWaveFunction.h SFpNpHxWaveFunction.cpp SquareLattice.h SquareLattice.cpp StagFluxGroundState.h StagFluxGroundState.cpp StagFluxLongExciton.h StagFluxLongExciton.cpp StagFluxTransExciton.h StagFluxTransExciton.cpp StagFluxWaveFunction.h StagFluxWaveFunction.cpp StagMagn.h StagMagn.cpp StagMagnTrack.h StagMagnTrack.cpp State.h State.cpp StatSpinStruct.h StatSpinStruct.cpp Stepper.h Timer.h Timer.cpp unix_signals.h VectorQuantity.h VectorQuantity.cpp vmc.cpp WaveFunction.h WaveFunction.cpp zdotu_sub.f)
 
+
 option (USE_MPI "Use mpi to parallelize the Monte Carlo sampling" ON)
 option (USE_BLAS_ATLAS "Use ATLAS BLAS" ON)
 option (USE_BLAS_SCSL "Use SGI/Cray BLAS" OFF)
@@ -64,6 +65,8 @@ if ( USE_PROFILING )
 endif( USE_PROFILING )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -ffast-math -funroll-loops -march=native")
+
+add_subdirectory(collect)
 
 install(TARGETS vmc DESTINATION .)
 
