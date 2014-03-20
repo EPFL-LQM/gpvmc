@@ -17,6 +17,7 @@ class Quantity {
         virtual void init();
         virtual void measure();
         virtual void save() const=0;
+        int GetNmeas() const {return m_meas;}
     protected:
         int m_comm_size;
         int m_comm_rank;

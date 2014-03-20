@@ -23,6 +23,7 @@ class FileManager
 {
     private:
         int m_num;
+        std::string m_num_str;
         std::string m_suffix;
         std::string m_dir;
         double m_compl;
@@ -35,6 +36,7 @@ class FileManager
         int m_stat_per_sample;
     public:
         FileManager(const std::string& dir="", const int& num=-1);
+        FileManager(const std::string& dir, const std::string& prefix);
         enum {message_comm=0,message_monitor=1,message_save=2,message_loop=3};
         MatStream& FileStream(std::string basename);
         void FileAttribute(std::string attr, double val);

@@ -63,7 +63,15 @@ FileManager::FileManager(const string& dir, const int& num)
         MPI_Bcast(&m_num,1,MPI_INT,0,MPI_COMM_WORLD);
 #endif
     }
+    ostringstream ostr;
+    ostr<<m_num;
+    m_num_str=ostr.str();
 }
+
+FileManager::FileManager(const string& dir, const string& prefix)
+    :m_num_str(prefix), m_dir(dir), m_compl(0), m_verbose(1), m_total(1)
+{}
+    
 
 #ifdef USEMPI
 void FileManager::MainLoop()
@@ -281,7 +289,7 @@ void FileManager::Write(int isready)
             MPI_Recv(strin,len,MPI_CHAR,isready,message_save,MPI_COMM_WORLD,&status);
             // Open corresponding file
             ostringstream fn;
-            fn<<m_dir<<"/"<<m_num<<'-'<<strin<<".h5";
+            fn<<m_dir<<"/"<<m_num_str<<'-'<<strin<<".h5";
             struct stat sb;
             hid_t fout;
             if(stat(fn.str().c_str(),&sb)==-1){
@@ -437,7 +445,7 @@ void FileManager::Write(int isready)
     map<string,MatStream >::iterator it=m_streams.begin();
     while(it!=m_streams.end()){
         ostringstream fn;
-        fn<<m_dir<<"/"<<m_num<<"-"<<it->first<<".h5";
+        fn<<m_dir<<"/"<<m_num_str<<"-"<<it->first<<".h5";
         struct stat sb;
         hid_t fout;
         if(stat(fn.str().c_str(),&sb)==-1){
@@ -527,7 +535,7 @@ void FileManager::Write(int isready)
 hid_t FileManager::WriteSimple(string filename)
 {
     ostringstream fn;
-    fn<<m_dir<<"/"<<m_num<<"-"<<filename<<".h5";
+    fn<<m_dir<<"/"<<m_num_str<<"-"<<filename<<".h5";
     hid_t fout=H5Fcreate(fn.str().c_str(),
                          H5F_ACC_EXCL,H5P_DEFAULT,H5P_DEFAULT);
     map<string,double>::iterator atit=m_fileattr.begin();

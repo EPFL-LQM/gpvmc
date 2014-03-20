@@ -41,6 +41,11 @@ L=8
 phi=0.1
 neel=0.0
 hx=0.0
+# relevant for vmc_optimize
+step_phi=0.05
+step_neel=0.025
+step_hx=0.05
+# external field
 Bx=0.0
 jastrow=0
 # calculation prefix to avoid overwriting (keep negative for auto-incrementation)

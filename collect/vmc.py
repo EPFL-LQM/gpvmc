@@ -108,6 +108,19 @@ def GetFermiSigns(filename,refstate=None,channel=None):
         else:
             raise KeyError('\"channel\" must be either \"trans\" or \"long\".')
 
+def GetMagnetization(filename,Nsamp=1):
+    if type(filename)==str:
+        filename=[filename]
+        dpath,args=GetStat(filename,Nsamp)
+    M=sc.zeros((Nsamp,3))
+    for sample,b in enumerate(args):
+        for d in b:
+            hfile=h5py.File(dpath[d][0],'r')
+            dat=hfile[dpath[d][1]]
+            M[sample,:]+=dat[:,0]
+        M[sample,:]/=len(b)
+    return M
+
 def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     if type(filename)==str:
         filename=[filename]
