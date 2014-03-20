@@ -166,10 +166,14 @@ double var_energy(const gsl_vector * x, void * params)
 
     //ask waiting processes to start calculating
     MPI_Bcast(&count,1,MPI_INT,0,MPI_COMM_WORLD);
+    double phi,neel,hx;
+    phi=gsl_vector_get(x,0)/4.0*M_PI;
+    neel=gsl_vector_get(x,1)*2;
+    hx=gsl_vector_get(x,2);
     //send variational parameters value
-    MPI_Bcast(x->data,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//phi
-    MPI_Bcast(x->data+1,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//neel
-    MPI_Bcast(x->data+2,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//hx
+    MPI_Bcast(&phi,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//phi
+    MPI_Bcast(&neel,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//neel
+    MPI_Bcast(&hx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//hx
     // Setup calculation parameters
     ostringstream ostr;
     ostr<<inmap["prefix"]<<"-"<<count;
@@ -269,7 +273,6 @@ int main(int argc, char* argv[])
         simap["meas_interv"]=pow(simap["L"],2);
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
     RanGen::srand(inmap["seed"]+100*comm_rank);
-    domap["phi"]*=M_PI;
     Params_s params;
     params.bomap=bomap;
     params.simap=simap;
@@ -287,12 +290,12 @@ int main(int argc, char* argv[])
         int status;
         double size;
         x=gsl_vector_alloc(3);
-        gsl_vector_set(x,0,domap["phi"]);
-        gsl_vector_set(x,1,domap["neel"]);
-        gsl_vector_set(x,2,domap["hx"]);
+        gsl_vector_set(x,0,domap["phi"]*4);
+        gsl_vector_set(x,1,domap["neel"]/2);
+        gsl_vector_set(x,2,domap["hx"]);// scale params such that they have approximate same scale
         ss=gsl_vector_alloc(3);
-        gsl_vector_set(ss,0,domap["step_phi"]*M_PI);
-        gsl_vector_set(ss,1,domap["step_neel"]);
+        gsl_vector_set(ss,0,domap["step_phi"]*4);
+        gsl_vector_set(ss,1,domap["step_neel"]/2);
         gsl_vector_set(ss,2,domap["step_hx"]);
         minexc_func.n=3;
         minexc_func.f=var_energy;
@@ -309,7 +312,7 @@ int main(int argc, char* argv[])
             if (status==GSL_SUCCESS){
                 cout<<"converged to minimum at"<<endl;
             }
-            cout<<iter<<" "<<gsl_vector_get(s->x,0)<<" "<<gsl_vector_get(s->x,1)<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
+            cout<<iter<<" "<<gsl_vector_get(s->x,0)/4.0<<" "<<gsl_vector_get(s->x,1)*2<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
         } while(status==GSL_CONTINUE && iter<100);
         gsl_vector_free(x);
         gsl_vector_free(ss);
