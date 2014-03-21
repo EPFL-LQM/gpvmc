@@ -29,6 +29,9 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 #include <gsl/gsl_multimin.h>
+#include <string>
+#include <fstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -267,12 +270,30 @@ int main(int argc, char* argv[])
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
+    stmap["opt_params"]="";
     ArgParse arg(argc,argv);
     arg.SetupParams(bomap,simap,inmap,domap,stmap);
     if(!simap["meas_interv"])
         simap["meas_interv"]=pow(simap["L"],2);
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
     RanGen::srand(inmap["seed"]+100*comm_rank);
+    // read variational params in
+    if(stmap["opt_params"].size()){
+        if(comm_rank==0){
+            ifstream pin(stmap["opt_params"]);
+            string line;
+            while(getline(pin,line)){
+                string key=line.substr(0,line.find("="));
+                if(key.size()){
+                    double val=stod(line.substr(line.find("=")+1,string::npos));
+                    domap[key]=val;
+                }
+            }
+        }
+        MPI_Bcast(&domap["phi"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        MPI_Bcast(&domap["neel"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        MPI_Bcast(&domap["hx"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    }
     Params_s params;
     params.bomap=bomap;
     params.simap=simap;
@@ -314,6 +335,12 @@ int main(int argc, char* argv[])
             }
             cout<<iter<<" "<<gsl_vector_get(s->x,0)/4.0<<" "<<gsl_vector_get(s->x,1)*2<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
         } while(status==GSL_CONTINUE && iter<100);
+        ostringstream oss;
+        oss<<inmap["prefix"]<<"opt_params.in";
+        ofstream fparamsout(oss.str().c_str());
+        fparamsout<<"phi="<<setprecision(6)<<gsl_vector_get(s->x,0)/4<<endl
+                  <<"neel-"<<setprecision(6)<<gsl_vector_get(s->x,1)*2<<endl
+                  <<"hx="<<setprecision(6)<<gsl_vector_get(s->x,2);
         gsl_vector_free(x);
         gsl_vector_free(ss);
         gsl_multimin_fminimizer_free(s);
