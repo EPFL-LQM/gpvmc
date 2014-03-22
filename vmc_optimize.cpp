@@ -43,6 +43,151 @@ struct Params_s{
     map<string,string> stmap;
 };
 
+void wait_and_see(Params_s * params);
+double var_energy_f(const gsl_vector * x, void * params);
+void var_energy_df(const gsl_vector * x, void * params, gsl_vector *df);
+void var_energy_fdf(const gsl_vector * x, void * params, double * f, gsl_vector * df);
+
+int main(int argc, char* argv[])
+{
+    // Initialize
+    MPI_Init(&argc,&argv);
+    int comm_size,comm_rank;
+    MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
+    MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
+    //int wait=0;
+    //if(comm_rank!=0){
+    //    cout<<getpid()<<endl;
+    //    wait=1;
+    //    while(wait)
+    //        sleep(5);
+    //}
+    MPI_Barrier(MPI_COMM_WORLD);
+    signal(SIGTERM,FileManager::EmergencyClose);
+    Timer::tic("main");
+
+    // calculation parameters:
+    map<string,bool> bomap;
+    map<string,size_t> simap;
+    map<string,int> inmap;
+    map<string,double> domap;
+    map<string,string> stmap;
+    simap["L"]=8;
+    simap["samples"]=10;
+    simap["samples_saves"]=1;
+    simap["samples_saves_stat"]=100;
+    simap["qx"]=0;
+    simap["qy"]=0;
+    simap["meas_interv"]=0;
+    inmap["prefix"]=-1;
+    inmap["therm"]=100;
+    inmap["verbose"]=1;
+    inmap["seed"]=time(NULL);
+    domap["phi"]=0.085;
+    domap["neel"]=0.0;
+    domap["hx"]=0.0;
+    domap["step_phi"]=0.05;
+    domap["step_neel"]=0.025;
+    domap["step_hx"]=0.05;
+    domap["d_phi"]=0.001;
+    domap["d_neel"]=0.001;
+    domap["d_hx"]=0.001;
+    domap["phase_shift_x"]=1.0;
+    domap["phase_shift_y"]=1.0;
+    domap["jr"]=0.0;
+    domap["Bx"]=0.0;
+    domap["tolerance"]=1e-4;
+    bomap["track_stagmagn"]=false;
+    bomap["track_overlap"]=false;
+    bomap["meas_projheis"]=true;
+    bomap["meas_stagmagn"]=true;
+    bomap["meas_statspinstruct"]=true;
+    bomap["meas_magnetization"]=false;
+    bomap["Sztot_conserved"]=true;
+    stmap["dir"]=".";
+    stmap["spinstate"]="";
+    stmap["channel"]="groundstate";
+    stmap["opt_params"]="";
+    ArgParse arg(argc,argv);
+    arg.SetupParams(bomap,simap,inmap,domap,stmap);
+    if(!simap["meas_interv"])
+        simap["meas_interv"]=pow(simap["L"],2);
+    if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
+    RanGen::srand(inmap["seed"]+100*comm_rank);
+    // read variational params in
+    if(stmap["opt_params"].size()){
+        if(comm_rank==0){
+            ifstream pin(stmap["opt_params"]);
+            string line;
+            while(getline(pin,line)){
+                string key=line.substr(0,line.find("="));
+                if(key.size()){
+                    double val=stod(line.substr(line.find("=")+1,string::npos));
+                    domap[key]=val;
+                }
+            }
+        }
+        MPI_Bcast(&domap["phi"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        MPI_Bcast(&domap["neel"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        MPI_Bcast(&domap["hx"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    }
+    Params_s params;
+    params.bomap=bomap;
+    params.simap=simap;
+    params.inmap=inmap;
+    params.domap=domap;
+    params.stmap=stmap;
+    if(comm_rank){
+        wait_and_see(&params);
+    } else {
+        const gsl_multimin_fminimizer_type *T=gsl_multimin_fminimizer_nmsimplex2;
+        gsl_multimin_fminimizer *s=NULL;
+        gsl_vector *x,*ss;
+        gsl_multimin_function minexc_func;
+        size_t iter=0;
+        int status;
+        double size;
+        x=gsl_vector_alloc(3);
+        gsl_vector_set(x,0,domap["phi"]*4);
+        gsl_vector_set(x,1,domap["neel"]/2);
+        gsl_vector_set(x,2,domap["hx"]);// scale params such that they have approximate same scale
+        ss=gsl_vector_alloc(3);
+        gsl_vector_set(ss,0,domap["step_phi"]*4);
+        gsl_vector_set(ss,1,domap["step_neel"]/2);
+        gsl_vector_set(ss,2,domap["step_hx"]);
+        minexc_func.n=3;
+        minexc_func.f=var_energy_f;
+        minexc_func.params=&params;
+        s=gsl_multimin_fminimizer_alloc(T,3);
+        gsl_multimin_fminimizer_set(s,&minexc_func,x,ss);
+        do {
+            iter++;
+            status=gsl_multimin_fminimizer_iterate(s);
+            if(status)
+                break;
+            size=gsl_multimin_fminimizer_size(s);
+            status=gsl_multimin_test_size(size,domap["tolerance"]);
+            if (status==GSL_SUCCESS){
+                cout<<"converged to minimum at"<<endl;
+            }
+            cout<<iter<<" "<<gsl_vector_get(s->x,0)/4.0<<" "<<gsl_vector_get(s->x,1)*2<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
+        } while(status==GSL_CONTINUE && iter<100);
+        ostringstream oss;
+        oss<<inmap["prefix"]<<"opt_params.in";
+        ofstream fparamsout(oss.str().c_str());
+        fparamsout<<"phi="<<setprecision(6)<<gsl_vector_get(s->x,0)/4<<endl
+                  <<"neel-"<<setprecision(6)<<gsl_vector_get(s->x,1)*2<<endl
+                  <<"hx="<<setprecision(6)<<gsl_vector_get(s->x,2);
+        gsl_vector_free(x);
+        gsl_vector_free(ss);
+        gsl_multimin_fminimizer_free(s);
+        int stop(-1);
+        MPI_Bcast(&stop,1,MPI_INT,0,MPI_COMM_WORLD);
+    }
+    MPI_Finalize();
+    return 0;
+}
+
 void wait_and_see(Params_s * params)
 {
     int count(-1);
@@ -153,14 +298,11 @@ void wait_and_see(Params_s * params)
     }
 }
 
-double var_energy(const gsl_vector * x, void * params)
+double var_energy_f(const gsl_vector * x, void * params)
 {
     static int count(0);
-    int comm_size(1);
-    int comm_rank(0);
+    int comm_size;
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
-
     map<string,bool> bomap=((Params_s*)params)->bomap;
     map<string,size_t> simap=((Params_s*)params)->simap;
     map<string,int> inmap=((Params_s*)params)->inmap;
@@ -214,140 +356,63 @@ double var_energy(const gsl_vector * x, void * params)
     return mean_energy;
 }
 
-int main(int argc, char* argv[])
+void var_energy_df_priv(const gsl_vector * x, void * params, gsl_vector *df)
 {
-    // Initialize
-    MPI_Init(&argc,&argv);
-    int comm_size,comm_rank;
-    MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
-    //int wait=0;
-    //if(comm_rank!=0){
-    //    cout<<getpid()<<endl;
-    //    wait=1;
-    //    while(wait)
-    //        sleep(5);
-    //}
-    MPI_Barrier(MPI_COMM_WORLD);
-    signal(SIGTERM,FileManager::EmergencyClose);
-    Timer::tic("main");
-
-    // calculation parameters:
-    map<string,bool> bomap;
-    map<string,size_t> simap;
-    map<string,int> inmap;
-    map<string,double> domap;
-    map<string,string> stmap;
-    simap["L"]=8;
-    simap["samples"]=10;
-    simap["samples_saves"]=1;
-    simap["samples_saves_stat"]=100;
-    simap["qx"]=0;
-    simap["qy"]=0;
-    simap["meas_interv"]=0;
-    inmap["prefix"]=-1;
-    inmap["therm"]=100;
-    inmap["verbose"]=1;
-    inmap["seed"]=time(NULL);
-    domap["phi"]=0.085;
-    domap["neel"]=0.0;
-    domap["hx"]=0.0;
-    domap["step_phi"]=0.05;
-    domap["step_neel"]=0.025;
-    domap["step_hx"]=0.05;
-    domap["phase_shift_x"]=1.0;
-    domap["phase_shift_y"]=1.0;
-    domap["jr"]=0.0;
-    domap["Bx"]=0.0;
-    domap["tolerance"]=1e-4;
-    bomap["track_stagmagn"]=false;
-    bomap["track_overlap"]=false;
-    bomap["meas_projheis"]=true;
-    bomap["meas_stagmagn"]=true;
-    bomap["meas_statspinstruct"]=true;
-    bomap["meas_magnetization"]=false;
-    bomap["Sztot_conserved"]=true;
-    stmap["dir"]=".";
-    stmap["spinstate"]="";
-    stmap["channel"]="groundstate";
-    stmap["opt_params"]="";
-    ArgParse arg(argc,argv);
-    arg.SetupParams(bomap,simap,inmap,domap,stmap);
-    if(!simap["meas_interv"])
-        simap["meas_interv"]=pow(simap["L"],2);
-    if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
-    RanGen::srand(inmap["seed"]+100*comm_rank);
-    // read variational params in
-    if(stmap["opt_params"].size()){
-        if(comm_rank==0){
-            ifstream pin(stmap["opt_params"]);
-            string line;
-            while(getline(pin,line)){
-                string key=line.substr(0,line.find("="));
-                if(key.size()){
-                    double val=stod(line.substr(line.find("=")+1,string::npos));
-                    domap[key]=val;
-                }
-            }
-        }
-        MPI_Bcast(&domap["phi"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-        MPI_Bcast(&domap["neel"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-        MPI_Bcast(&domap["hx"],1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    }
-    Params_s params;
-    params.bomap=bomap;
-    params.simap=simap;
-    params.inmap=inmap;
-    params.domap=domap;
-    params.stmap=stmap;
-    if(comm_rank){
-        wait_and_see(&params);
-    } else {
-        const gsl_multimin_fminimizer_type *T=gsl_multimin_fminimizer_nmsimplex2;
-        gsl_multimin_fminimizer *s=NULL;
-        gsl_vector *x,*ss;
-        gsl_multimin_function minexc_func;
-        size_t iter=0;
-        int status;
-        double size;
-        x=gsl_vector_alloc(3);
-        gsl_vector_set(x,0,domap["phi"]*4);
-        gsl_vector_set(x,1,domap["neel"]/2);
-        gsl_vector_set(x,2,domap["hx"]);// scale params such that they have approximate same scale
-        ss=gsl_vector_alloc(3);
-        gsl_vector_set(ss,0,domap["step_phi"]*4);
-        gsl_vector_set(ss,1,domap["step_neel"]/2);
-        gsl_vector_set(ss,2,domap["step_hx"]);
-        minexc_func.n=3;
-        minexc_func.f=var_energy;
-        minexc_func.params=&params;
-        s=gsl_multimin_fminimizer_alloc(T,3);
-        gsl_multimin_fminimizer_set(s,&minexc_func,x,ss);
-        do {
-            iter++;
-            status=gsl_multimin_fminimizer_iterate(s);
-            if(status)
-                break;
-            size=gsl_multimin_fminimizer_size(s);
-            status=gsl_multimin_test_size(size,domap["tolerance"]);
-            if (status==GSL_SUCCESS){
-                cout<<"converged to minimum at"<<endl;
-            }
-            cout<<iter<<" "<<gsl_vector_get(s->x,0)/4.0<<" "<<gsl_vector_get(s->x,1)*2<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
-        } while(status==GSL_CONTINUE && iter<100);
-        ostringstream oss;
-        oss<<inmap["prefix"]<<"opt_params.in";
-        ofstream fparamsout(oss.str().c_str());
-        fparamsout<<"phi="<<setprecision(6)<<gsl_vector_get(s->x,0)/4<<endl
-                  <<"neel-"<<setprecision(6)<<gsl_vector_get(s->x,1)*2<<endl
-                  <<"hx="<<setprecision(6)<<gsl_vector_get(s->x,2);
-        gsl_vector_free(x);
-        gsl_vector_free(ss);
-        gsl_multimin_fminimizer_free(s);
-        int stop(-1);
-        MPI_Bcast(&stop,1,MPI_INT,0,MPI_COMM_WORLD);
-    }
-    MPI_Finalize();
-    return 0;
+    double f=var_energy_f(x,params);
+    map<string,double> domap=((Params_s*)params)->domap;
+    // phi derivative
+    gsl_vector * x_dphi=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dphi,x);
+    gsl_vector_set(x_dphi,0,gsl_vector_get(x_dphi,0)+domap["d_phi"]);
+    double fdphi=var_energy_f(x_dphi,params);
+    fdphi=(fdphi-f)/domap["d_phi"]*1.0/(1.0+pow(gsl_vector_get(x,0),2));//careful, change of variable
+    // neel derivative
+    gsl_vector * x_dneel=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dneel,x);
+    gsl_vector_set(x_dneel,1,gsl_vector_get(x_dneel,1)+domap["d_neel"]);
+    double fdneel=var_energy_f(x_dneel,params);
+    fdneel=(fdneel-f)/domap["d_neel"];
+    // hx derivative
+    gsl_vector * x_dhx=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dhx,x);
+    gsl_vector_set(x_dhx,2,gsl_vector_get(x_dhx,2)+domap["d_hx"]);
+    double fdhx=var_energy_f(x_dhx,params);
+    fdhx=(fdhx-f)/domap["d_hx"];
+    gsl_vector_set(df,0,fdphi);
+    gsl_vector_set(df,1,fdneel);
+    gsl_vector_set(df,2,fdhx);
+    gsl_vector_free(x_dphi);
+    gsl_vector_free(x_dneel);
+    gsl_vector_free(x_dhx);
 }
 
+void var_energy_fdf(const gsl_vector * x, void * params, double * fout, gsl_vector * df)
+{
+    double f=var_energy_f(x,params);
+    map<string,double> domap=((Params_s*)params)->domap;
+    // phi derivative
+    gsl_vector * x_dphi=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dphi,x);
+    gsl_vector_set(x_dphi,0,gsl_vector_get(x_dphi,0)+domap["d_phi"]);
+    double fdphi=var_energy_f(x_dphi,params);
+    fdphi=(fdphi-f)/domap["d_phi"]*1.0/(1.0+pow(gsl_vector_get(x,0),2));//careful, change of variable
+    // neel derivative
+    gsl_vector * x_dneel=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dneel,x);
+    gsl_vector_set(x_dneel,1,gsl_vector_get(x_dneel,1)+domap["d_neel"]);
+    double fdneel=var_energy_f(x_dneel,params);
+    fdneel=(fdneel-f)/domap["d_neel"];
+    // hx derivative
+    gsl_vector * x_dhx=gsl_vector_alloc(3);
+    gsl_vector_memcpy(x_dhx,x);
+    gsl_vector_set(x_dhx,2,gsl_vector_get(x_dhx,2)+domap["d_hx"]);
+    double fdhx=var_energy_f(x_dhx,params);
+    fdhx=(fdhx-f)/domap["d_hx"];
+    gsl_vector_set(df,0,fdphi);
+    gsl_vector_set(df,1,fdneel);
+    gsl_vector_set(df,2,fdhx);
+    *fout=f;
+    gsl_vector_free(x_dphi);
+    gsl_vector_free(x_dneel);
+    gsl_vector_free(x_dhx);
+}
