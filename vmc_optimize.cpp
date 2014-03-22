@@ -95,7 +95,7 @@ void wait_and_see(Params_s * params)
         LatticeState* sp(0);
         sp=new LatticeState(&slat,{L*L},{2});
         WaveFunction* wav(0);
-        wav=new SFpNpHxGroundState(L,L,phi,neel,hx,phase_shift);
+        wav=new SFpNpHxGroundState(L,L,phi*M_PI,neel,hx,phase_shift);
         wav->Save(&fm);
         Amplitude amp(sp,wav);
         vector<vector<size_t> > pop;
@@ -170,9 +170,10 @@ double var_energy(const gsl_vector * x, void * params)
     //ask waiting processes to start calculating
     MPI_Bcast(&count,1,MPI_INT,0,MPI_COMM_WORLD);
     double phi,neel,hx;
-    phi=gsl_vector_get(x,0)/4.0*M_PI;
-    neel=gsl_vector_get(x,1)*2;
+    phi=0.125+0.25*atan(gsl_vector_get(x,0))/M_PI;
+    neel=gsl_vector_get(x,1);
     hx=gsl_vector_get(x,2);
+    cout<<"evaluation params: "<<phi<<" "<<neel<<" "<<hx<<endl;
     //send variational parameters value
     MPI_Bcast(&phi,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//phi
     MPI_Bcast(&neel,1,MPI_DOUBLE,0,MPI_COMM_WORLD);//neel
@@ -210,7 +211,7 @@ double var_energy(const gsl_vector * x, void * params)
     }
     std_energy=sqrt(std_energy/(comm_size-2.0));
     ++count;
-    cout<<"evaluation: "<<mean_energy<<" +/- "<<std_energy<<endl;
+    cout<<"evaluation: "<<phi<<" "<<neel<<" "<<hx<<" = "<<mean_energy<<" +/- "<<std_energy<<endl;
     return mean_energy;
 }
 
@@ -311,12 +312,12 @@ int main(int argc, char* argv[])
         int status;
         double size;
         x=gsl_vector_alloc(3);
-        gsl_vector_set(x,0,domap["phi"]*4);
-        gsl_vector_set(x,1,domap["neel"]/2);
-        gsl_vector_set(x,2,domap["hx"]);// scale params such that they have approximate same scale
+        gsl_vector_set(x,0,tan(M_PI*(4*domap["phi"]-0.5)));// constraint on [0,0.25]
+        gsl_vector_set(x,1,domap["neel"]);// unconstraint
+        gsl_vector_set(x,2,domap["hx"]);// unconstraint
         ss=gsl_vector_alloc(3);
-        gsl_vector_set(ss,0,domap["step_phi"]*4);
-        gsl_vector_set(ss,1,domap["step_neel"]/2);
+        gsl_vector_set(ss,0,tan(M_PI*(4*domap["step_phi"]-0.5)));
+        gsl_vector_set(ss,1,domap["step_neel"]);
         gsl_vector_set(ss,2,domap["step_hx"]);
         minexc_func.n=3;
         minexc_func.f=var_energy;
@@ -333,13 +334,13 @@ int main(int argc, char* argv[])
             if (status==GSL_SUCCESS){
                 cout<<"converged to minimum at"<<endl;
             }
-            cout<<iter<<" "<<gsl_vector_get(s->x,0)/4.0<<" "<<gsl_vector_get(s->x,1)*2<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
+            cout<<iter<<" "<<0.125+0.25*atan(gsl_vector_get(s->x,0))/M_PI<<" "<<gsl_vector_get(s->x,1)<<" "<<gsl_vector_get(s->x,2)<<" = "<<s->fval<<" size = "<<size<<endl;
         } while(status==GSL_CONTINUE && iter<100);
         ostringstream oss;
-        oss<<inmap["prefix"]<<"opt_params.in";
+        oss<<inmap["prefix"]<<"-opt_params.in";
         ofstream fparamsout(oss.str().c_str());
-        fparamsout<<"phi="<<setprecision(6)<<gsl_vector_get(s->x,0)/4<<endl
-                  <<"neel-"<<setprecision(6)<<gsl_vector_get(s->x,1)*2<<endl
+        fparamsout<<"phi="<<setprecision(6)<<0.125+0.25*atan(gsl_vector_get(s->x,0))/M_PI<<endl
+                  <<"neel="<<setprecision(6)<<gsl_vector_get(s->x,1)<<endl
                   <<"hx="<<setprecision(6)<<gsl_vector_get(s->x,2);
         gsl_vector_free(x);
         gsl_vector_free(ss);
