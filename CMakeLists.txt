@@ -6,7 +6,6 @@ add_executable(vmc Amplitude.h Amplitude.cpp ArgParse.h ArgParse.cpp BigComplex.
 
 add_executable(vmc_optimize Amplitude.h Amplitude.cpp ArgParse.h ArgParse.cpp BigComplex.h BigDouble.h blas_lapack.h defs.h defs.cpp FileManager.h FileManager.cpp Lattice.h LatticeState.h LatticeState.cpp LatticeStepper.h LatticeStepper.cpp linalg.h linalg.cpp Magnetization.h Magnetization.cpp MatrixQuantity.h MatrixQuantity.cpp MetroMC.h MetroMC.cpp OverlapTrack.h OverlapTrack.cpp ProjHeis.h ProjHeis.cpp Quantity.h Quantity.cpp RanGen.h RanGen.cpp ScalarQuantity.h ScalarQuantity.cpp SFpNpHxExciton.h SFpNpHxExciton.cpp SFpNpHxGroundState.h SFpNpHxGroundState.cpp SFpNpHxWaveFunction.h SFpNpHxWaveFunction.cpp SquareLattice.h SquareLattice.cpp StagFluxGroundState.h StagFluxGroundState.cpp StagFluxLongExciton.h StagFluxLongExciton.cpp StagFluxTransExciton.h StagFluxTransExciton.cpp StagFluxWaveFunction.h StagFluxWaveFunction.cpp StagMagn.h StagMagn.cpp StagMagnTrack.h StagMagnTrack.cpp State.h State.cpp StatSpinStruct.h StatSpinStruct.cpp Stepper.h Timer.h Timer.cpp unix_signals.h VectorQuantity.h VectorQuantity.cpp vmc_optimize.cpp WaveFunction.h WaveFunction.cpp zdotu_sub.f)
 
-
 option (MtROSA "Special flag to build on Monte Rosa cluster" OFF)
 if (MtROSA)
     message("Build on Monte Rosa: delegate compiler flags and link to the cluster build system")
@@ -51,10 +50,17 @@ else (MtROSA)
         include_directories(${GSL_INCLUDE_DIRS})
         target_link_libraries(vmc ${GSL_LIBRARIES})
         target_link_libraries(vmc_optimize ${GSL_LIBRARIES})
-        add_definitions( -DUSE_RNG_GSL )
-    else (GSL_FOUND)
-        add_definitions( -DUSE_RNG_STD )
     endif (GSL_FOUND)
+
+    option ( USE_RNG_GSL "Use random generator from gsl" ON )
+    option ( USE_RNG_STD "Use random generator from stdlib" OFF )
+
+    if ( USE_RNG_GSL )
+        add_definitions ( -DUSE_RNG_GSL )
+    endif ( USE_RNG_GSL )
+    if ( USE_RNG_STD )
+        add_definitions ( -DUSE_RNG_STD )
+    endif ( USE_RNG_STD )
 
     if (USE_MPI)
         if (MPI_FOUND)
@@ -90,7 +96,14 @@ string( REGEX REPLACE "[-g]" "" VERSION_SHA1 ${VERSION_SHA1} )
 
 add_definitions( -DGIT_SHA1="${VERSION_SHA1}" )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -ffast-math -funroll-loops -march=native" CACHE STRING "Compile flags" FORCE)
+set( CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -ffast-math -funroll-loops -march=native" CACHE STRING "Release compile flags" FORCE)
+
+set( CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -O0 -g3" CACHE STRING "Debug compile flags" FORCE)
+
+if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+    add_definitions( -DDEBUG )
+endif()
+
 
 add_subdirectory(collect)
 

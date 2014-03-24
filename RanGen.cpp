@@ -1,4 +1,6 @@
 #include "RanGen.h"
+#include <iostream>
+#include <cstdlib>
 
 #ifdef USE_RNG_MKL
     #ifdef __cplusplus
@@ -37,7 +39,7 @@ RanGen::RanGen()
 #elif defined USE_RNG_ACML
     m_rng->state=new int[650];
 #elif defined USE_RNG_GSL
-    m_rng->state=gsl_rng_alloc(gsl_rng_ranlux);
+    m_rng->state=gsl_rng_alloc(gsl_rng_ranlxd2);
     gsl_rng_set(m_rng->state,1);
 #endif
 }
@@ -66,6 +68,9 @@ void RanGen::srand(size_t seed)
     gsl_rng_set(m_ran.m_rng->state,seed);
 #elif defined USE_RNG_STD
     std::srand(seed);
+#else
+    std::cerr<<"No random generator set at build time. Abort."<<std::endl;
+    std::abort();
 #endif
 }
 
@@ -78,10 +83,20 @@ double RanGen::uniform()
     int info;
     acml::dranduniform(1,0.0,1.0,m_ran.m_rng->state,&out,&info);
 #elif defined USE_RNG_GSL
-    out=gsl_rng_uniform(m_ran.m_rng->state);
+    out=gsl_rng_uniform_pos(m_ran.m_rng->state);
 #elif defined USE_RNG_STD
     out=((double)std::rand())/((double)RAND_MAX);
+#else
+    std::cerr<<"No random generator set at build time. Abort."<<std::endl;
+    std::abort();
 #endif
+#ifdef DEBUG
+    if(out==0){
+        std::cerr<<"Random generator returned 0. Looks suspicious."<<std::endl;
+        std::abort();
+    }
+#endif
+
     return out;
 }
 
