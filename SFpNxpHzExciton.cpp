@@ -1,19 +1,19 @@
 #include <set>
-#include "SFpNpHxExciton.h"
+#include "SFpNxpHzExciton.h"
 #include "linalg.h"
 
 using namespace std;
 
-SFpNpHxExciton::SFpNpHxExciton(size_t Lx,
-                               size_t Ly,
-                               double phi,
-                               double neel,
-                               double hx,
-                               vector<double> bc_phase,
-                               vector<size_t> q)
-    :SFpNpHxWaveFunction(Lx,Ly,
-                         Lx*Ly,
-                         phi,neel,hx,bc_phase),
+SFpNxpHzExciton::SFpNxpHzExciton(size_t Lx,
+                                 size_t Ly,
+                                 double phi,
+                                 double neel,
+                                 double hz,
+                                 vector<double> bc_phase,
+                                 vector<size_t> q)
+    :SFpNxpHzWaveFunction(Lx,Ly,
+                          Lx*Ly,
+                          phi,neel,hz,bc_phase),
      m_q(q)
 {
     // add all two-spinons excitons
@@ -33,8 +33,8 @@ SFpNpHxExciton::SFpNpHxExciton(size_t Lx,
                 for(size_t mp=0;mp<2;++mp){
                     for(size_t m=2;m<4;++m){
                         vector<uint_vec_t> st(gsst);
-                        st[0][m_qn2fock[(Qk[0]*Ly+Qk[1])*4+mp]]=Lx*Ly;//means empty
-                        st[0][m_qn2fock[(kx*Ly+ky)*4+m]]=0;//means occupied
+                        st[0][m_qn2fock[(Qk[0]*Ly+Qk[1])*4+mp]]=Lx*Ly;
+                        st[0][m_qn2fock[(kx*Ly+ky)*4+m]]=0;
                         AddState(st);
                     }
                 }
@@ -43,5 +43,5 @@ SFpNpHxExciton::SFpNpHxExciton(size_t Lx,
     }
 }
 
-SFpNpHxExciton::~SFpNpHxExciton()
+SFpNxpHzExciton::~SFpNxpHzExciton()
 {}

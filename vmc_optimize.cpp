@@ -108,8 +108,7 @@ int main(int argc, char* argv[])
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
     stmap["opt_params"]="";
-    ArgParse arg(argc,argv);
-    arg.SetupParams(bomap,simap,inmap,domap,stmap);
+    ArgParse(argc,argv,domap,inmap,simap,bomap,stmap);
     if(!simap["meas_interv"])
         simap["meas_interv"]=pow(simap["L"],2);
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;

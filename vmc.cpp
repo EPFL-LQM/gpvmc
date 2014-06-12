@@ -11,6 +11,9 @@
 #include "StagFluxGroundState.h"
 #include "SFpNpHxWaveFunction.h"
 #include "SFpNpHxGroundState.h"
+#include "SFpNxpHzWaveFunction.h"
+#include "SFpNxpHzGroundState.h"
+#include "SFpNxpHzExciton.h"
 #include "SFpNpHxExciton.h"
 #include "LatticeStepper.h"
 #include "ProjHeis.h"
@@ -28,8 +31,17 @@
 #include <unistd.h>
 #include <hdf5.h>
 #include <hdf5_hl.h>
+#include <cstdlib>
 
 using namespace std;
+
+void myexit(int exitcode)
+{
+#ifdef USEMPI
+    MPI_Finalize();
+#endif
+    exit(exitcode);
+}
 
 int main(int argc, char* argv[])
 {
@@ -50,7 +62,9 @@ int main(int argc, char* argv[])
     //    while(wait)
     //        sleep(5);
     //}
+#ifdef USEMPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
     signal(SIGTERM,FileManager::EmergencyClose);
     Timer::tic("main");
 
@@ -72,24 +86,27 @@ int main(int argc, char* argv[])
     inmap["verbose"]=1;
     inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
-    domap["neel"]=0.0;
+    domap["nx"]=0.0;
+    domap["nz"]=0.0;
     domap["hx"]=0.0;
+    domap["hz"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
-    domap["Bx"]=0.0;
     bomap["track_stagmagn"]=false;
     bomap["track_overlap"]=false;
-    bomap["meas_projheis"]=true;
-    bomap["meas_stagmagn"]=true;
-    bomap["meas_statspinstruct"]=true;
+    bomap["meas_projheis"]=false;
+    bomap["meas_stagmagn"]=false;
+    bomap["meas_statspinstruct"]=false;
     bomap["meas_magnetization"]=false;
-    bomap["Sztot_conserved"]=true;
+    bomap["Sztot_conserved"]=false;
+    bomap["long_neel_order"]=false;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
-    ArgParse arg(argc,argv);
-    arg.SetupParams(bomap,simap,inmap,domap,stmap);
+    int help=ArgParse(argc,argv,domap,inmap,simap,bomap,stmap);
+    if(help)
+        myexit(0);
     if(!simap["meas_interv"])
         simap["meas_interv"]=pow(simap["L"],2);
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
@@ -112,6 +129,32 @@ int main(int argc, char* argv[])
         fm.FileAttribute(it->first,it->second);
     fm.FileAttribute("gitversion",GIT_SHA1);
 
+    //some input checks
+    if(domap["nx"]!=0.0){
+        if(bomap["Sztot_conserved"]){
+            cerr<<"Error: Transverse Neel order and conservation of Sztot are mutually exclusive"<<endl;
+            myexit(EXIT_FAILURE);
+        }
+        if(domap["nz"]!=0.0){
+            cerr<<"Error, Neel order either on x axis or z axis."<<endl;
+            myexit(EXIT_FAILURE);
+        }
+        if(domap["hx"]!=0.0){
+            cerr<<"Error, field must be applied perpendicular to Neel order."<<endl;
+            myexit(EXIT_FAILURE);
+        }
+    }
+    if(domap["nz"]!=0.0){
+        if(domap["hz"]!=0.0){
+            cerr<<"Error, field must be applied perpendicular to Neel order."<<endl;
+            myexit(EXIT_FAILURE);
+        }
+        if(domap["hx"]!=0.0 && bomap["Sztot_conserved"]){
+            cerr<<"Error, Sztot is not conserved if an transverse field is applied."<<endl;
+            myexit(EXIT_FAILURE);
+        }
+    }
+
 #ifdef USEMPI
     if(comm_rank){
 #endif
@@ -119,7 +162,9 @@ int main(int argc, char* argv[])
         double rej=0;
         size_t L=simap["L"];
         vector<size_t> Q(2);
-        double neel=domap["neel"], phi=domap["phi"];
+        double neel=max(domap["nx"],domap["nz"]);
+        double phi=domap["phi"];
+        double field=max(domap["hx"],domap["hz"]);
         vector<double> phase_shift(2);
         phase_shift[0]=domap["phase_shift_x"];
         phase_shift[1]=domap["phase_shift_y"];
@@ -166,7 +211,7 @@ int main(int argc, char* argv[])
 //            sp->Init();
 //        }
         WaveFunction* wav(0);
-        if(domap["Bx"]==0 && bomap["Sztot_conserved"]){
+        if(bomap["Sztot_conserved"]){
             if(stmap["channel"]=="groundstate"){
                 wav=new StagFluxGroundState(L,L,phi,neel,phase_shift);
             } else if(stmap["channel"]=="trans"){
@@ -174,11 +219,17 @@ int main(int argc, char* argv[])
             } else if(stmap["channel"]=="long"){
                 wav=new StagFluxLongExciton(L,L,phi,neel,phase_shift,Q);
             }
-        } else {
+        } else if(domap["nz"]!=0.0 || bomap["long_neel_order"]){
             if(stmap["channel"]=="groundstate"){
                 wav=new SFpNpHxGroundState(L,L,phi,neel,domap["hx"],phase_shift);
             } else {//trans and long are mixed
                 wav=new SFpNpHxExciton(L,L,phi,neel,domap["hx"],phase_shift,Q);
+            }
+        } else {
+            if(stmap["channel"]=="groundstate"){
+                wav=new SFpNxpHzGroundState(L,L,phi,neel,domap["hz"],phase_shift);
+            } else {//trans and long are mixed
+                wav=new SFpNxpHzExciton(L,L,phi,neel,domap["hz"],phase_shift,Q);
             }
         }
         wav->Save(&fm);
