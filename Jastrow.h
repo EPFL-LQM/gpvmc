@@ -2,11 +2,11 @@
 #define _JASTROW_H
 
 #include "defs.h"
+#include "Amplitude.h"
 
-class LatticeState;
 class JastrowPotential;
 
-class Jastrow {
+class Jastrow: public Amplitude {
     public:
         Jastrow(const LatticeState* st,const JastrowPotential* pot);
         virtual void Init();
@@ -17,7 +17,6 @@ class Jastrow {
         virtual void Update(const std::vector<hop_path_t>& rhop);
     protected:
         double m_jassum;
-        const LatticeState* m_latstate;
         const JastrowPotential* m_jaspot;
 };
 

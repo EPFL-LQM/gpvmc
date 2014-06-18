@@ -18,15 +18,15 @@ using namespace std;
 #define EPS -8
 #define DEPS 1e-8
 
-SlaterDeterminant::SlaterDeterminant(LatticeState* sp, WaveFunction* wav)
-    :m_lst(sp), m_wav(wav),
+SlaterDeterminant::SlaterDeterminant(const LatticeState* sp, const WaveFunction* wav)
+    :Amplitude(sp), m_wav(wav),
     m_amp(0), m_amp_ok(false)
 {
     bool compat=true;
-    if(m_lst->GetNfl()!=m_wav->GetNfl()){
+    if(m_latstate->GetNfl()!=m_wav->GetNfl()){
         compat=false;
     } else {
-        if(!equal(m_lst->GetNpt().begin(),m_lst->GetNpt().end(),m_wav->GetNpt().begin())){
+        if(!equal(m_latstate->GetNpt().begin(),m_latstate->GetNpt().end(),m_wav->GetNpt().begin())){
             compat=false;
         }
     }
@@ -44,8 +44,8 @@ SlaterDeterminant::SlaterDeterminant(LatticeState* sp, WaveFunction* wav)
         abort();
 #endif
     }
-    m_Nfl=m_lst->GetNfl();
-    m_N=m_lst->GetNpt();
+    m_Nfl=m_latstate->GetNfl();
+    m_N=m_latstate->GetNpt();
     m_mat.resize(m_Nfl);
     m_mati.resize(m_Nfl);
     for(size_t fl=0;fl<m_Nfl;++fl){
@@ -69,7 +69,7 @@ void SlaterDeterminant::Init()
     for(size_t fl=0;fl<m_Nfl;++fl){
         for(size_t r=0;r<m_N[fl];++r){
             for(size_t f=0;f<m_N[fl];++f){
-                m_mat[fl][r*m_N[fl]+f]=m_wav->MatEl(m_wav->Getpt()[fl][f],m_lst->Getpt()[fl][r],fl);
+                m_mat[fl][r*m_N[fl]+f]=m_wav->MatEl(m_wav->Getpt()[fl][f],m_latstate->Getpt()[fl][r],fl);
             }
         }
     }
@@ -168,7 +168,7 @@ void SlaterDeterminant::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                 for(size_t f=0;f<m_N[fl];++f){
                     U[f*Nkf+kidx[n]+r]=
                         m_wav->MatEl(khop[n][fl][r].second,
-                                     m_lst->Getpt()[fl][f],fl);
+                                     m_latstate->Getpt()[fl][f],fl);
                 }
             }
         }
@@ -179,7 +179,7 @@ void SlaterDeterminant::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
         for(size_t nr=0;nr<Nr;++nr){
             rfr[nr]=rhop[nr][fl].size();
             for(size_t rr=0;rr<rhop[nr][fl].size();++rr)
-                rfid[ridx[nr]+rr]=m_lst->Getfs()[fl][rhop[nr][fl][rr].first];
+                rfid[ridx[nr]+rr]=m_latstate->Getfs()[fl][rhop[nr][fl][rr].first];
         }
         for(size_t nk=0;nk<Nk;++nk){
             kfr[nk]=khop[nk][fl].size();
@@ -222,7 +222,7 @@ void SlaterDeterminant::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                         for(size_t rk=0;rk<khop[nk][fl].size();++rk){
                             U[rfid[ridx[nr]+rr]*Nkf+kidx[nk]+rk]=
                                 m_wav->MatEl(khop[nk][fl][rk].second,
-                                         m_lst->Getpt()[fl][rfid[ridx[nr]+rr]],fl);
+                                         m_latstate->Getpt()[fl][rfid[ridx[nr]+rr]],fl);
                         }
                     }
                 }
@@ -298,7 +298,7 @@ void SlaterDeterminant::Update(const vector<hop_path_t>& rhop,
         for(size_t r=0;r<khop[fl].size();++r){
             for(size_t f=0;f<m_N[fl];++f){
                 U[f*khop[fl].size()+r]=m_wav->MatEl(khop[fl][r].second,
-                                                    m_lst->Getpt()[fl][f],fl);
+                                                    m_latstate->Getpt()[fl][f],fl);
             }
         }
         BigComplex qq;
@@ -308,7 +308,7 @@ void SlaterDeterminant::Update(const vector<hop_path_t>& rhop,
             kid[r]=m_wav->Getfs()[fl][khop[fl][r].second];
         }
         for(size_t r=0;r<rhop[fl].size();++r){
-            rid[r]=m_lst->Getfs()[fl][rhop[fl][r].second];
+            rid[r]=m_latstate->Getfs()[fl][rhop[fl][r].second];
         }
 #ifdef PROFILE
         Timer::tic("SlaterDeterminant::Update/InvUpdate");

@@ -6,7 +6,7 @@
 using namespace std;
 
 Jastrow::Jastrow(const LatticeState* st,const JastrowPotential* pot)
-    :m_jassum(0),m_latstate(st),m_jaspot(pot)
+    :Amplitude(st),m_jassum(0),m_jaspot(pot)
 {}
 
 void Jastrow::Init()

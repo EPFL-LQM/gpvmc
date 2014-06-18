@@ -3,9 +3,9 @@
 #include "BigDouble.h"
 #include "BigComplex.h"
 #include "defs.h"
+#include "Amplitude.h"
 
 class WaveFunction;
-class LatticeState;
 
 /*! \brief scalar product \f$\langle \{R_i,\sigma_i\}|\Psi\rangle\f$
  *
@@ -41,13 +41,13 @@ class LatticeState;
  * & v^TA^{-1}e_r+A_{rk}A^{-1}_{kr}\end{array}\right|.\f]
  */
 
-class SlaterDeterminant {
+class SlaterDeterminant: public Amplitude {
     public:
-        SlaterDeterminant(LatticeState* sp, WaveFunction* wav);//!< Constructor
+        SlaterDeterminant(const LatticeState* sp, const WaveFunction* wav);//!< Constructor
         ~SlaterDeterminant();//!< Destructor
         /*! Initialize or reinitialize the matrices
          * Calculate determinant and inverse matrices.*/
-        void Init();
+        virtual void Init();
         /*! gives the new determinants after the row update
          * specified by r(...) for all subsequent column updates
          * specified by k(...)*/
@@ -60,13 +60,8 @@ class SlaterDeterminant {
 
         //! returns \f$\langle \{R_i,\sigma\}|\Psi\rangle\f$.
         BigComplex Amp() const;
-        const LatticeState* GetLatticeState() const {return m_lst;}
-        LatticeState* GetLatticeState() {return m_lst;}
-        const WaveFunction* GetWaveFunction() const {return m_wav;}
-        WaveFunction* GetWaveFunction() {return m_wav;}
     private:
-        LatticeState* m_lst;
-        WaveFunction* m_wav;
+        const WaveFunction* m_wav;
         std::vector<std::vector<std::complex<double> > > m_mat;
         std::vector<std::vector<std::complex<double> > > m_mati;
         BigComplex m_amp;

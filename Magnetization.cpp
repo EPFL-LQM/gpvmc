@@ -11,7 +11,7 @@ using namespace std;
 Magnetization::Magnetization(const Stepper* stepper, FileManager* fm)
     :VectorQuantity(stepper,fm,"Magnetization",3)
 {
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();
+    const LatticeState* st=m_stepper->GetLatticeState();
     if(!(st->GetNfl()==1 && st->GetNifs()[0]==2))
     {
         string err="Magnetization::Magnatization: only defined for a system "
@@ -30,7 +30,7 @@ Magnetization::~Magnetization()
 
 void Magnetization::measure()
 {
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();    
+    const LatticeState* st=m_stepper->GetLatticeState();    
     Quantity::measure();
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti;

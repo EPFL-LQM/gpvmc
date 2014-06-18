@@ -11,11 +11,11 @@ using namespace std;
 StatSpinStruct::StatSpinStruct(const Stepper* stepper,
                                FileManager* fm)
     :MatrixQuantity(stepper,fm,"StatSpinStruct",3,
-                      stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLx()*
-                      stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLy())
+                      stepper->GetLatticeState()->GetLattice()->GetLx()*
+                      stepper->GetLatticeState()->GetLattice()->GetLy())
 {
-    size_t Lx=stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLx();
-    size_t Ly=stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLy();
+    size_t Lx=stepper->GetLatticeState()->GetLattice()->GetLx();
+    size_t Ly=stepper->GetLatticeState()->GetLattice()->GetLy();
     m_qs.reserve(Lx*Ly);
     for(size_t qx=0; qx<Lx;++qx){
         for(size_t qy=0;qy<Ly;++qy){
@@ -37,7 +37,7 @@ StatSpinStruct::StatSpinStruct(const Stepper* stepper,
 
 void StatSpinStruct::measure()
 {
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();
+    const LatticeState* st=m_stepper->GetLatticeState();
     if(!(st->GetNfl()==1 && st->GetNifs()[0]==2) &&
                     !(st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]))
     {
@@ -50,8 +50,8 @@ void StatSpinStruct::measure()
 #endif
     }
     Quantity::measure();
-    size_t Lx=m_stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLx();
-    size_t Ly=m_stepper->GetAmp()->GetLatticeState()->GetLattice()->GetLy();
+    size_t Lx=m_stepper->GetLatticeState()->GetLattice()->GetLx();
+    size_t Ly=m_stepper->GetLatticeState()->GetLattice()->GetLy();
     // get spin swap list
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti,stj;

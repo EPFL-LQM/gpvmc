@@ -12,7 +12,7 @@ StagMagnZ::~StagMagnZ()
 void StagMagnZ::measure()
 {
     Quantity::measure();
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();
+    const LatticeState* st=m_stepper->GetLatticeState();
     complex<double> msz(0);
     if((st->GetNfl()==1 && st->GetNifs()[0]==2) ||
             (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]==1))

@@ -19,11 +19,11 @@ ProjHeis::ProjHeis(const Stepper* stepper,
                    FileManager* fm, const Lattice* lat,
                    double Bx)
     :MatrixQuantity(stepper,fm,"ProjHeis",
-            2*stepper->GetAmp()->GetWaveFunction()->GetNExc(),
-            stepper->GetAmp()->GetWaveFunction()->GetNExc()),
+            2*stepper->GetWaveFunction()->GetNExc(),
+            stepper->GetWaveFunction()->GetNExc()),
      m_lat(lat), m_Bx(Bx)
 {
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();
+    const LatticeState* st=m_stepper->GetLatticeState();
     if(Bx!=0 && !(st->GetNfl()==1 && st->GetNifs()[0]==2))
     {
         string err="ProjHeis::ProjHeis: only defined with non-zero "
@@ -46,8 +46,8 @@ void ProjHeis::measure()
     Quantity::measure();
     const SlaterDeterminant* amp=m_stepper->GetAmp();
     const Jastrow* jas=m_stepper->GetJas();
-    const LatticeState* st=amp->GetLatticeState();
-    const WaveFunction* wav=amp->GetWaveFunction();
+    const LatticeState* st=m_stepper->GetLatticeState();
+    const WaveFunction* wav=m_stepper->GetWaveFunction();
     size_t Nexc=wav->GetNExc();
     BigDouble weight=m_stepper->weight();
     vector<BigComplex> amps(Nexc,0),heisamps(Nexc,0);
@@ -159,7 +159,7 @@ void ProjHeis::measure()
 
 std::string ProjHeis::str() const
 {
-    size_t Nks=m_stepper->GetAmp()->GetWaveFunction()->GetNExc();
+    size_t Nks=m_stepper->GetWaveFunction()->GetNExc();
     std::ostringstream sout;
     sout<<std::scientific<<std::setprecision(10);
     sout<<"Hkk="<<std::endl

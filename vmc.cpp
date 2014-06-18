@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
         } else {
             amp.Init();
         }
-        LatticeStepper step(&amp,jas);
+        LatticeStepper step(sp,wav,&amp,jas);
         if(!bomap["Sztot_zero_proj"]){
             //if applied field, Sztot is not
             //conserved and spins-up must be

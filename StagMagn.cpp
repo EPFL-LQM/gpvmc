@@ -12,7 +12,7 @@ StagMagn::~StagMagn()
 {}
 void StagMagn::measure()
 {
-    const LatticeState* st=m_stepper->GetAmp()->GetLatticeState();    
+    const LatticeState* st=m_stepper->GetLatticeState();    
     Quantity::measure();
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti;
