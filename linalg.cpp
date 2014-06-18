@@ -2,6 +2,7 @@
 #include "blas_lapack.h"
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -25,6 +26,13 @@ bool linalg::DetInv(const std::complex<double> *A, std::complex<double>* I,
     else {
 #ifdef DEBUG
         std::cout<<"linalg::DetInv: Warning, matrix is singular: det="<<norm(d)<<std::endl;
+        std::cout<<"Matrix was"<<endl;
+        for(size_t i=0;i<M;++i){
+            for(size_t j=0;j<M;++j){
+                cout<<std::setprecision(2)<<"("<<A[i*M+j].real()<<","<<std::setprecision(2)<<A[i*M+j].imag()<<")"<<"  ";
+            }
+            std::cout<<std::endl;
+        }
 #endif
         d=0.0;
     }

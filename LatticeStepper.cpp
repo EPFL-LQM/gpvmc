@@ -1,5 +1,6 @@
 #include "LatticeStepper.h"
-#include "Amplitude.h"
+#include "SlaterDeterminant.h"
+#include "Jastrow.h"
 #include "LatticeState.h"
 #include "Lattice.h"
 #include "WaveFunction.h"
@@ -10,11 +11,12 @@
 
 using namespace std;
 
-LatticeStepper::LatticeStepper(Amplitude* amp)
-    :Stepper(amp),
+LatticeStepper::LatticeStepper(SlaterDeterminant* amp, Jastrow* jas)
+    :Stepper(amp,jas),
      m_Nfl(amp->GetLatticeState()->GetNfl()),
      m_Nifs(amp->GetLatticeState()->GetNifs()),
      m_prev(amp->GetLatticeState()->GetNfl()),
+     m_flavor_flip(amp->GetLatticeState()->GetNfl(),false),
      m_khop(-1), m_weight(-1)
 {}
 
@@ -25,6 +27,11 @@ void LatticeStepper::Reset()
     m_khop=-1;
     m_prev_weight=-1;
     m_weight=-1;
+}
+
+void LatticeStepper::SetFlavorFlip(const vector<bool>& flavor_flip)
+{
+    m_flavor_flip=flavor_flip;
 }
 
 BigDouble LatticeStepper::trystep()
@@ -54,7 +61,7 @@ BigDouble LatticeStepper::trystep()
                           {return a.size()<b.size();})-s2.begin();
     // from here it is assumed there is only one fermion per site.
     size_t c= m_Nifs[f1]*RanGen::uniform();
-    if(c==s1[f1][0]){
+    if(!m_flavor_flip[f1] || c==s1[f1][0]){
         // exchange neighbouring fermions
         m_prev=vector<hop_path_t>(m_Nfl);
         if(f1==f2 && s1[f1][0]==s2[f2][0]){
@@ -76,15 +83,18 @@ BigDouble LatticeStepper::trystep()
     }
     const vector<vector<hop_path_t> >& khops=wav->GetHops();
     vector<BigComplex> qs(khops.size());
+    vector<double> js(1);
 #ifdef PROFILE
     Timer::tic("LatticeStepper::trystep/VirtUpdate");
 #endif
     m_amp->VirtUpdate(vector<vector<hop_path_t> >(1,m_prev),khops,qs);
+    m_jas->VirtUpdate(vector<vector<hop_path_t> >(1,m_prev),js);
 #ifdef PROFILE
     Timer::toc("LatticeStepper::trystep/VirtUpdate");
 #endif
     BigDouble out(0);
     for_each(qs.begin(),qs.end(),[&](const BigComplex& aq){out+=norm(aq);}); 
+    out*=js[0];
     m_khop=max_element(qs.begin(),qs.end(),
                        [](const BigComplex& a,const BigComplex& b)
                        {return norm(a)<norm(b);}) - qs.begin();
@@ -100,6 +110,7 @@ void LatticeStepper::step()
     LatticeState* st=m_amp->GetLatticeState();
     WaveFunction *wav=m_amp->GetWaveFunction();
     st->Hop(m_prev);
+    m_jas->Update(m_prev);
     if(!m_khop<0){
         const vector<hop_path_t>& khop_p=wav->GetHop(m_khop);
         wav->Hop(m_khop);
@@ -140,13 +151,13 @@ BigDouble LatticeStepper::weight()
     if(m_weight<0.0){
         BigDouble out(0);
         const vector<vector<hop_path_t> >& khop=wav->GetHops();
-        vector<vector<hop_path_t> > rhop(1,vector<hop_path_t>(2));
+        vector<vector<hop_path_t> > rhop(1,vector<hop_path_t>(m_Nfl));
         vector<BigComplex> qs(khop.size(),0);
         m_amp->VirtUpdate(rhop,khop,qs);
         for(size_t k=0;k<khop.size();++k){
             out+=norm(qs[k]);
         }
-        m_weight=out;
+        m_weight=pow(m_jas->Jas(),2)*out;
         if(m_weight==0.0){
             std::cout<<"Warning: LatticeStepper::weight: "
                   "state has no overlap."<<std::endl;

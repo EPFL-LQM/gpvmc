@@ -19,10 +19,12 @@
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
 #include "StagMagn.h"
+#include "StagMagnZ.h"
 #include "Magnetization.h"
 #include "OverlapTrack.h"
 #include "StagMagnTrack.h"
-#include "Amplitude.h"
+#include "SlaterDeterminant.h"
+#include "IdentityJastrow.h"
 #include "RanGen.h"
 #include "FileManager.h"
 #include "ArgParse.h"
@@ -101,6 +103,7 @@ int main(int argc, char* argv[])
     bomap["meas_magnetization"]=false;
     bomap["Sztot_conserved"]=false;
     bomap["long_neel_order"]=false;
+    bomap["Sztot_zero_proj"]=false;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
@@ -228,12 +231,12 @@ int main(int argc, char* argv[])
         } else {
             if(stmap["channel"]=="groundstate"){
                 wav=new SFpNxpHzGroundState(L,L,phi,neel,domap["hz"],phase_shift);
+                cout<<"SFpNxPHz case"<<endl;
             } else {//trans and long are mixed
                 wav=new SFpNxpHzExciton(L,L,phi,neel,domap["hz"],phase_shift,Q);
             }
         }
         wav->Save(&fm);
-        Amplitude amp(sp,wav);
         vector<vector<size_t> > pop;
         // for now start with a Sztot=0 state always
         if(bomap["Sztot_conserved"]){
@@ -242,15 +245,36 @@ int main(int argc, char* argv[])
         } else {
             pop.push_back({L*L/2,L*L/2});
         }
+        sp->RanInit(pop);
+        SlaterDeterminant amp(sp,wav);
+        Jastrow* jas;
+        //TODO: implement relevant jastrow
+        jas=new IdentityJastrow;
         if(stmap["spinstate"]==""){
-            while(amp.Amp()==0.0){
+            int tc=0,failcount=10;
+            while(amp.Amp()==0.0 && tc<failcount){
                 sp->RanInit(pop);
                 amp.Init();
+                jas->Init();
+                tc++;
+            }
+            if(tc==failcount){
+                cerr<<"could not find a non-singular starting configuration."<<endl;
+                cerr<<"last real space state is:"<<endl<<*sp<<endl;
+                cerr<<"wf state is:"<<endl<<*wav<<endl;
+                myexit(1);
             }
         } else {
             amp.Init();
         }
-        LatticeStepper step(&amp);
+        LatticeStepper step(&amp,jas);
+        if(!bomap["Sztot_zero_proj"]){
+            //if applied field, Sztot is not
+            //conserved and spins-up must be
+            //able to tunel to spin-down.
+            vector<bool> flip(1,true);
+            step.SetFlavorFlip(flip);
+        }
         MetroMC varmc(&step,&fm);
         if(bomap["meas_projheis"]){
             ProjHeis* heisen=new ProjHeis(&step,&fm,&slat,domap["Bx"]);
@@ -258,8 +282,13 @@ int main(int argc, char* argv[])
         }
         if(stmap["channel"]=="groundstate"){
             if(bomap["meas_stagmagn"]){
-                StagMagn* stagsz=new StagMagn(&step,&fm);
-                varmc.AddQuantity(stagsz);
+                if(bomap["Sztot_conserved"]){
+                    StagMagnZ* stagsz=new StagMagnZ(&step,&fm);
+                    varmc.AddQuantity(stagsz);
+                } else {
+                    StagMagn* stags=new StagMagn(&step,&fm);
+                    varmc.AddQuantity(stags);
+                }
             }
             if(bomap["meas_statspinstruct"]){
                 StatSpinStruct* stat=new StatSpinStruct(&step,&fm);

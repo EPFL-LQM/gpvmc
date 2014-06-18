@@ -44,7 +44,7 @@ SFpNxpHzWaveFunction::~SFpNxpHzWaveFunction()
 
 std::complex<double> SFpNxpHzWaveFunction::matrix_element(size_t fk,size_t fr, size_t fl)
 {
-    std::complex<double> I(0,1);
+    std::complex<double> I(0.,1.);
     double k[2], r[2];
     k[0]=(m_fock2qn[3*fk]+m_bc_phase[0]/(2.0))*2*M_PI/double(m_Lx);
     k[1]=(m_fock2qn[3*fk+1]+m_bc_phase[1]/(2.0))*2*M_PI/double(m_Ly);
@@ -52,17 +52,18 @@ std::complex<double> SFpNxpHzWaveFunction::matrix_element(size_t fk,size_t fr, s
     int ifr=fr;
     size_t up=ifr%2;
     r[1]=((ifr-up)/2)%m_Ly;
-    r[0]=((ifr-up-r[1]*2)/(2*m_Ly));
+    r[0]=((ifr-up)/2-r[1])/m_Ly;
     up=size_t(1-int(up));
     std::complex<double> out;
+    double phir=1-int(r[0]+r[1])%2;
     if(up){
         out=exp(I*(k[0]*r[0]+k[1]*r[1]))*
-            (double((1-int(r[0]+r[1])%2))*(Uk(k,band)+Xk(k,band))
-             +double(int(r[0]+r[1])%2)*(Vk(k,band)+Yk(k,band)));
+            (phir*(Uk(k,band)+Xk(k,band))
+             +(1-phir)*(Vk(k,band)+Yk(k,band)));
     } else {
         out=exp(I*(k[0]*r[0]+k[1]*r[1]))*
-            (double((1-int(r[0]+r[1])%2))*(-Uk(k,band)+Xk(k,band))
-             +double(int(r[0]+r[1])%2)*(-Vk(k,band)+Yk(k,band)));
+            (phir*(-Uk(k,band)+Xk(k,band))
+             +(1-phir)*(-Vk(k,band)+Yk(k,band)));
     }
 #ifdef CRAY
     if(isnan(real(out)) || isnan(imag(out)))
@@ -152,13 +153,13 @@ std::complex<double> SFpNxpHzWaveFunction::Vk(double* k, size_t band) const
     std::complex<double> d=delta(k);
     std::complex<double> pd=d/abs(d);
     if(band==0)
-        return 0.5*sign(m_hz-abs(d))*pd*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)-m_hz)*pd*sqrt(1+m_nx/om);
     if(band==1)
-        return 0.5*sign(m_hz+abs(d))*pd*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)+m_hz)*pd*sqrt(1+m_nx/om);
     if(band==2)
-        return -0.5*sign(m_hz-abs(d))*pd*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)-m_hz)*pd*sqrt(1+m_nx/om);
     else //band==3
-        return -0.5*sign(m_hz+abs(d))*pd*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)+m_hz)*pd*sqrt(1+m_nx/om);
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Xk(double* k, size_t band) const
@@ -166,13 +167,13 @@ std::complex<double> SFpNxpHzWaveFunction::Xk(double* k, size_t band) const
     std::complex<double> d=delta(k);
     double om=omega(k,band);
     if(band==0)
-        return 0.5*sign(m_hz-abs(d))*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)-m_hz)*sqrt(1+m_nx/om);
     if(band==1)
-        return -0.5*sign(m_hz+abs(d))*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)+m_hz)*sqrt(1+m_nx/om);
     if(band==2)
-        return -0.5*sign(m_hz-abs(d))*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)-m_hz)*sqrt(1+m_nx/om);
     else //band==3
-        return 0.5*sign(m_hz+abs(d))*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)+m_hz)*sqrt(1+m_nx/om);
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Yk(double* k, size_t band) const

@@ -16,13 +16,15 @@ class LatticeStepper: public Stepper {
         size_t m_Nfl;
         uint_vec_t m_Nifs;
         std::vector<hop_path_t> m_prev;
+        std::vector<bool> m_flavor_flip;
         int m_khop;
         BigDouble m_prev_weight;
         BigDouble m_weight;
     public:
-        LatticeStepper(Amplitude* amp);
+        LatticeStepper(SlaterDeterminant* amp, Jastrow* jas);
         virtual ~LatticeStepper() {}
         virtual void Reset();
+        void SetFlavorFlip(const std::vector<bool>& flavor_flip);
 
         virtual BigDouble trystep();
         virtual void step();

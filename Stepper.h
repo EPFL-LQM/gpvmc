@@ -2,7 +2,8 @@
 #define _STEPPER_H
 #include "BigDouble.h"
 
-class Amplitude;
+class SlaterDeterminant;
+class Jastrow;
 
 /*! \brief Class to perform a Monte Carlo step, by swaping nearest neighbours spins.
  *
@@ -10,8 +11,8 @@ class Amplitude;
 
 class Stepper {
     public:
-        Stepper(Amplitude* amp)
-            : m_amp(amp){}
+        Stepper(SlaterDeterminant* amp, Jastrow* jas)
+            : m_amp(amp),m_jas(jas){}
         virtual ~Stepper() {}
         virtual void Reset()=0;
 
@@ -21,11 +22,14 @@ class Stepper {
         virtual BigDouble weight() const=0;
         virtual double transprob()=0;
 
-        const Amplitude* GetAmp() const {return m_amp;}
-        Amplitude* GetAmp() {return m_amp;}
+        const SlaterDeterminant* GetAmp() const {return m_amp;}
+        SlaterDeterminant* GetAmp() {return m_amp;}
+        const Jastrow* GetJas() const {return m_jas;}
+        Jastrow* GetJas() {return m_jas;}
 
     protected:
-        Amplitude* m_amp;
+        SlaterDeterminant* m_amp;
+        Jastrow* m_jas;
 };
 
 #endif//_STEPPER_H

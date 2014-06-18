@@ -1,4 +1,4 @@
-#include "Amplitude.h"
+#include "SlaterDeterminant.h"
 #include "WaveFunction.h"
 #include "LatticeState.h"
 #include <limits>
@@ -18,7 +18,7 @@ using namespace std;
 #define EPS -8
 #define DEPS 1e-8
 
-Amplitude::Amplitude(LatticeState* sp, WaveFunction* wav)
+SlaterDeterminant::SlaterDeterminant(LatticeState* sp, WaveFunction* wav)
     :m_lst(sp), m_wav(wav),
     m_amp(0), m_amp_ok(false)
 {
@@ -32,13 +32,13 @@ Amplitude::Amplitude(LatticeState* sp, WaveFunction* wav)
     }
     if(!compat){
 #ifdef EXCEPT
-        throw(std::logic_error("Amplitude::"
-                    "Amplitude(const LatticeState*, const WaveFunction*):"
+        throw(std::logic_error("SlaterDeterminant::"
+                    "SlaterDeterminant(const LatticeState*, const WaveFunction*):"
                     "cannot define amplitude with different number of "
                     "flavours or number of particles."));
 #else
-        cerr<<"Amplitude::"
-              "Amplitude(const LatticeState*, const WaveFunction*):"
+        cerr<<"SlaterDeterminant::"
+              "SlaterDeterminant(const LatticeState*, const WaveFunction*):"
               "cannot define amplitude with different number of "
               "flavours or number of particles."<<endl;
         abort();
@@ -55,16 +55,16 @@ Amplitude::Amplitude(LatticeState* sp, WaveFunction* wav)
     Init();
 }
 
-Amplitude::~Amplitude()
+SlaterDeterminant::~SlaterDeterminant()
 {}
 
-void Amplitude::Init()
+void SlaterDeterminant::Init()
 {
 #ifdef PROFILE
-    Timer::tic("Amplitude::Init");
+    Timer::tic("SlaterDeterminant::Init");
 #endif
 #ifdef DEBUG
-    std::cout<<"Amplitude::Init: has been called"<<std::endl;
+    std::cout<<"SlaterDeterminant::Init: has been called"<<std::endl;
 #endif
     for(size_t fl=0;fl<m_Nfl;++fl){
         for(size_t r=0;r<m_N[fl];++r){
@@ -88,23 +88,23 @@ void Amplitude::Init()
         m_amp_ok=true;
     }
 #ifdef PROFILE
-    Timer::toc("Amplitude::Init");
+    Timer::toc("SlaterDeterminant::Init");
 #endif
 }
 
-BigComplex Amplitude::Amp() const {return m_amp*m_wav->GetSign();}
+BigComplex SlaterDeterminant::Amp() const {return m_amp*m_wav->GetSign();}
 
-void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
+void SlaterDeterminant::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                              const vector<vector<hop_path_t> >& khop,
                              vector<BigComplex>& qs) const
 {
     if(!m_amp_ok){
 #ifdef EXCEPT
-        throw(std::logic_error("Amplitude::VirtUpdate:"
+        throw(std::logic_error("SlaterDeterminant::VirtUpdate:"
                                " Should not be called from"
                                " a state without overlap."));
 #else
-        cerr<<"Amplitude::VirtUpdate:"
+        cerr<<"SlaterDeterminant::VirtUpdate:"
               " Should not be called from"
               " a state without overlap."<<endl;
         abort();
@@ -114,12 +114,12 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
     size_t Nk=khop.size();
     if(Nr*Nk==0){
 #ifdef EXCEPT
-        throw(std::logic_error("Amplitude::VirtUpdate:"
+        throw(std::logic_error("SlaterDeterminant::VirtUpdate:"
                                " the condition min(Nr)=1 "
                                " and min(Nk)=1"
                                " must be fullfilled."));
 #else
-        cerr<<"Amplitude::VirtUpdate:"
+        cerr<<"SlaterDeterminant::VirtUpdate:"
               " the condition min(Nr)=1 "
               " and min(Nk)=1"
               " must be fullfilled."<<endl;
@@ -127,7 +127,7 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
     }
 #endif
 #ifdef PROFILE
-    Timer::tic("Amplitude::VirtUpdate");
+    Timer::tic("SlaterDeterminant::VirtUpdate");
 #endif
     size_t NN=max(Nr,Nk);
     qs.resize(Nr*Nk);
@@ -204,7 +204,7 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                     }
                 }
 #ifdef PROFILE
-                Timer::tic("Amplitude::VirtUpdate/DetUpdate");
+                Timer::tic("SlaterDeterminant::VirtUpdate/DetUpdate");
 #endif
                 linalg::DetUpdate(m_mat[fl].data(),m_mati[fl].data(),m_N[fl],
                                   &V[ridx[nr]*m_N[fl]],m_N[fl],
@@ -212,7 +212,7 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                                   U.data(),Nkf,&kfid[0],&kfr[0],Nk,
                                   qq.data());
 #ifdef PROFILE
-                Timer::toc("Amplitude::VirtUpdate/DetUpdate");
+                Timer::toc("SlaterDeterminant::VirtUpdate/DetUpdate");
 #endif
                 for(size_t nk=0;nk<Nk;++nk){
                     qs[nk*Nr+nr]*=qq[nk];
@@ -239,14 +239,14 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
                     }
                 }
 #ifdef PROFILE
-                Timer::tic("Amplitude::VirtUpdate/DetUpdate");
+                Timer::tic("SlaterDeterminant::VirtUpdate/DetUpdate");
 #endif
                 linalg::DetUpdate(m_mat[fl].data(),m_mati[fl].data(),m_N[fl],
                                   V.data(),m_N[fl],&rfid[0],&rfr[0],Nr,
                                   &U[kidx[nk]],Nkf,&kfid[kidx[nk]],
                                   &kfr[nk],1,qq.data());
 #ifdef PROFILE
-                Timer::toc("Amplitude::VirtUpdate/DetUpdate");
+                Timer::toc("SlaterDeterminant::VirtUpdate/DetUpdate");
 #endif
                 for(size_t nr=0;nr<Nr;++nr){
                     qs[nk*Nr+nr]*=qq[nr];
@@ -264,27 +264,27 @@ void Amplitude::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
         }
     }
 #ifdef PROFILE
-    Timer::toc("Amplitude::VirtUpdate");
+    Timer::toc("SlaterDeterminant::VirtUpdate");
 #endif
 }
 
-void Amplitude::Update(const vector<hop_path_t>& rhop,
+void SlaterDeterminant::Update(const vector<hop_path_t>& rhop,
                          const vector<hop_path_t>& khop)
 {
     if(!m_amp_ok){
 #ifdef EXCEPT
-        throw(std::logic_error("Amplitude::Update:"
+        throw(std::logic_error("SlaterDeterminant::Update:"
                                " Should not be called from"
                                " a state without overlap."));
 #else
-        cerr<<"Amplitude::Update:"
+        cerr<<"SlaterDeterminant::Update:"
               " Should not be called from"
               " a state without overlap."<<endl;
         abort();
 #endif
     }
 #ifdef PROFILE
-    Timer::tic("Amplitude::Update");
+    Timer::tic("SlaterDeterminant::Update");
 #endif
     for(size_t fl=0;fl<m_Nfl;++fl){
         vector<complex<double> > V(m_N[fl]*rhop[fl].size());
@@ -311,18 +311,18 @@ void Amplitude::Update(const vector<hop_path_t>& rhop,
             rid[r]=m_lst->Getfs()[fl][rhop[fl][r].second];
         }
 #ifdef PROFILE
-        Timer::tic("Amplitude::Update/InvUpdate");
+        Timer::tic("SlaterDeterminant::Update/InvUpdate");
 #endif
         linalg::InvUpdate(m_mat[fl].data(),m_mati[fl].data(),m_N[fl],
                           V.data(),rid.data(),rhop[fl].size(),
                           U.data(),kid.data(),khop[fl].size(),qq);
 #ifdef PROFILE
-        Timer::toc("Amplitude::Update/InvUpdate");
+        Timer::toc("SlaterDeterminant::Update/InvUpdate");
 #endif
         m_amp*=qq;
     }
 #ifdef PROFILE
-    Timer::toc("Amplitude::Update");
+    Timer::toc("SlaterDeterminant::Update");
 #endif
 }
 

@@ -94,6 +94,19 @@ void LatticeState::GetLatOc(size_t v,
     }
 }
 
+void LatticeState::Fock2QN(size_t fidx, size_t flav, uint_vec_t& st) const
+{
+    // a fock index is constructed as follow:
+    // fidx=v*m_Nifs[flav]+is
+    // where v is the vertex index and is is the vertex
+    // internal degree of freedom (for instance spin)
+    // This is restricted to 2D and Bravais lattice so far...
+    st.resize(3);
+    st[0]=fidx/m_Nifs[flav];
+    st[1]=fidx%m_Nifs[flav];
+    st[2]=flav;
+}
+
 ostream& operator<<(ostream& out,const LatticeState& lst){
     vector<string> st(lst.m_lattice->GetNv());
     for(size_t v=0;v<lst.m_lattice->GetNv();++v){

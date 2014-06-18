@@ -1,6 +1,7 @@
 #include "Magnetization.h"
 #include "Stepper.h"
-#include "Amplitude.h"
+#include "SlaterDeterminant.h"
+#include "Jastrow.h"
 #include "LatticeState.h"
 #include "Lattice.h"
 #include <array>
@@ -46,18 +47,20 @@ void Magnetization::measure()
         }
     }
     vector<BigComplex> swamps(hops.size(),BigComplex(0.0,0.0));
-    BigComplex amp=m_stepper->GetAmp()->Amp();
+    vector<double> swjs(hops.size(),0);
+    BigComplex amp=m_stepper->GetAmp()->Amp()*m_stepper->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(1)),swamps);
+    m_stepper->GetJas()->VirtUpdate(hops,swjs);
     vector<BigComplex> S(3,BigComplex(0.0,0.0));
     for(size_t v=0;v<st->GetNsites();++v){
         const Vertex* vxi=st->GetLattice()->GetVertices()[v];
         st->GetLatOc(vxi->idx,sti);
         if(sti[0][0]==0){//up
             S[2]+=0.5;
-            S[0]+=0.5*conj(amp)*swamps[v];
+            S[0]+=0.5*conj(amp)*swamps[v]*swjs[v];
         } else {//down
             S[2]-=0.5;
-            S[1]+=0.5*conj(amp)*swamps[v];
+            S[1]+=0.5*conj(amp)*swamps[v]*swjs[v];
         }
     }
     BigComplex mI(0.0,-1.0);

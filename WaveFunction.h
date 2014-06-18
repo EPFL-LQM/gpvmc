@@ -57,10 +57,6 @@ class WaveFunction : public State{
         {
             return m_cache[s][f*m_Nfs[s]+r];
         }
-        //TODO: (more elegant) instead of separating
-        // position r and spin s, bundle  position and
-        // spin in a single quantum state index, just like
-        // what is already done for index f.
         size_t GetNExc() const {return m_exc.size();}
 
         // Writes down the states and relative fermi signs to storage

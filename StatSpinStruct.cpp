@@ -1,7 +1,8 @@
 #include <cmath>
 #include "StatSpinStruct.h"
 #include "Stepper.h"
-#include "Amplitude.h"
+#include "SlaterDeterminant.h"
+#include "Jastrow.h"
 #include "LatticeState.h"
 #include "Lattice.h"
 
@@ -75,8 +76,11 @@ void StatSpinStruct::measure()
     }
     // Calculate spin swap amplitudes
     vector<BigComplex> swamps(hops.size());
+    vector<double> swjs(hops.size());
     BigComplex amp=m_stepper->GetAmp()->Amp();
+    double jas=m_stepper->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(st->GetNfl())),swamps);
+    m_stepper->GetJas()->VirtUpdate(hops,swjs);
     // Calculate Static spin structure factor
     vector<complex<double> > sqlong(m_qs.size()/2,0);
     vector<BigComplex> sqtranspm(m_qs.size()/2,0);
@@ -92,7 +96,7 @@ void StatSpinStruct::measure()
                 if(isup(sti)){
                     if(isup(stj)){
                         if(vi==vj){
-                            sqtranspm[q]+=norm(amp)/double(Lx*Ly);
+                            sqtranspm[q]+=norm(amp)*pow(jas,2)/double(Lx*Ly);
                             sqlong[q]+=0.25/double(Lx*Ly);
                         } else {
                             sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
@@ -110,10 +114,10 @@ void StatSpinStruct::measure()
                                         (-0.25)*
                                         m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         sqtransmp[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                           conj(amp)*swamps[sw]*
+                                           conj(amp)*jas*swamps[sw]*swjs[sw]*
                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
                         sqtranspm[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                           amp*conj(swamps[sw])*
+                                           amp*jas*conj(swamps[sw])*swjs[sw]*
                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         ++sw;
                     }
@@ -126,15 +130,15 @@ void StatSpinStruct::measure()
                                         (-0.25)*
                                         m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         sqtranspm[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                           conj(amp)*swamps[sw]*
+                                           conj(amp)*jas*swamps[sw]*swjs[sw]*
                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
                         sqtransmp[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                           amp*conj(swamps[sw])*
+                                           amp*jas*conj(swamps[sw])*swjs[sw]*
                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                         ++sw;
                     } else {
                         if(vi==vj){
-                            sqtransmp[q]+=norm(amp)/double(Lx*Ly);
+                            sqtransmp[q]+=norm(amp)*pow(jas,2)/double(Lx*Ly);
                             sqlong[q]+=0.25/double(Lx*Ly);
                         } else {
                             sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*

@@ -1,5 +1,5 @@
-#ifndef _AMPLITUDE_H
-#define _AMPLITUDE_H
+#ifndef _SLATERDETERMINANT_H
+#define _SLATERDETERMINANT_H
 #include "BigDouble.h"
 #include "BigComplex.h"
 #include "defs.h"
@@ -41,10 +41,10 @@ class LatticeState;
  * & v^TA^{-1}e_r+A_{rk}A^{-1}_{kr}\end{array}\right|.\f]
  */
 
-class Amplitude {
+class SlaterDeterminant {
     public:
-        Amplitude(LatticeState* sp, WaveFunction* wav);//!< Constructor
-        ~Amplitude();//!< Destructor
+        SlaterDeterminant(LatticeState* sp, WaveFunction* wav);//!< Constructor
+        ~SlaterDeterminant();//!< Destructor
         /*! Initialize or reinitialize the matrices
          * Calculate determinant and inverse matrices.*/
         void Init();
@@ -75,4 +75,4 @@ class Amplitude {
         size_t m_Nfl;
 };
 
-#endif//_AMPLITUDE_H
+#endif//_SLATERDETERMINANT_H

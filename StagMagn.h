@@ -1,8 +1,8 @@
 #ifndef _STAGMAGN_H
 #define _STAGMAGN_H
-#include "ScalarQuantity.h"
+#include "VectorQuantity.h"
 
-class StagMagn: public ScalarQuantity {
+class StagMagn: public VectorQuantity {
     public:
         StagMagn(const Stepper* stepper, FileManager* fm);
         virtual ~StagMagn();

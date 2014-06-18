@@ -25,6 +25,9 @@ class LatticeState: public State{
          */
         void GetLatOc(size_t v,
                       std::vector<uint_vec_t>& st) const;
+        /*! \brief Translate the fock index fidx into the corresponding quantum numbers.
+         */
+        void Fock2QN(size_t fidx,size_t flav, uint_vec_t& st) const;
 
         friend std::ostream& operator<<(std::ostream& out,const LatticeState& lst);
 };
