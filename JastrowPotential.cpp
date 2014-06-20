@@ -29,6 +29,7 @@ void JastrowPotential::Init()
 
 double JastrowPotential::Pot(const uint_vec_t& statei,const uint_vec_t& statej) const
 {
-    return m_rijpot[statei[0]*m_lattice->GetNv()+statej[0]]*
+    double out=m_rijpot[statei[0]*m_lattice->GetNv()+statej[0]]*
             this->internal_quantum_number_potential(statei,statej);
+    return out;
 }

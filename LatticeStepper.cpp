@@ -92,7 +92,7 @@ BigDouble LatticeStepper::trystep()
 #endif
     BigDouble out(0);
     for_each(qs.begin(),qs.end(),[&](const BigComplex& aq){out+=norm(aq);}); 
-    out*=js[0];
+    out*=pow(js[0],2);
     m_khop=max_element(qs.begin(),qs.end(),
                        [](const BigComplex& a,const BigComplex& b)
                        {return norm(a)<norm(b);}) - qs.begin();

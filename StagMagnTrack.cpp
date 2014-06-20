@@ -22,7 +22,7 @@ void StagMagnTrack::measure()
 {
     const LatticeState* st=m_stepper->GetLatticeState();
     if((st->GetNfl()==1 && st->GetNifs()[0]==2) ||
-            (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]))
+            (st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]==1))
     {
         m_vals.push_back(0);
         const Lattice* lat=st->GetLattice();
@@ -31,8 +31,8 @@ void StagMagnTrack::measure()
                     complex<double>(0,1)*M_PI*(
                         lat->GetVertices()[v]->uc[0]
                         +lat->GetVertices()[v]->pos[0]
-                        +lat->GetVertices()[v]->uc[0]
-                        +lat->GetVertices()[v]->pos[0]));
+                        +lat->GetVertices()[v]->uc[1]
+                        +lat->GetVertices()[v]->pos[1]));
             vector<uint_vec_t> vst;
             st->GetLatOc(v,vst);
             int up=0;

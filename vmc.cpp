@@ -25,6 +25,8 @@
 #include "StagMagnTrack.h"
 #include "SlaterDeterminant.h"
 #include "IdentityJastrow.h"
+#include "Jastrow.h"
+#include "NeelJastrowPotential.h"
 #include "RanGen.h"
 #include "FileManager.h"
 #include "ArgParse.h"
@@ -92,6 +94,7 @@ int main(int argc, char* argv[])
     domap["nz"]=0.0;
     domap["hx"]=0.0;
     domap["hz"]=0.0;
+    domap["neel_jastrow"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
@@ -104,6 +107,8 @@ int main(int argc, char* argv[])
     bomap["Sztot_conserved"]=false;
     bomap["long_neel_order"]=false;
     bomap["Sztot_zero_proj"]=false;
+    bomap["Sztot_non_zero_init"]=false;
+    bomap["Neel_init"]=false;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
@@ -238,19 +243,51 @@ int main(int argc, char* argv[])
         }
         wav->Save(&fm);
         vector<vector<size_t> > pop;
-        // for now start with a Sztot=0 state always
         if(bomap["Sztot_conserved"]){
             pop.push_back(vector<size_t>(1,L*L/2));
             pop.push_back(vector<size_t>(1,L*L/2));
         } else {
-            pop.push_back({L*L/2,L*L/2});
+            if(bomap["Sztot_non_zero_init"]){
+                int Nup=(size_t)(RanGen::uniform()*L*L);
+                pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
+            } else {
+                pop.push_back({L*L/2,L*L/2});
+            }
         }
-        sp->RanInit(pop);
+        if(bomap["Neel_init"]){
+            vector<uint_vec_t> fst(sp->GetNfl());
+            for(size_t fl=0;fl<sp->GetNfl();++fl){
+                fst[fl]=uint_vec_t(sp->GetNfs()[fl],sp->GetNpt()[fl]);
+            }
+            for(size_t v=0;v<slat.GetNv();++v){
+                bool even=(slat.GetVertices()[v]->uc[0]+slat.GetVertices()[v]->uc[1])%2;
+                if(even){
+                    if(bomap["Sztot_conserved"])
+                        fst[0][v]=0;
+                    else
+                        fst[0][v*2]=0;
+                } else {
+                    if(bomap["Sztot_conserved"])
+                        fst[1][v]=0;
+                    else
+                        fst[0][v*2+1]=0;
+                }
+            }
+            sp->InitFock(fst);
+        } else {
+            sp->RanInit(pop);
+        }
         SlaterDeterminant amp(sp,wav);
-        Jastrow* jas;
-        //TODO: implement relevant jastrow
-        jas=new IdentityJastrow;
-        if(stmap["spinstate"]==""){
+        Jastrow* jas=0;
+        JastrowPotential* jaspot=0;
+        if(domap["neel_jastrow"]!=0.0){
+            jaspot=new NeelJastrowPotential(&slat,domap["neel_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
+        } else {
+            jas=new IdentityJastrow;
+        }
+        if(jaspot) jaspot->Init();
+        if(stmap["spinstate"]=="" || !bomap["Neel_init"]){
             int tc=0,failcount=10;
             while(amp.Amp()==0.0 && tc<failcount){
                 sp->RanInit(pop);
@@ -345,6 +382,8 @@ int main(int argc, char* argv[])
         //sp->save(&fm);
         delete wav;
         delete sp;
+        delete jas;
+        delete jaspot;
         for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)
             delete varmc.GetQuantities()[qu];
 #ifdef USEMPI

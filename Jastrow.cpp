@@ -1,7 +1,10 @@
 #include "Jastrow.h"
 #include "LatticeState.h"
 #include "JastrowPotential.h"
+#include "Lattice.h"
 #include <cmath>
+#include <iostream>
+#include <cassert>
 
 using namespace std;
 
@@ -41,6 +44,7 @@ void Jastrow::VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
                 uint_vec_t statekold(3),stateknew(3);
                 m_latstate->Fock2QN(rhop[hidx][flk][k].first,flk,statekold);
                 m_latstate->Fock2QN(rhop[hidx][flk][k].second,flk,stateknew);
+                assert(statekold[0]==m_latstate->GetLattice()->GetVertices()[statekold[0]]->idx);
                 for(size_t fli=0;fli<m_latstate->GetNfl();++fli){
                     for(size_t pti=0;pti<m_latstate->GetNpt()[fli];++pti){
                         if(fli!=flk || pti!=m_latstate->Getfs()[flk][rhop[hidx][flk][k].first]){

@@ -9,7 +9,7 @@ class JastrowPotential{
     public:
         JastrowPotential(const Lattice* lattice);
         ~JastrowPotential();
-        void Init();
+        virtual void Init();
         double Pot(const uint_vec_t& statei, const uint_vec_t& statej) const;
     protected:
         virtual double space_potential(const uint_vec_t& Ri,
@@ -18,8 +18,8 @@ class JastrowPotential{
                                        const std::vector<double>& rj) const=0;
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,
                                                          const uint_vec_t& statej) const=0;
-    private:
         const Lattice* m_lattice;
+    private:
         double* m_rijpot;//!< Cache of the real space potential.
 };
 
