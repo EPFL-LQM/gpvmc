@@ -22,6 +22,7 @@
 #include "StagMagnZ.h"
 #include "Magnetization.h"
 #include "OverlapTrack.h"
+#include "JastrowTrack.h"
 #include "StagMagnTrack.h"
 #include "SlaterDeterminant.h"
 #include "IdentityJastrow.h"
@@ -100,6 +101,7 @@ int main(int argc, char* argv[])
     domap["jr"]=0.0;
     bomap["track_stagmagn"]=false;
     bomap["track_overlap"]=false;
+    bomap["track_jastrow"]=false;
     bomap["meas_projheis"]=false;
     bomap["meas_stagmagn"]=false;
     bomap["meas_statspinstruct"]=false;
@@ -343,6 +345,10 @@ int main(int argc, char* argv[])
         if(bomap["track_overlap"]){
             OverlapTrack* ovt=new OverlapTrack(&step,&fm);
             varmc.AddQuantity(ovt);
+        }
+        if(bomap["track_jastrow"]){
+            JastrowTrack* jast=new JastrowTrack(&step,&fm);
+            varmc.AddQuantity(jast);
         }
 
         // Start calculation: thermalize

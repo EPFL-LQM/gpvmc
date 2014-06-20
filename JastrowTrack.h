@@ -1,5 +1,5 @@
-#ifndef _OVERLAPTRACK_H
-#define _OVERLAPTRACK_H
+#ifndef _JASTROWTRACK_H
+#define _JASTROWTRACK_H
 #include "Quantity.h"
 #include "BigDouble.h"
 #include <vector>
@@ -7,10 +7,10 @@
 /*!\brief class to track down the evolution of the MC weight
  *
  */
-class OverlapTrack: public Quantity {
+class JastrowTrack: public Quantity {
     public:
-        OverlapTrack(const Stepper* stepper, FileManager* fm);
-        virtual ~OverlapTrack();
+        JastrowTrack(const Stepper* stepper, FileManager* fm);
+        virtual ~JastrowTrack();
         virtual void init();
         virtual void save() const;
         virtual void measure();

@@ -19,7 +19,8 @@ class NeelJastrowPotential: public JastrowPotential {
         {
             double out(0);
             if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
-                out=(m_neel*(1.0-2.0*(int(Ri[0]+Ri[1])%2)))/m_lattice->GetNv();
+                out=double(m_neel*(1.0-2.0*(int(Ri[0]+Ri[1])%2)));
+                //out=double(m_neel*(1.0-2.0*(int(Ri[0]+Ri[1])%2)))/sqrt(double(m_lattice->GetNv()));
             return out;
         }
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,
