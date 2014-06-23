@@ -3,6 +3,7 @@
 #include "JastrowPotential.h"
 #include "Lattice.h"
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 
@@ -39,6 +40,13 @@ void Jastrow::VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
 {
     js.assign(rhop.size(),m_jassum);
     for(size_t hidx=0;hidx<rhop.size();++hidx){
+        //list of particles which have moved.
+        vector<uint_vec_t> moving_part(m_latstate->GetNfl());
+        for(size_t flk=0;flk<m_latstate->GetNfl();++flk){
+            for(size_t h=0;h<rhop[hidx][flk].size();++h){
+                moving_part[flk].push_back(m_latstate->Getfs()[flk][rhop[hidx][flk][h].first]);
+            }
+        }
         for(size_t flk=0;flk<m_latstate->GetNfl();++flk){
             for(size_t k=0;k<rhop[hidx][flk].size();++k){
                 uint_vec_t statekold(3),stateknew(3);
@@ -47,7 +55,7 @@ void Jastrow::VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
                 assert(statekold[0]==m_latstate->GetLattice()->GetVertices()[statekold[0]]->idx);
                 for(size_t fli=0;fli<m_latstate->GetNfl();++fli){
                     for(size_t pti=0;pti<m_latstate->GetNpt()[fli];++pti){
-                        if(fli!=flk || pti!=m_latstate->Getfs()[flk][rhop[hidx][flk][k].first]){
+                        if(find(moving_part[fli].begin(),moving_part[fli].end(),pti)==moving_part[fli].end()){
                             uint_vec_t statei(3);
                             m_latstate->Fock2QN(m_latstate->Getpt()[fli][pti],fli,statei);
                             js[hidx]+=m_jaspot->Pot(statei,stateknew)+
@@ -59,7 +67,7 @@ void Jastrow::VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
                 }
                 for(size_t fll=0;fll<m_latstate->GetNfl();++fll){
                     for(size_t l=0;l<rhop[hidx][fll].size();++l){
-                        uint_vec_t statelold(3),statelnew(3);
+                        uint_vec_t statelold(4),statelnew(3);
                         m_latstate->Fock2QN(rhop[hidx][fll][l].first,fll,statelold);
                         m_latstate->Fock2QN(rhop[hidx][fll][l].second,fll,statelnew);
                         js[hidx]+=m_jaspot->Pot(stateknew,statelnew)-
@@ -69,12 +77,20 @@ void Jastrow::VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
             }
         }
     }
-    for(size_t j=0;j<js.size();++j)
+    for(size_t j=0;j<js.size();++j){
         js[j]=exp(js[j]);
+    }
 }
 
 void Jastrow::Update(const vector<hop_path_t>& rhop)
 {
+    //list of particles which have moved.
+    vector<uint_vec_t> moving_part(m_latstate->GetNfl());
+    for(size_t flk=0;flk<m_latstate->GetNfl();++flk){
+        for(size_t h=0;h<rhop[flk].size();++h){
+            moving_part[flk].push_back(m_latstate->Getfs()[flk][rhop[flk][h].second]);
+        }
+    }
     for(size_t flk=0;flk<m_latstate->GetNfl();++flk){
         for(size_t k=0;k<rhop[flk].size();++k){
             uint_vec_t statekold(3),stateknew(3);
@@ -82,7 +98,8 @@ void Jastrow::Update(const vector<hop_path_t>& rhop)
             m_latstate->Fock2QN(rhop[flk][k].second,flk,stateknew);
             for(size_t fli=0;fli<m_latstate->GetNfl();++fli){
                 for(size_t pti=0;pti<m_latstate->GetNpt()[fli];++pti){
-                    if(fli!=flk || pti!=m_latstate->Getfs()[flk][rhop[flk][k].second]){
+                    //if fli.pti is not one of the moving particles:
+                    if(find(moving_part[fli].begin(),moving_part[fli].end(),pti)==moving_part[fli].end()){
                         uint_vec_t statei(3);
                         m_latstate->Fock2QN(m_latstate->Getpt()[fli][pti],fli,statei);
                         m_jassum+=m_jaspot->Pot(statei,stateknew)+

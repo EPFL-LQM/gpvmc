@@ -9,9 +9,9 @@ class JastrowPotential{
     public:
         JastrowPotential(const Lattice* lattice);
         ~JastrowPotential();
-        virtual void Init();
         double Pot(const uint_vec_t& statei, const uint_vec_t& statej) const;
     protected:
+        virtual void init();
         virtual double space_potential(const uint_vec_t& Ri,
                                        const std::vector<double>& ri,
                                        const uint_vec_t& Rj,

@@ -28,6 +28,7 @@
 #include "IdentityJastrow.h"
 #include "Jastrow.h"
 #include "NeelJastrowPotential.h"
+#include "StagJastrowPotential.h"
 #include "RanGen.h"
 #include "FileManager.h"
 #include "ArgParse.h"
@@ -96,6 +97,7 @@ int main(int argc, char* argv[])
     domap["hx"]=0.0;
     domap["hz"]=0.0;
     domap["neel_jastrow"]=0.0;
+    domap["stag_jastrow"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
@@ -285,10 +287,12 @@ int main(int argc, char* argv[])
         if(domap["neel_jastrow"]!=0.0){
             jaspot=new NeelJastrowPotential(&slat,domap["neel_jastrow"]);
             jas=new Jastrow(sp,jaspot);
+        } else if(domap["stag_jastrow"]!=0.0){
+            jaspot=new StagJastrowPotential(&slat,domap["stag_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
         } else {
             jas=new IdentityJastrow;
         }
-        if(jaspot) jaspot->Init();
         if(stmap["spinstate"]=="" || !bomap["Neel_init"]){
             int tc=0,failcount=10;
             while(amp.Amp()==0.0 && tc<failcount){
@@ -305,6 +309,7 @@ int main(int argc, char* argv[])
             }
         } else {
             amp.Init();
+            jas->Init();
         }
         LatticeStepper step(sp,wav,&amp,jas);
         if(!bomap["Sztot_zero_proj"]){

@@ -1,15 +1,16 @@
-#ifndef _NEELJASTROWPOTENTIAL_H
-#define _NEELJASTROWPOTENTIAL_H
+#ifndef _STAGJASTROWPOTENTIAL_H
+#define _STAGJASTROWPOTENTIAL_H
 
 #include <iostream>
 #include <algorithm>
 #include "JastrowPotential.h"
+#include "linalg.h"
 
 using namespace std;
 
-class NeelJastrowPotential: public JastrowPotential {
+class StagJastrowPotential: public JastrowPotential {
     public:
-        NeelJastrowPotential(const Lattice* lattice, double neel)
+        StagJastrowPotential(const Lattice* lattice, double neel)
             :JastrowPotential(lattice),m_neel(neel)
         {
             this->init();
@@ -21,21 +22,27 @@ class NeelJastrowPotential: public JastrowPotential {
                                        const std::vector<double>& rj) const
         {
             double out(0);
-            if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
-                out=double(m_neel*(1.0-2.0*(int(Ri[0]+Ri[1])%2)));
-                //out=double(m_neel*(1.0-2.0*(int(Ri[0]+Ri[1])%2)))/sqrt(double(m_lattice->GetNv()));
+            if(Ri[0]==Rj[0] && Ri[1]==Rj[1] && ri[0]==rj[0] && ri[1]==rj[1])
+                return out;
+            else
+                out=m_neel*double(1.0-2.0*linalg::mod(int(Rj[0]+Rj[1])-int(Ri[0]+Ri[1]),2))/m_lattice->GetNv();
             return out;
         }
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,
                                                          const uint_vec_t& statej) const
         {
-            if(equal(statei.begin(),statei.end(),statej.begin())){
-                if(isup(statei))
+            if(isup(statei)){
+                if(isup(statej)){
                     return 1;
-                else
+                } else {
                     return -1;
+                }
             } else {
-                return 0;
+                if(isup(statej)){
+                    return -1;
+                } else {
+                    return 1;
+                }
             }
         }
     private:
@@ -49,4 +56,4 @@ class NeelJastrowPotential: public JastrowPotential {
         }
 };
 
-#endif//_NEELJASTROWPOTENTIAL_H
+#endif//_STAGJASTROWPOTENTIAL_H

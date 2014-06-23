@@ -14,7 +14,7 @@ JastrowPotential::~JastrowPotential()
     delete [] m_rijpot;
 }
 
-void JastrowPotential::Init()
+void JastrowPotential::init()
 {
     for(size_t vi=0;vi<m_lattice->GetNv();++vi){
         for(size_t vj=0;vj<m_lattice->GetNv();++vj){
