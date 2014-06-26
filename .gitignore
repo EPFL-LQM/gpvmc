@@ -9,11 +9,10 @@ config.mak
 *.pyc
 vmc
 vmc_1
-collect/MANIFEST
-collect/build
-collect/dist
+tools/MANIFEST
+tools/build
+tools/dist
 gitversion.h
 doc/
-test*
 tags
 build/

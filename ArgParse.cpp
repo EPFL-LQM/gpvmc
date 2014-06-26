@@ -133,7 +133,7 @@ int ArgParse(int argc, char* argv[],
         }
     }
 #ifdef USEMPI
-    MPI_Bcast(&help,sizeof(bool),MPI_Byte,0,MPI_COMM_WORLD);
+    MPI_Bcast(&help,sizeof(bool),MPI_BYTE,0,MPI_COMM_WORLD);
     for(size_t k=0;k<keys.size();++k){
         if(types[k]=="double")
             MPI_Bcast(&double_opts[keys[k]],1,MPI_DOUBLE,0,MPI_COMM_WORLD);

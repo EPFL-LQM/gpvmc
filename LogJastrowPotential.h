@@ -1,5 +1,5 @@
-#ifndef _STAGJASTROWPOTENTIAL_H
-#define _STAGJASTROWPOTENTIAL_H
+#ifndef _LOGJASTROWPOTENTIAL_H
+#define _LOGJASTROWPOTENTIAL_H
 
 #include <iostream>
 #include <algorithm>
@@ -8,9 +8,9 @@
 
 using namespace std;
 
-class StagJastrowPotential: public JastrowPotential {
+class LogJastrowPotential: public JastrowPotential {
     public:
-        StagJastrowPotential(const Lattice* lattice, double neel)
+        LogJastrowPotential(const Lattice* lattice, double neel)
             :JastrowPotential(lattice,vector<double>(1,neel))
         {
             this->init();
@@ -21,24 +21,36 @@ class StagJastrowPotential: public JastrowPotential {
                                        const uint_vec_t& Rj,
                                        const std::vector<double>& rj) const
         {
-            double out(0);
-            if(Ri[0]!=Rj[0] || Ri[1]!=Rj[1] || ri[0]!=rj[0] || ri[1]!=rj[1])
-                out=m_params[0]*double(1.0-2.0*linalg::mod(int(Rj[0]+Rj[1])-int(Ri[0]+Ri[1]),2))/m_lattice->GetNv();
-            return out;
+            if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
+                return 0.0;
+            else{
+                int rx,ry;
+                rx=int(Rj[0])-int(Ri[0]);
+                ry=int(Rj[1])-int(Ri[1]);
+                int ph=1;
+                if(linalg::mod(rx+ry,2))
+                    ph=-1;
+                return ph*m_params[0]*log(sqrt(0.5*(pow(sin(rx*M_PI/m_lattice->GetLx()),2)+pow(sin(ry*M_PI/m_lattice->GetLy()),2))))/m_lattice->GetNv();
+            }
         }
-
         virtual double space_potential_grad(const uint_vec_t& Ri,
                                             const std::vector<double>& ri,
                                             const uint_vec_t& Rj,
                                             const std::vector<double>& rj,
                                             std::size_t param) const
         {
-            double out(0);
-            if(Ri[0]!=Rj[0] || Ri[1]!=Rj[1] || ri[0]!=rj[0] || ri[1]!=rj[1])
-                out=double(1.0-2.0*linalg::mod(int(Rj[0]+Rj[1])-int(Ri[0]+Ri[1]),2))/m_lattice->GetNv();
-            return out;
+            if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
+                return 0.0;
+            else{
+                int rx,ry;
+                rx=int(Rj[0])-int(Ri[0]);
+                ry=int(Rj[1])-int(Ri[1]);
+                int ph=1;
+                if(linalg::mod(rx+ry,2))
+                    ph=-1;
+                return ph*log(sqrt(0.5*(pow(sin(rx*M_PI/m_lattice->GetLx()),2)+pow(sin(ry*M_PI/m_lattice->GetLy()),2))))/m_lattice->GetNv();
+            }
         }
-
         virtual double space_potential_hess(const uint_vec_t& Ri,
                                             const std::vector<double>& ri,
                                             const uint_vec_t& Rj,
@@ -48,7 +60,6 @@ class StagJastrowPotential: public JastrowPotential {
         {
             return 0;
         }
-
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,
                                                          const uint_vec_t& statej) const
         {
@@ -76,4 +87,4 @@ class StagJastrowPotential: public JastrowPotential {
         }
 };
 
-#endif//_STAGJASTROWPOTENTIAL_H
+#endif//_LOGJASTROWPOTENTIAL_H
