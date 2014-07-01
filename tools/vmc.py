@@ -111,7 +111,7 @@ def GetFermiSigns(filename,refstate=None,channel=None):
 def GetMagnetization(filename,Nsamp=1):
     if type(filename)==str:
         filename=[filename]
-        dpath,args=GetStat(filename,Nsamp)
+    dpath,args=GetStat(filename,Nsamp)
     M=sc.zeros((Nsamp,3))
     for sample,b in enumerate(args):
         for d in b:
