@@ -6,11 +6,13 @@ from matplotlib.cbook import is_numlike
 from scipy.linalg import eigh
 import scipy as sc
 from numpy.linalg import matrix_rank
+import numpy as np
 import vmc_utils as vln
 import stagflux as sf
 import os
 import re
 import code
+import six
 
 class InputFileError(Exception):
     def __init__(self,errstr):
@@ -296,10 +298,10 @@ def GetSq(filename,Nsamp=1):
     try:
         filetype=attrs['type']
     except KeyError:
-        mo=re.match('.*/?[0-9]+-(StatSpinStruct)\.h5',filename)
+        mo=re.match('.*/?[0-9]+-(StatSpinStruct)\.h5',filename[0])
         filetype=mo.groups()[0]
     if filetype!='StatSpinStruct':
-        raise InputFileError('\"{0}\" is not a static structure factor file')
+        raise InputFileError('\"{0}\" is not a static structure factor file'.format(filename))
     N=pow(attrs['L'],2)
     Sq=sc.zeros((Nsamp,3,N),complex)
     for sample,b in enumerate(args):
@@ -308,7 +310,7 @@ def GetSq(filename,Nsamp=1):
             Sq[sample,:,:]+=hfile[dpath[d][1]][0:3,0::2]+1j*hfile[dpath[d][1]][0:3,1::2]
             hfile.close()
         Sq[sample,:,:]/=len(b)
-    qx,qy=sc.meshgrid(range(attrs['L']),range(attrs['L']))
+    qx,qy=sc.meshgrid(np.arange(attrs['L']),np.arange(attrs['L']))
     return qx.flatten(),qy.flatten(),Sq
 
 def GetStagMagn(filename,Nsamp=1):
@@ -339,6 +341,12 @@ def GetAttr(filename):
     hfile=h5py.File(filename,'r')
     attrs=dict(hfile.attrs)
     hfile.close()
+    if six.PY3:
+        for k,v in attrs.items():
+            val=v
+            if type(v) is np.bytes_:
+                val=str(val,encoding='ascii')
+            attrs[k]=val
     return attrs
 
 def PlotSqw(filename,gsen,Nsamp=1,channel=None,\

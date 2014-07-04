@@ -10,7 +10,7 @@ using namespace std;
 
 StatSpinStruct::StatSpinStruct(const Stepper* stepper,
                                FileManager* fm)
-    :MatrixQuantity(stepper,fm,"StatSpinStruct",3,
+    :MatrixQuantity(stepper,fm,"StatSpinStruct",5,
                       stepper->GetLatticeState()->GetLattice()->GetLx()*
                       stepper->GetLatticeState()->GetLattice()->GetLy())
 {
@@ -65,12 +65,22 @@ void StatSpinStruct::measure()
             // assuming single occupancy
             size_t fi=max_element(sti.begin(),sti.end(),uint_vec_t_comp)-sti.begin();
             size_t fj=max_element(stj.begin(),stj.end(),uint_vec_t_comp)-stj.begin();
-            if(fi!=fj || sti[fi]!=stj[fj]){
+            if(fi!=fj || sti[fi]!=stj[fj]){//+- and -+ components
                 hops.push_back(vector<hop_path_t>(st->GetNfl()));
                 hops.back()[fi].push_back(hop_t(vxi->idx*Nifs[fi]+sti[fi][0],
                                                 vxj->idx*Nifs[fi]+sti[fi][0]));
                 hops.back()[fj].push_back(hop_t(vxj->idx*Nifs[fj]+stj[fj][0],
                                                 vxi->idx*Nifs[fj]+stj[fj][0]));
+            } else if(st->GetNfl()==1){ //++ and -- components, only if Sztot not conserved.
+                if(isup(sti)){
+                    hops.push_back(vector<hop_path_t>(st->GetNfl()));
+                    hops.back()[0].push_back(hop_t(vxi->idx*2,vxi->idx*2+1));
+                    hops.back()[0].push_back(hop_t(vxj->idx*2,vxj->idx*2+1));
+                } else {
+                    hops.push_back(vector<hop_path_t>(st->GetNfl()));
+                    hops.back()[0].push_back(hop_t(vxi->idx*2+1,vxi->idx*2));
+                    hops.back()[0].push_back(hop_t(vxj->idx*2+1,vxj->idx*2));
+                }
             }
         }
     }
@@ -85,6 +95,8 @@ void StatSpinStruct::measure()
     vector<complex<double> > sqlong(m_qs.size()/2,0);
     vector<BigComplex> sqtranspm(m_qs.size()/2,0);
     vector<BigComplex> sqtransmp(m_qs.size()/2,0);
+    vector<BigComplex> sqtranspp(m_qs.size()/2,0);
+    vector<BigComplex> sqtransmm(m_qs.size()/2,0);
     for(size_t q=0;q<m_qs.size()/2;++q){
         size_t sw=0;
         for(size_t vi=0;vi<st->GetNsites();++vi){
@@ -105,6 +117,12 @@ void StatSpinStruct::measure()
                             sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
+                            if(st->GetNfl()==1){
+                                sqtransmm[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
+                                              m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
+                                ++sw;
+                            }
                         }
                     } else {
                         sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
@@ -147,6 +165,12 @@ void StatSpinStruct::measure()
                             sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
+                            if(st->GetNfl()==1){
+                                sqtranspp[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
+                                              m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
+                                ++sw;
+                            }
                         }
                     }
                 }
@@ -158,6 +182,8 @@ void StatSpinStruct::measure()
         Val(0,q)+=sqlong[q];
         Val(1,q)+=complex<double>(sqtransmp[q]/w);
         Val(2,q)+=complex<double>(sqtranspm[q]/w);
+        Val(3,q)+=complex<double>(sqtranspp[q]/w);
+        Val(4,q)+=complex<double>(sqtransmm[q]/w);
     }
 }
 
