@@ -114,13 +114,13 @@ string( REGEX REPLACE "[-g]" "" VERSION_SHA1 ${VERSION_SHA1} )
 
 add_definitions( -DGIT_SHA1="${VERSION_SHA1}" )
 
-set( CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -ffast-math -funroll-loops -march=native" CACHE STRING "Release compile flags" FORCE)
+set( CMAKE_CXX_FLAGS_RELEASE "-std=c++0x -O3 -ffast-math -funroll-loops -march=native" CACHE STRING "Release compile flags")
 
 if( CMAKE_BUILD_TYPE STREQUAL "Release" )
     add_definitions( -DNDEBUG )
 endif()
 
-set( CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -O0 -g3" CACHE STRING "Debug compile flags" FORCE)
+set( CMAKE_CXX_FLAGS_DEBUG "-std=c++0x -O0 -g3" CACHE STRING "Debug compile flags")
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
     add_definitions( -DDEBUG )

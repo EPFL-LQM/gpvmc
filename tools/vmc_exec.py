@@ -19,11 +19,10 @@ def vmc_exec(**kwargs):
     asked using the kwargs.
     """
     opts=get_vmc_args()
-    opts+=['nprocs','hosts','Nsamp']
+    opts+=['nprocs','hosts']
     kwargs.setdefault('nprocs',4)
     kwargs.setdefault('hosts','localhost')
     kwargs.setdefault('dir','.')
-    kwargs.setdefault('Nsamp',1)
     meas_trans={'meas_magnetization':'Magnetization',\
                 'meas_projheis':'ProjHeis',\
                 'meas_stagmagn':'StagMagn',\
@@ -54,7 +53,7 @@ def vmc_exec(**kwargs):
     outq=dict()
     for meas in meas_trans.keys():
         if kwargs.setdefault(meas,False):
-            outq[meas_trans[meas]]=get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['Nsamp'])
+            outq[meas_trans[meas]]=get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['samples'])
     return outq
 
 def get_quantity(filepath,Nsamp):
