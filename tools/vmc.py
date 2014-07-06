@@ -303,11 +303,12 @@ def GetSq(filename,Nsamp=1):
     if filetype!='StatSpinStruct':
         raise InputFileError('\"{0}\" is not a static structure factor file'.format(filename))
     N=pow(attrs['L'],2)
-    Sq=sc.zeros((Nsamp,3,N),complex)
+    Sq=sc.zeros((Nsamp,5,N),complex)
     for sample,b in enumerate(args):
         for d in b:
             hfile=h5py.File(dpath[d][0],'r')
-            Sq[sample,:,:]+=hfile[dpath[d][1]][0:3,0::2]+1j*hfile[dpath[d][1]][0:3,1::2]
+            dim=hfile[dpath[d][1]].shape[0]
+            Sq[sample,:dim,:]+=hfile[dpath[d][1]][0:,0::2]+1j*hfile[dpath[d][1]][0:,1::2]
             hfile.close()
         Sq[sample,:,:]/=len(b)
     qx,qy=sc.meshgrid(np.arange(attrs['L']),np.arange(attrs['L']))

@@ -118,7 +118,10 @@ void StatSpinStruct::measure()
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                             if(st->GetNfl()==1){
-                                sqtransmm[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                sqtransmm[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
+                                              m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                                sqtransmm[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                               conj(amp)*jas*swamps[sw]*swjs[sw]*
                                               m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                                 ++sw;
@@ -166,7 +169,10 @@ void StatSpinStruct::measure()
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                             if(st->GetNfl()==1){
-                                sqtranspp[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                sqtranspp[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
+                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
+                                              m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
+                                sqtranspp[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                               conj(amp)*jas*swamps[sw]*swjs[sw]*
                                               m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
                                 ++sw;
