@@ -71,7 +71,7 @@ void StatSpinStruct::measure()
                                                 vxj->idx*Nifs[fi]+sti[fi][0]));
                 hops.back()[fj].push_back(hop_t(vxj->idx*Nifs[fj]+stj[fj][0],
                                                 vxi->idx*Nifs[fj]+stj[fj][0]));
-            } else if(st->GetNfl()==1){ //++ and -- components, only if Sztot not conserved.
+            } else if(st->GetNfl()==1 && vi!=vj){ //++ and -- components, only if Sztot not conserved.
                 if(isup(sti)){
                     hops.push_back(vector<hop_path_t>(st->GetNfl()));
                     hops.back()[0].push_back(hop_t(vxi->idx*2,vxi->idx*2+1));
