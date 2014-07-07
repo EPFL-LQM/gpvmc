@@ -9,10 +9,10 @@
 using namespace std;
 
 StatSpinStruct::StatSpinStruct(const Stepper* stepper,
-                               FileManager* fm)
+                               FileManager* fm, bool meas_trans)
     :MatrixQuantity(stepper,fm,"StatSpinStruct",5,
                       stepper->GetLatticeState()->GetLattice()->GetLx()*
-                      stepper->GetLatticeState()->GetLattice()->GetLy())
+                      stepper->GetLatticeState()->GetLattice()->GetLy()), m_meas_trans(meas_trans)
 {
     size_t Lx=stepper->GetLatticeState()->GetLattice()->GetLx();
     size_t Ly=stepper->GetLatticeState()->GetLattice()->GetLy();
@@ -71,7 +71,7 @@ void StatSpinStruct::measure()
                                                 vxj->idx*Nifs[fi]+sti[fi][0]));
                 hops.back()[fj].push_back(hop_t(vxj->idx*Nifs[fj]+stj[fj][0],
                                                 vxi->idx*Nifs[fj]+stj[fj][0]));
-            } else if(st->GetNfl()==1 && vi!=vj){ //++ and -- components, only if Sztot not conserved.
+            } else if(m_meas_trans && st->GetNfl()==1 && vi!=vj){ //++ and -- components, only if Sztot not conserved.
                 if(isup(sti)){
                     hops.push_back(vector<hop_path_t>(st->GetNfl()));
                     hops.back()[0].push_back(hop_t(vxi->idx*2,vxi->idx*2+1));
@@ -117,7 +117,7 @@ void StatSpinStruct::measure()
                             sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                            if(st->GetNfl()==1){
+                            if(m_meas_trans && st->GetNfl()==1){
                                 sqtransmm[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                               conj(amp)*jas*swamps[sw]*swjs[sw]*
                                               m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
@@ -168,7 +168,7 @@ void StatSpinStruct::measure()
                             sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
                                             0.25*
                                             m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                            if(st->GetNfl()==1){
+                            if(m_meas_trans && st->GetNfl()==1){
                                 sqtranspp[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
                                               conj(amp)*jas*swamps[sw]*swjs[sw]*
                                               m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];

@@ -5,8 +5,8 @@
 #include "LatticeState.h"
 #include "Lattice.h"
 
-StagMagn::StagMagn(const Stepper* stepper, FileManager* fm)
-    :VectorQuantity(stepper,fm,"StagMagn",3)
+StagMagn::StagMagn(const Stepper* stepper, FileManager* fm, bool meas_trans)
+    :VectorQuantity(stepper,fm,"StagMagn",3), m_meas_trans(meas_trans)
 {}
 StagMagn::~StagMagn()
 {}
@@ -16,23 +16,25 @@ void StagMagn::measure()
     Quantity::measure();
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti;
-    for(size_t v=0;v<st->GetNsites();++v){
-        const Vertex* vxi=st->GetLattice()->GetVertices()[v];
-        st->GetLatOc(vxi->idx,sti);
-        size_t fi=sti[0][0];
-        if(fi==0){//up
-            hops.push_back(vector<hop_path_t>(1));
-            hops.back()[0].push_back(hop_t(vxi->idx*2,vxi->idx*2+1));
-        } else {
-            hops.push_back(vector<hop_path_t>(1));
-            hops.back()[0].push_back(hop_t(vxi->idx*2+1,vxi->idx*2));
-        }
-    }
     vector<BigComplex> swamps(hops.size(),BigComplex(0.0,0.0));
     vector<double> swjs(hops.size(),0);
     BigComplex amp=m_stepper->GetAmp()->Amp()*m_stepper->GetJas()->Jas();
-    m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(1)),swamps);
-    m_stepper->GetJas()->VirtUpdate(hops,swjs);
+    if(m_meas_trans){
+        for(size_t v=0;v<st->GetNsites();++v){
+            const Vertex* vxi=st->GetLattice()->GetVertices()[v];
+            st->GetLatOc(vxi->idx,sti);
+            size_t fi=sti[0][0];
+            if(fi==0){//up
+                hops.push_back(vector<hop_path_t>(1));
+                hops.back()[0].push_back(hop_t(vxi->idx*2,vxi->idx*2+1));
+            } else {
+                hops.push_back(vector<hop_path_t>(1));
+                hops.back()[0].push_back(hop_t(vxi->idx*2+1,vxi->idx*2));
+            }
+        }
+        m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(1)),swamps);
+        m_stepper->GetJas()->VirtUpdate(hops,swjs);
+    }
     vector<BigComplex> S(3,BigComplex(0.0,0.0));
     for(size_t v=0;v<st->GetNsites();++v){
         const Vertex* vxi=st->GetLattice()->GetVertices()[v];
@@ -42,10 +44,12 @@ void StagMagn::measure()
         st->GetLatOc(vxi->idx,sti);
         if(sti[0][0]==0){//up
             S[2]+=0.5*ph;
-            S[0]+=0.5*conj(amp)*swamps[v]*swjs[v]*ph;
+            if(m_meas_trans)
+                S[0]+=0.5*conj(amp)*swamps[v]*swjs[v]*ph;
         } else {//down
             S[2]-=0.5*ph;
-            S[1]+=0.5*conj(amp)*swamps[v]*swjs[v]*ph;
+            if(m_meas_trans)
+                S[1]+=0.5*conj(amp)*swamps[v]*swjs[v]*ph;
         }
     }
     BigComplex mI(0.0,-1.0);

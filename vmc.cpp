@@ -335,16 +335,16 @@ int main(int argc, char* argv[])
                     StagMagnZ* stagsz=new StagMagnZ(&step,&fm);
                     varmc.AddQuantity(stagsz);
                 } else {
-                    StagMagn* stags=new StagMagn(&step,&fm);
+                    StagMagn* stags=new StagMagn(&step,&fm,!bomap["Sztot_zero_proj"]);
                     varmc.AddQuantity(stags);
                 }
             }
             if(bomap["meas_statspinstruct"]){
-                StatSpinStruct* stat=new StatSpinStruct(&step,&fm);
+                StatSpinStruct* stat=new StatSpinStruct(&step,&fm,!bomap["Sztot_zero_proj"]);
                 varmc.AddQuantity(stat);
             }
             if(bomap["meas_magnetization"] && (domap["Bx"]!=0 || !bomap["Sztot_conserved"])){
-                Magnetization* magn=new Magnetization(&step,&fm);
+                Magnetization* magn=new Magnetization(&step,&fm,!bomap["Sztot_zero_proj"]);
                 varmc.AddQuantity(magn);
             }
         }

@@ -10,9 +10,11 @@
 
 class Magnetization: public VectorQuantity {
     public:
-        Magnetization(const Stepper* stepper, FileManager* fm);
+        Magnetization(const Stepper* stepper, FileManager* fm, bool meas_trans=false);
         virtual ~Magnetization();
         virtual void measure();
+    private:
+        bool m_meas_trans;
 };
 
 #endif
