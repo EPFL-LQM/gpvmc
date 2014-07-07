@@ -242,7 +242,6 @@ int main(int argc, char* argv[])
         } else {
             if(stmap["channel"]=="groundstate"){
                 wav=new SFpNxpHzGroundState(L,L,phi,neel,domap["hz"],phase_shift);
-                cout<<"SFpNxPHz case"<<endl;
             } else {//trans and long are mixed
                 wav=new SFpNxpHzExciton(L,L,phi,neel,domap["hz"],phase_shift,Q);
             }
