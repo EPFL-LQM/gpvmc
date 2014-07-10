@@ -170,6 +170,7 @@ int main(int argc, char* argv[])
     }
 
 #ifdef USEMPI
+    MPI_Barrier(MPI_COMM_WORLD);
     if(comm_rank){
 #endif
         // Setup calculation
@@ -359,7 +360,7 @@ int main(int argc, char* argv[])
             JastrowTrack* jast=new JastrowTrack(&step,&fm);
             varmc.AddQuantity(jast);
         }
-
+        
         // Start calculation: thermalize
         if(simap["therm"]){
             Timer::tic("main/thermalize");
