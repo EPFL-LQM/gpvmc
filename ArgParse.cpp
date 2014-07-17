@@ -150,6 +150,7 @@ int ArgParse(int argc, char* argv[],
             if(rank==0)
                 memcpy(c_str,string_opts[keys[k]].c_str(),strlen);
             MPI_Bcast(c_str,strlen,MPI_CHAR,0,MPI_COMM_WORLD);
+            string_opts[keys[k]]=string(c_str);
         }
     }
 #endif//USEMPI

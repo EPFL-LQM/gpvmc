@@ -64,7 +64,7 @@ void ProjHeis::measure()
         // assuming single occupancy
         size_t fi=max_element(sti.begin(),sti.end(),uint_vec_t_comp)-sti.begin();
         size_t fj=max_element(stj.begin(),stj.end(),uint_vec_t_comp)-stj.begin();
-        if(fi!=fj || sti[fi]!=stj[fj]){
+        if(fi!=fj || sti[fi][0]!=stj[fj][0]){
             rhop.push_back(vector<hop_path_t>(st->GetNfl()));
             rhop.back()[fi].push_back(hop_t(vi->idx*Nifs[fi]+sti[fi][0],
                                            vj->idx*Nifs[fi]+sti[fi][0]));
@@ -121,7 +121,7 @@ void ProjHeis::measure()
         // assuming single occupancy
         size_t fi=max_element(sti.begin(),sti.end(),uint_vec_t_comp)-sti.begin();
         size_t fj=max_element(stj.begin(),stj.end(),uint_vec_t_comp)-stj.begin();
-        if(fi!=fj || sti[fi]!=stj[fj]){
+        if(fi!=fj || sti[fi][1]!=stj[fj][0]){
             for(size_t k=0;k<Nexc;++k)
                 heisamps[k]-=J*(0.25*amps[k]+0.5*qs[k*Nsw+swc]*js[swc]);
             ++swc;

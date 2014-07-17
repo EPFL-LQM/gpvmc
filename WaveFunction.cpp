@@ -15,7 +15,7 @@ WaveFunction::WaveFunction()
 void WaveFunction::build_base(const uint_vec_t& Npt, const uint_vec_t& Nfs)
 {
     State::build_base(Npt,Nfs);
-    m_cache=vector<vector<complex<double> > >(Npt.size());
+    m_cache=vector<vector<complex<double> > >(m_Nfl);
     for(size_t fl=0;fl<m_Nfl;++fl)
         m_cache[fl]=vector<complex<double> >(size_t(pow(m_Nfs[fl],2)));
 }

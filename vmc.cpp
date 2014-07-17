@@ -250,8 +250,13 @@ int main(int argc, char* argv[])
         wav->Save(&fm);
         vector<vector<size_t> > pop;
         if(bomap["Sztot_conserved"]){
-            pop.push_back(vector<size_t>(1,L*L/2));
-            pop.push_back(vector<size_t>(1,L*L/2));
+            if(stmap["channel"]=="trans"){
+                pop.push_back(vector<size_t>(1,L*L/2+1));
+                pop.push_back(vector<size_t>(1,L*L/2-1));
+            } else {
+                pop.push_back(vector<size_t>(1,L*L/2));
+                pop.push_back(vector<size_t>(1,L*L/2));
+            }
         } else {
             if(bomap["Sztot_non_zero_init"]){
                 int Nup=(size_t)(RanGen::uniform()*L*L);
