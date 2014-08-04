@@ -3,7 +3,7 @@ find_program(PYTHON "python")
 if (PYTHON)
     set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
     set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-    set(DEPS "${CMAKE_CURRENT_SOURCE_DIR}/vmc.py" "${CMAKE_CURRENT_SOURCE_DIR}/stagflux.py" "${CMAKE_CURRENT_SOURCE_DIR}/vmc_utils.py" "${CMAKE_CURRENT_SOURCE_DIR}/vmc_exec.py")
+    set(DEPS "${CMAKE_CURRENT_SOURCE_DIR}/vmc_legacy_utils/vmc.py" "${CMAKE_CURRENT_SOURCE_DIR}/vmc_legacy_utils/stagflux.py" "${CMAKE_CURRENT_SOURCE_DIR}/vmc_legacy_utils/vmc_utils.py")
     set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/timestamp")
 
     configure_file(${SETUP_PY_IN} ${SETUP_PY})
@@ -16,7 +16,6 @@ if (PYTHON)
 
     install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install --user)")
 endif(PYTHON)
-
 add_executable(concatenate concatenate.cpp)
 
 if (HDF5_FOUND)
