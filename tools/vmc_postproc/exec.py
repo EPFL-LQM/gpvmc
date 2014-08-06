@@ -6,7 +6,6 @@ import sys
 import re
 import h5py
 import numpy as np
-import vmc
 
 def vmc_exec(**kwargs):
     """
@@ -55,23 +54,6 @@ def vmc_exec(**kwargs):
         if kwargs.setdefault(meas,False):
             outq[meas_trans[meas]]=get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['samples'])
     return outq
-
-def get_quantity(filepath,Nsamp):
-    print(filepath)
-    dpath,args=vmc.GetStat([filepath],Nsamp)
-    hfile=h5py.File(dpath[args[0][0]][0],'r')
-    dshape=list(hfile[dpath[args[0][0]][1]].shape)
-    hfile.close()
-    dshape[1]/=2 #because complex numbers a contiguous along a line
-    Q=np.zeros([Nsamp]+list(dshape),dtype=complex)
-    for si,bi in enumerate(args):
-        for d in bi:
-            hfile=h5py.File(dpath[d][0],'r')
-            dat=hfile[dpath[d][1]]
-            Q[si,:]+=dat[:,::2]+1j*dat[:,1::2]
-            hfile.close()
-        Q[si,:]/=len(bi)
-    return Q
 
 def get_vmc_args():
     """

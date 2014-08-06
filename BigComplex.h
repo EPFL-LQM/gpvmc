@@ -41,6 +41,15 @@ class BigComplex
 
         }
 
+        bool isnaninf()
+        {
+#ifdef CRAY
+            return isnan(real(m_c)) || isinf(real(m_c)) || isnan(imag(m_c)) || isinf(imag(m_c));
+#else
+            return std::isnan(real(m_c)) || std::isinf(real(m_c)) || std::isnan(imag(m_c)) || std::isinf(imag(m_c));
+#endif
+        }
+
         BigComplex(const std::complex<double>& c, int e=0)
             :m_c(c), m_e(e)
         {
