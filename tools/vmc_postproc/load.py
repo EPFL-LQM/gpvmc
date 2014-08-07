@@ -7,10 +7,14 @@ import re
 import h5py
 import copy
 import numpy as np
+import numpy.linalg as lg
+from scipy.linalg import eigh
+import warnings
 
 def get_quantity(filepath,Nsamp):
-    print(filepath)
-    dpath,args=get_stat([filepath],Nsamp)
+    if type(filepath)!=list:
+        fielpath=[filepath]
+    dpath,args=get_stat(filepath,Nsamp)
     hfile=h5py.File(dpath[args[0][0]][0],'r')
     dshape=list(hfile[dpath[args[0][0]][1]].shape)
     hfile.close()
@@ -24,7 +28,6 @@ def get_quantity(filepath,Nsamp):
             hfile.close()
         Q[si,:]/=len(bi)
     return Q
-
 
 def get_stat(filename,Nsamp=1):
     hfile=[]
@@ -92,3 +95,34 @@ def bunch(instat,Nsamp,indices=False):
 
 def argsort(seq):
     return sorted(range(len(seq)),key=seq.__getitem__)
+
+def get_attr(filename):
+    hfile=h5py.File(filename,'r')
+    attrs=dict(hfile.attrs)
+    hfile.close()
+    if six.PY3:
+        for k,v in attrs.items():
+            val=v
+            if type(v) is np.bytes_:
+                val=str(val,encoding='ascii')
+            attrs[k]=val
+    return attrs
+
+def get_wav(filename):
+    attr=get_attr(filename)
+    filetype=''
+    try:
+        filetype=attr['type']
+    except KeyError:
+        mo=re.match('.*/?[0-9]+-(.*)\.h5',filename)
+        filetype=mo.groups()[0]
+    if filetype!='WaveFunction':
+        raise(RuntimeError('get_wav: Bad file type \'{}\'.'.format(filetype)))
+    L=attr['L']
+    hfile=h5py.File(filename,'r')
+    states_flav=[]
+    for k in hfile.keys():
+        states_flav+=[hfile[k]]
+    states=np.column_stack(states_flav)
+    hfile.close()
+    return states
