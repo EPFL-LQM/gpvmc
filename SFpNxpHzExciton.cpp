@@ -22,7 +22,7 @@ SFpNxpHzExciton::SFpNxpHzExciton(size_t Lx,
         gsst[0][4*f]=0;
         gsst[0][4*f+1]=0;
     }
-    if((m_q[0]==0 && m_q[1]==0) || (m_q[0]==Lx/2 && m_q[1]==Ly))
+    if((m_q[0]==0 && m_q[1]==0) || (m_q[0]==Lx/2 && m_q[1]==Ly/2))
         AddState(gsst);
     for(size_t kx=0;kx<Lx;++kx){
         for(size_t ky=0;ky<Ly;++ky){
