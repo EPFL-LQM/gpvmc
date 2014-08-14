@@ -3,6 +3,8 @@
 
 #include "State.h"
 #include <complex>
+#include <map>
+#include <string>
 
 class FileManager;
 
@@ -41,13 +43,18 @@ class WaveFunction : public State{
          * a single particle state.*/
         virtual std::complex<double>
             matrix_element(size_t f, size_t r, size_t s)=0;
+        /*! Derived classes must define how the fock index f
+         * for flavour fl translates into the set of relevant
+         * quantum numbers.
+         */
+        virtual void quantum_numbers(const size_t& f, const size_t& fl,std::map<std::string,size_t>& qn)=0;
 
     /**************
      * public:    *
      **************/
     public:
         /*! Base constructor*/
-        WaveFunction();
+        WaveFunction(FileManager* fm);
 
         virtual ~WaveFunction();
 
@@ -58,9 +65,6 @@ class WaveFunction : public State{
             return m_cache[s][f*m_Nfs[s]+r];
         }
         size_t GetNExc() const {return m_exc.size();}
-
-        // Writes down the states and relative fermi signs to storage
-        void Save(FileManager* fm);
 
         /*! Add a state to the wavefunction, defining
          * the hop path from and to the other already defined
@@ -75,9 +79,14 @@ class WaveFunction : public State{
          */
         void Hop(size_t khop);
 
+        //! Writes down the states
+        virtual void Save();
+
         const std::vector<std::vector<hop_path_t> >& GetHops() const;
 
         const std::vector<hop_path_t>& GetHop(size_t k) const;
+
+        size_t GetCurrentStateIndex() const {return m_c_exc;}
 
 };
 

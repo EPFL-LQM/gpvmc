@@ -6,21 +6,26 @@
 #include <iostream>
 
 class Lattice;
+class FileManager;
 
 class LatticeState: public State{
     private:
         const Lattice* m_lattice;
         uint_vec_t m_Nifs; //!< Site internal degrees of freedom per flavour
     public:
-        LatticeState(const Lattice* lattice,
-                       const uint_vec_t& Npt,
-                       const uint_vec_t& Nifs);
+        LatticeState(FileManager* fm,
+                     const Lattice* lattice,
+                     const uint_vec_t& Npt,
+                     const uint_vec_t& Nifs);
         size_t GetNsites() const;
         const uint_vec_t& GetNifs() const;
         const Lattice* GetLattice() const;
         /*! \brief Initialize at random the state
          */
         void RanInit(const std::vector<std::vector<size_t> >& pop);
+        /*! \brief Initialize from a fock state (0=empty, 1 occupied)
+         */
+        void FockInit(const std::vector<std::vector<int> >& fock);
         /*! \brief st[f][:] lists the occupied internal states at vertex v.
          */
         void GetLatOc(size_t v,

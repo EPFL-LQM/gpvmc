@@ -105,21 +105,30 @@ BigDouble LatticeStepper::trystep()
 
 void LatticeStepper::step()
 {
+    static int count=0;
     m_latstate->Hop(m_prev);
     m_jas->Update(m_prev);
-    if(!m_khop<0){
+    try{
+    if(m_khop>=0){
         const vector<hop_path_t>& khop_p=m_wav->GetHop(m_khop);
         m_wav->Hop(m_khop);
         m_amp->Update(m_prev,khop_p);
     } else {
         m_amp->Update(m_prev,vector<hop_path_t>(m_Nfl));
     }
+    } catch(std::logic_error e){
+        cout<<*m_latstate<<endl<<*m_wav<<endl;
+#ifndef USEMPI
+        m_latstate->Save();
+#endif
+        throw;
+    }
     if(m_amp->Amp()==0){
         cerr<<"LatticeStepper::step(): Stepped to a zero overlap!"<<endl;
         abort();
     }
     BigDouble ow=m_weight;
-#ifndef DEBUG
+#ifdef DNDEBUG
     if(m_prev_weight>0.0)
         m_weight=m_prev_weight;
     else {
@@ -139,6 +148,7 @@ void LatticeStepper::step()
     }
     m_prev=vector<hop_path_t>(m_Nfl);
     m_khop=-1;
+    count++;
 }
 
 BigDouble LatticeStepper::weight()

@@ -9,9 +9,10 @@ using namespace std;
 class SFpNpHxExciton : public SFpNpHxWaveFunction
 {
     public:
-        SFpNpHxExciton(size_t Lx, size_t Ly,
-                            double phi, double neel, double hx,
-                            std::vector<double> bc_phase, std::vector<size_t> q);
+        SFpNpHxExciton(FileManager* fm,
+                       size_t Lx, size_t Ly,
+                       double phi, double neel, double hx,
+                       std::vector<double> bc_phase, std::vector<size_t> q);
         virtual ~SFpNpHxExciton();
     private:
         std::vector<size_t> m_q;

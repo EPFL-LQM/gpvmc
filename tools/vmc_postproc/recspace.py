@@ -1,8 +1,8 @@
 import numpy as np
 
 def mbz(params):
-    Lx=params['L']
-    Ly=params['L']
+    Lx=int(params['L'])
+    Ly=int(params['L'])
     shift=[params['phase_shift_x']/2.0,params['phase_shift_y']/2.0]
     fskx=np.zeros(Lx*Ly/2)
     fsky=np.zeros(Lx*Ly/2)

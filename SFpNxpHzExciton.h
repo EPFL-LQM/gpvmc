@@ -9,7 +9,8 @@ using namespace std;
 class SFpNxpHzExciton : public SFpNxpHzWaveFunction
 {
     public:
-        SFpNxpHzExciton(size_t Lx, size_t Ly,
+        SFpNxpHzExciton(FileManager* fm,
+                        size_t Lx, size_t Ly,
                         double phi, double neel, double hz,
                         std::vector<double> bc_phase, std::vector<size_t> q);
         virtual ~SFpNxpHzExciton();

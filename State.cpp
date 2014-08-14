@@ -1,10 +1,16 @@
 #include "State.h"
+#include "FileManager.h"
+#include <hdf5.h>
+#include <hdf5_hl.h>
+#ifdef USEMPI
+#include <mpi.h>
+#endif
 #include <iomanip>
 
 using namespace std;
 
-State::State()
-    : m_sign(1)
+State::State(FileManager* fm)
+    : m_filemanager(fm),m_sign(1)
 {}
 
 State::~State()
@@ -106,6 +112,57 @@ int State::HopSign(const vector<hop_path_t>& hops) const
         }
     }
     return (2*int(!odd)-1);
+}
+
+void State::Save()
+{
+    int rank=0, size=1;
+#ifdef USEMPI
+    MPI_Comm comm=m_filemanager->GetCalcComm();
+    MPI_Comm_size(comm,&size);
+    MPI_Comm_rank(comm,&rank);
+#endif
+    vector<vector<int> > st;
+    for(size_t fl=0;fl<m_Nfl;++fl){
+        st.push_back(vector<int>(m_Nfs[fl],0));
+        for(size_t f=0;f<m_Nfs[fl];++f)
+            st[fl][f]=int(m_fock[fl][f]!=m_Npt[fl]);
+    }
+    if(rank==0){
+        hid_t ofile=m_filemanager->WriteSimple("FockState");
+        for(size_t fl=0;fl<m_Nfl;++fl){
+            hsize_t dim=m_Nfs[fl];
+            vector<int> buf(m_Nfs[fl]*(size));
+#ifdef USEMPI
+            MPI_Gather(&st[fl][0],m_Nfs[fl],MPI_INT,&buf[0],m_Nfs[fl],MPI_INT,0,comm);
+#else
+            buf=st[fl];
+#endif
+            for(size_t r=0;r<size;++r){
+                herr_t status;
+                hid_t grp;
+                int absrankid=0;
+#ifdef USEMPI
+                absrankid=r+1;
+#endif
+                bool grpexists=H5Lexists(ofile,(string("/rank-")+to_string(absrankid)).c_str(),H5P_DEFAULT);
+                if(grpexists){
+                    grp=H5Gopen(ofile,(string("/rank-")+to_string(absrankid)).c_str(),H5P_DEFAULT);
+                } else {
+                    grp=H5Gcreate(ofile,(string("rank-")+to_string(absrankid)).c_str(),H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+                }
+                H5LTmake_dataset_int(grp,(string("flavour-")+to_string(fl)).c_str(),1,&dim,&buf[r*m_Nfs[fl]]);
+                H5Gclose(grp);
+            }
+        }
+        H5Fclose(ofile);
+    } else {
+#ifdef USEMPI
+        for(size_t fl=0;fl<m_Nfl;++fl){
+            MPI_Gather(&st[fl][0],m_Nfs[fl],MPI_INT,NULL,0,MPI_INT,0,comm);
+        }
+#endif
+    }
 }
 
 std::ostream& operator<<(std::ostream& out,

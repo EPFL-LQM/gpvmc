@@ -5,8 +5,13 @@
 #include <iostream>
 #include "defs.h"
 
+class FileManager;
+
 class State {
     protected:
+        /*! FileManager object to process writing on disk
+         */
+        FileManager * m_filemanager;
         /*! \brief State in the enumerated single particle state basis.
          * m_part[f][p] is the index of the state p'th particle of flavour f
          * is in. The flavour is any good quantum number of the underlying mean-field
@@ -62,7 +67,7 @@ class State {
     public:
         /*! \brief Default constructor.
          */
-        State();
+        State(FileManager* fm);
 
         virtual ~State();
 
@@ -90,6 +95,9 @@ class State {
         /*! \brief Calculate the fermionic sign change of a sequence of hoppings.
          */
         int HopSign(const std::vector<hop_path_t>& hops) const;
+
+        //! Writes down the states
+        virtual void Save();
 
         /*! \brief Easy output
          */

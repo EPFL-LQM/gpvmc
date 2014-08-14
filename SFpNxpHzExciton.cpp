@@ -4,14 +4,16 @@
 
 using namespace std;
 
-SFpNxpHzExciton::SFpNxpHzExciton(size_t Lx,
+SFpNxpHzExciton::SFpNxpHzExciton(FileManager* fm,
+                                 size_t Lx,
                                  size_t Ly,
                                  double phi,
                                  double neel,
                                  double hz,
                                  vector<double> bc_phase,
                                  vector<size_t> q)
-    :SFpNxpHzWaveFunction(Lx,Ly,
+    :SFpNxpHzWaveFunction(fm,
+                          Lx,Ly,
                           Lx*Ly,
                           phi,neel,hz,bc_phase),
      m_q(q)

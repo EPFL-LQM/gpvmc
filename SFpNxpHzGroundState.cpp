@@ -2,10 +2,12 @@
 
 using namespace std;
 
-SFpNxpHzGroundState::SFpNxpHzGroundState(size_t Lx, size_t Ly,
+SFpNxpHzGroundState::SFpNxpHzGroundState(FileManager* fm,
+                                         size_t Lx, size_t Ly,
                                          double phi, double neel,double hz,
                                          const std::vector<double>& bc_phase)
-    :SFpNxpHzWaveFunction(Lx,Ly,
+    :SFpNxpHzWaveFunction(fm,
+                          Lx,Ly,
                           Lx*Ly,
                           phi,neel,hz,bc_phase)
 {

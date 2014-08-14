@@ -122,7 +122,6 @@ def get_wav(filename):
     hfile=h5py.File(filename,'r')
     states_flav=[]
     for k in hfile.keys():
-        states_flav+=[hfile[k]]
-    states=np.column_stack(states_flav)
-    hfile.close()
-    return states
+        states_flav.append(hfile[k])
+    wav_states=np.column_stack(states_flav)
+    return wav_states

@@ -17,13 +17,12 @@
  */
 class StagFluxWaveFunction : public WaveFunction {
     public:
-        StagFluxWaveFunction(size_t Lx, size_t Ly,
-                               size_t Nbyup, size_t Nbydo,
-                               double phi, double neel,
-                               std::vector<double> bc_phase);
+        StagFluxWaveFunction(FileManager* fm,
+                             size_t Lx, size_t Ly,
+                             size_t Nbyup, size_t Nbydo,
+                             double phi, double neel,
+                             std::vector<double> bc_phase);
         virtual ~StagFluxWaveFunction();
-        virtual std::complex<double>
-            matrix_element(size_t f, size_t r, size_t up);
 
     protected:
         size_t m_Lx;
@@ -34,6 +33,9 @@ class StagFluxWaveFunction : public WaveFunction {
         double m_neel;
         std::vector<double> m_bc_phase;
 
+        virtual std::complex<double>
+            matrix_element(size_t f, size_t r, size_t up);
+        virtual void quantum_numbers(const size_t& f, const size_t& fl, std::map<std::string,size_t>& qn);
         /*! utility function to tell whether k is inside
          * or outside of the Magmetic Zone Boundary.*/
         bool inmbz(size_t kx, size_t ky) const;

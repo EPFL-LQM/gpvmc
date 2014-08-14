@@ -12,6 +12,9 @@
 #include <exception>
 #include <stdexcept>
 #include <vector>
+#ifdef USEMPI
+#include <mpi.h>
+#endif
 
 class MatStream;
 
@@ -34,9 +37,14 @@ class FileManager
         std::map<std::string,std::string> m_file_str_attr;
         std::map<std::string,double> m_dataattr;
         int m_stat_per_sample;
+#ifdef USEMPI
+        MPI_Comm m_calc_comm;
+        void init_mpi_comm();
+#endif
     public:
         FileManager(const std::string& dir="", const int& num=-1);
         FileManager(const std::string& dir, const std::string& prefix);
+        ~FileManager();
         enum {message_comm=0,message_monitor=1,message_save=2,message_loop=3};
         MatStream& FileStream(std::string basename);
         void FileAttribute(std::string attr, double val);
@@ -47,6 +55,7 @@ class FileManager
         int Prefix() {return m_num;}
 #ifdef USEMPI
         void MainLoop();
+        MPI_Comm GetCalcComm() const {return m_calc_comm;}
 #endif
         void Monitor(int rank,double percents=0, double total_time=0);
         double& MonitorCompletion() {return m_compl;}

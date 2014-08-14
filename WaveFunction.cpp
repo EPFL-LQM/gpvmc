@@ -9,7 +9,8 @@
 
 using namespace std;
 
-WaveFunction::WaveFunction()
+WaveFunction::WaveFunction(FileManager* fm)
+    :State(fm)
 {}
 
 void WaveFunction::build_base(const uint_vec_t& Npt, const uint_vec_t& Nfs)
@@ -81,15 +82,16 @@ const vector<hop_path_t>& WaveFunction::GetHop(size_t k) const
     return m_exc[m_c_exc][k];
 }
 
-void WaveFunction::Save(FileManager* fm)
+void WaveFunction::Save()
 {
     int rank=0, size=1;
 #ifdef USEMPI
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Comm comm=m_filemanager->GetCalcComm();
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&size);
 #endif//USEMPI
-    if(size==1 || rank==1){ //not root process except if non-mpi
-        hid_t wfile=fm->WriteSimple("WaveFunction");
+    if(rank==0){
+        hid_t wfile=m_filemanager->WriteSimple("WaveFunction");
         for(size_t flav=0;flav<m_Nfl;++flav){
             vector<int> fock(m_exc.size()*m_Nfs[flav]);
             hsize_t dims[2]={m_exc.size(),m_Nfs[flav]};
@@ -102,6 +104,33 @@ void WaveFunction::Save(FileManager* fm)
             ostringstream sn;
             sn<<"states_"<<flav;
             H5LTmake_dataset_int(wfile,sn.str().c_str(),2,dims,fock.data());
+            // open dataset to add attributes
+            hid_t dataset=H5Dopen(wfile,sn.str().c_str(),H5P_DEFAULT);
+            // create attributes to store quantum numbers.
+            hsize_t dim=m_Nfs[flav];
+            hid_t ds;
+            ds=H5Screate_simple(1,&dim,NULL);
+            map<string,size_t> qn;
+            map<string,hid_t> ats;
+            map<string,vector<unsigned int> > qns;
+            map<string,size_t>::iterator qniter;
+            this->quantum_numbers(0,flav,qn);
+            for(qniter=qn.begin();qniter!=qn.end();qniter++){
+                ats[qniter->first]=H5Acreate(dataset,qniter->first.c_str(),H5T_STD_U32BE,ds,H5P_DEFAULT,H5P_DEFAULT);
+                qns[qniter->first]=vector<unsigned int>(m_Nfs[flav]);
+            }
+            H5Sclose(ds);
+            for(size_t f=0;f<m_Nfs[flav];++f){
+                this->quantum_numbers(f,flav,qn);
+                for(qniter=qn.begin();qniter!=qn.end();qniter++){
+                    qns[qniter->first][f]=qniter->second;
+                }
+            }
+            for(map<string,hid_t>::iterator atiter=ats.begin();atiter!=ats.end();atiter++){
+                H5Awrite(atiter->second,H5T_NATIVE_UINT,&qns[atiter->first][0]);
+                H5Aclose(atiter->second);
+            }
+            H5Dclose(dataset);
         }
         H5Fclose(wfile);
     }

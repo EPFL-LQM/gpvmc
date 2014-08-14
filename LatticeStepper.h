@@ -7,6 +7,8 @@
 #include "BigDouble.h"
 #include "defs.h"
 
+class FileManager;
+
 /*! \brief Class to perform a Monte Carlo step, by swaping nearest neighbours spins.
  *
  */

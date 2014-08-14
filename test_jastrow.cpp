@@ -2,6 +2,7 @@
 #include <map>
 #include <ctime>
 #include <cmath>
+#include "FileManager.h"
 #include "LatticeState.h"
 #include "SquareLattice.h"
 #include "Jastrow.h"
@@ -58,6 +59,7 @@ int main(int argc,char* argv[])
 #ifdef USEMPI
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
+    FileManager fm(".","test_jastrow");
     RanGen::srand(inmap["seed"]+100*rank);
     size_t L=simap["L"];
     SquareLattice slat(L,L);
@@ -74,9 +76,9 @@ int main(int argc,char* argv[])
     for(size_t tix=0;tix<simap["N_hop_tests"];++tix){
         LatticeState* st;
         if(bomap["Sztot_conserved"])
-            st=new LatticeState(&slat,{L*L/2,L*L/2},{1,1});
+            st=new LatticeState(&fm,&slat,{L*L/2,L*L/2},{1,1});
         else
-            st=new LatticeState(&slat,{L*L},{2});
+            st=new LatticeState(&fm,&slat,{L*L},{2});
         Jastrow* jas=0;
         JastrowPotential* jaspot=0;
         if(bomap["Neel_jastrow"]){

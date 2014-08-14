@@ -8,10 +8,11 @@
 
 using namespace std;
 
-LatticeState::LatticeState(const Lattice* lattice,
-                               const uint_vec_t& Npt,
-                               const uint_vec_t& Nifs)
-    : m_lattice(lattice), m_Nifs(Nifs)
+LatticeState::LatticeState(FileManager* fm,
+                           const Lattice* lattice,
+                           const uint_vec_t& Npt,
+                           const uint_vec_t& Nifs)
+    : State(fm), m_lattice(lattice), m_Nifs(Nifs)
 {
     vector<size_t> lNfs(Npt.size(),m_lattice->GetNv());
     for(size_t f=0;f<lNfs.size();++f) lNfs[f]*=Nifs[f];
@@ -75,6 +76,37 @@ void LatticeState::RanInit(const vector<vector<size_t> >& pop)
                     }
                 }
             }
+        }
+    }
+    InitFock(fst);
+}
+
+void LatticeState::FockInit(const vector<vector<int> >& fock)
+{
+    bool compatible=true;
+    if(fock.size()!=m_Nfl)
+        compatible=false;
+    else{
+        for(size_t fl=0;fl<m_Nfl;++fl){
+            if(m_Nfs[fl]!=fock[fl].size())
+                compatible=false;
+        }
+    }
+    if(!compatible){
+#ifdef EXCEPT
+        throw(std::runtime_error("LatticeState::FockInit: Fock state has no matching"
+                                 " nuumber of flavours or different sizes"));
+#else
+        cerr<<"LatticeState::FockInit: Fock state has no matching"
+              " nuumber of flavours or different sizes"<<endl;
+        abort();
+#endif
+    }
+    vector<uint_vec_t> fst(fock.size());
+    for(size_t fl=0;fl<m_Nfl;++fl){
+        fst[fl]=vector<size_t>(m_Nfs[fl],m_Npt[fl]);
+        for(size_t f=0;f<m_Nfs[fl];++f){
+            if(fock[fl][f]) fst[fl][f]=0;
         }
     }
     InitFock(fst);

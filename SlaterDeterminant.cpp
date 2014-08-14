@@ -52,7 +52,6 @@ SlaterDeterminant::SlaterDeterminant(const LatticeState* sp, const WaveFunction*
         m_mat[fl].resize(m_N[fl]*m_N[fl]);
         m_mati[fl].resize(m_N[fl]*m_N[fl]);
     }
-    Init();
 }
 
 SlaterDeterminant::~SlaterDeterminant()
@@ -124,8 +123,8 @@ void SlaterDeterminant::VirtUpdate(const vector<vector<hop_path_t> >& rhop,
               " and min(Nk)=1"
               " must be fullfilled."<<endl;
         abort();
-    }
 #endif
+    }
 #ifdef PROFILE
     Timer::tic("SlaterDeterminant::VirtUpdate");
 #endif

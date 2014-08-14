@@ -66,12 +66,32 @@ FileManager::FileManager(const string& dir, const int& num)
     ostringstream ostr;
     ostr<<m_num;
     m_num_str=ostr.str();
+#ifdef USEMPI
+    init_mpi_comm();
+#endif
 }
 
 FileManager::FileManager(const string& dir, const string& prefix)
     :m_num_str(prefix), m_dir(dir), m_compl(0), m_verbose(1), m_total(1)
+{
+#ifdef USEMPI
+    init_mpi_comm();
+#endif
+}
+
+FileManager::~FileManager()
 {}
-    
+
+#ifdef USEMPI
+void FileManager::init_mpi_comm()
+{
+    int root=0;
+    MPI_Group world_group, calc_group;
+    MPI_Comm_group(MPI_COMM_WORLD,&world_group);
+    MPI_Group_excl(world_group,1,&root,&calc_group);
+    MPI_Comm_create(MPI_COMM_WORLD,calc_group,&m_calc_comm);
+}
+#endif
 
 #ifdef USEMPI
 void FileManager::MainLoop()

@@ -8,8 +8,9 @@ set(VMC_SOURCES Amplitude.h SlaterDeterminant.h SlaterDeterminant.cpp Jastrow.h 
 
 add_executable(vmc vmc.cpp ${VMC_SOURCES})
 add_executable(test_jastrow test_jastrow.cpp ${VMC_SOURCES})
+add_executable(test_random_walk test_random_walk.cpp ${VMC_SOURCES})
 
-set(VMC_TARGETS vmc test_jastrow)
+set(VMC_TARGETS vmc test_jastrow test_random_walk)
 set(VMC_INSTALL_TARGETS vmc)
 
 add_test(NAME "IdentityJastrow_update_test" COMMAND test_jastrow --L=8 --N_hop_tests=100)

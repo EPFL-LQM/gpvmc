@@ -74,7 +74,6 @@ int main(int argc, char* argv[])
 #endif
     signal(SIGTERM,FileManager::EmergencyClose);
     Timer::tic("main");
-
     // calculation parameters:
     map<string,bool> bomap;
     map<string,size_t> simap;
@@ -126,22 +125,22 @@ int main(int argc, char* argv[])
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
     RanGen::srand(inmap["seed"]+100*comm_rank);
     // Setup calculation parameters
-    FileManager fm(stmap["dir"],inmap["prefix"]);
-    fm.Verbose()=inmap["verbose"];
-    fm.MonitorTotal()=simap["samples"]*simap["samples_saves"];
-    fm.StatPerSample()=simap["samples_saves"];
+    FileManager * fm=new FileManager(stmap["dir"],inmap["prefix"]);
+    fm->Verbose()=inmap["verbose"];
+    fm->MonitorTotal()=simap["samples"]*simap["samples_saves"];
+    fm->StatPerSample()=simap["samples_saves"];
     domap["phi"]*=M_PI;
     for(map<string,bool>::iterator it=bomap.begin();it!=bomap.end();++it)
-        fm.FileAttribute(it->first,it->second);
+        fm->FileAttribute(it->first,it->second);
     for(map<string,size_t>::iterator it=simap.begin();it!=simap.end();++it)
-        fm.FileAttribute(it->first,it->second);
+        fm->FileAttribute(it->first,it->second);
     for(map<string,int>::iterator it=inmap.begin();it!=inmap.end();++it)
-        fm.FileAttribute(it->first,it->second);
+        fm->FileAttribute(it->first,it->second);
     for(map<string,double>::iterator it=domap.begin();it!=domap.end();++it)
-        fm.FileAttribute(it->first,it->second);
+        fm->FileAttribute(it->first,it->second);
     for(map<string,string>::iterator it=stmap.begin();it!=stmap.end();++it)
-        fm.FileAttribute(it->first,it->second);
-    fm.FileAttribute("gitversion",GIT_SHA1);
+        fm->FileAttribute(it->first,it->second);
+    fm->FileAttribute("gitversion",GIT_SHA1);
 
     //some input checks
     if(domap["nx"]!=0.0){
@@ -189,82 +188,57 @@ int main(int argc, char* argv[])
         LatticeState* sp(0);
         if(bomap["Sztot_conserved"]){
             if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
-                sp=new LatticeState(&slat,{L*L/2,L*L/2},{1,1});
+                sp=new LatticeState(fm,&slat,{L*L/2,L*L/2},{1,1});
             } else if(stmap["channel"]=="trans"){
-                sp=new LatticeState(&slat,{L*L/2+1,L*L/2-1},{1,1});
+                sp=new LatticeState(fm,&slat,{L*L/2+1,L*L/2-1},{1,1});
             }
         } else {
-            sp=new LatticeState(&slat,{L*L},{2});
+            sp=new LatticeState(fm,&slat,{L*L},{2});
         }
-//        if(stmap["spinstate"]!=""){
-//            char* ist=new char[L*L];
-//#ifdef USEMPI
-//            if(comm_rank==1){
-//#endif
-//                hid_t ifile=H5Fopen(stmap["spinstate"].c_str(),H5F_ACC_RDONLY,H5P_DEFAULT);
-//#ifdef USEMPI
-//                H5LTread_dataset_char(ifile,"/rank-1",ist);
-//#else
-//                H5LTread_dataset_char(ifile,"/rank-0",ist);
-//#endif
-//                sp->Init(ist);
-//#ifdef USEMPI
-//                for(int r=2;r<comm_size;++r){
-//                    ostringstream rst;
-//                    rst<<"/rank-"<<r;
-//                    H5LTread_dataset_char(ifile,rst.str().c_str(),ist);
-//                    MPI_Send(ist,L*L,MPI_CHAR,r,0,MPI_COMM_WORLD);
-//                }
-//                H5Fclose(ifile);
-//            } else {
-//                MPI_Recv(ist,L*L,MPI_CHAR,1,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-//                sp->Init(ist);
-//            }
-//#endif
-//            delete [] ist;
-//        } else {
-//            sp->Init();
-//        }
         WaveFunction* wav(0);
         if(bomap["Sztot_conserved"]){
             if(stmap["channel"]=="groundstate"){
-                wav=new StagFluxGroundState(L,L,phi,neel,phase_shift);
+                wav=new StagFluxGroundState(fm,L,L,phi,neel,phase_shift);
             } else if(stmap["channel"]=="trans"){
-                wav=new StagFluxTransExciton(L,L,phi,neel,phase_shift,Q);
+                wav=new StagFluxTransExciton(fm,L,L,phi,neel,phase_shift,Q);
             } else if(stmap["channel"]=="long"){
-                wav=new StagFluxLongExciton(L,L,phi,neel,phase_shift,Q);
+                wav=new StagFluxLongExciton(fm,L,L,phi,neel,phase_shift,Q);
             }
         } else if(domap["nz"]!=0.0 || bomap["long_neel_order"]){
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNpHxGroundState(L,L,phi,neel,domap["hx"],phase_shift);
+                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,domap["hx"],phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNpHxExciton(L,L,phi,neel,domap["hx"],phase_shift,Q);
+                wav=new SFpNpHxExciton(fm,L,L,phi,neel,domap["hx"],phase_shift,Q);
             }
         } else {
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNxpHzGroundState(L,L,phi,neel,domap["hz"],phase_shift);
+                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,domap["hz"],phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNxpHzExciton(L,L,phi,neel,domap["hz"],phase_shift,Q);
+                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,domap["hz"],phase_shift,Q);
             }
         }
-        wav->Save(&fm);
-        vector<vector<size_t> > pop;
-        if(bomap["Sztot_conserved"]){
-            if(stmap["channel"]=="trans"){
-                pop.push_back(vector<size_t>(1,L*L/2+1));
-                pop.push_back(vector<size_t>(1,L*L/2-1));
-            } else {
-                pop.push_back(vector<size_t>(1,L*L/2));
-                pop.push_back(vector<size_t>(1,L*L/2));
-            }
+#ifndef DNDEBUG
+        cout<<"Wavefunction is:"<<endl<<*wav<<endl;
+#endif
+        wav->Save();
+        SlaterDeterminant amp(sp,wav);
+        Jastrow* jas=0;
+        JastrowPotential* jaspot=0;
+        if(domap["neel_jastrow"]!=0.0){
+            jaspot=new NeelJastrowPotential(&slat,domap["neel_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
+        } else if(domap["stag_jastrow"]!=0.0){
+            jaspot=new StagJastrowPotential(&slat,domap["stag_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
+        } else if(domap["log_jastrow"]!=0.0){
+            jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
         } else {
-            if(bomap["Sztot_non_zero_init"]){
-                int Nup=(size_t)(RanGen::uniform()*L*L);
-                pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
-            } else {
-                pop.push_back({L*L/2,L*L/2});
-            }
+            jas=new IdentityJastrow;
         }
+#ifndef DNDEBUG
+        cout<<"Initialize initial spin state"<<endl;
+#endif
         if(bomap["Neel_init"]){
             vector<uint_vec_t> fst(sp->GetNfl());
             for(size_t fl=0;fl<sp->GetNfl();++fl){
@@ -285,25 +259,72 @@ int main(int argc, char* argv[])
                 }
             }
             sp->InitFock(fst);
+            amp.Init();
+            jas->Init();
+        } else if(stmap["spinstate"]!=""){
+            int calc_rank=0, calc_size=1;
+#ifdef USEMPI
+            MPI_Comm_rank(fm->GetCalcComm(),&calc_rank);
+            MPI_Comm_size(fm->GetCalcComm(),&calc_size);
+#endif
+            vector<vector<int> > fockstates(sp->GetNfl());
+            if(calc_rank==0){
+                hid_t ifile=H5Fopen(stmap["spinstate"].c_str(),H5F_ACC_RDONLY,H5P_DEFAULT);
+#ifdef USEMPI
+                for(size_t fl=0;fl<sp->GetNfl();++fl){
+                    fockstates[fl]=vector<int>(sp->GetNfs()[fl],0);
+                    vector<int> rstate(sp->GetNfs()[fl]*calc_size);
+                    for(size_t r=0;r<calc_size;++r){
+                        H5LTread_dataset_int(ifile,
+                                (string("/rank-")+to_string(r+1)+
+                                 string("/flavour-")+to_string(fl)).c_str(),
+                                &rstate[r*sp->GetNfs()[fl]]);
+                    }
+                    MPI_Scatter(&rstate[0],sp->GetNfs()[fl],MPI_INT,
+                            &fockstates[fl][0],sp->GetNfs()[fl],MPI_INT,
+                            0,fm->GetCalcComm());
+                }
+#else
+                for(size_t fl=0;fl<sp->GetNfl();++fl){
+                    fockstates[fl]=vector<int>(sp->GetNfs()[fl],0);
+                    H5LTread_dataset_int(ifile,
+                        (string("/rank-0/flavour-")+to_string(fl)).c_str(),
+                        &fockstates[fl][0]);
+                }
+#endif
+            } else {
+#ifdef USEMPI
+                for(size_t fl=0;fl<sp->GetNfl();++fl){
+                    fockstates[fl]=vector<int>(sp->GetNfs()[fl],0);
+                    MPI_Scatter(NULL,0,MPI_INT,
+                            &fockstates[fl][0],sp->GetNfs()[fl],MPI_INT,
+                            0,fm->GetCalcComm());
+                }
+#endif
+            }
+            sp->FockInit(fockstates);
+            amp.Init();
+            jas->Init();
         } else {
+            vector<vector<size_t> > pop;
+            if(bomap["Sztot_conserved"]){
+                if(stmap["channel"]=="trans"){
+                    pop.push_back(vector<size_t>(1,L*L/2+1));
+                    pop.push_back(vector<size_t>(1,L*L/2-1));
+                } else {
+                    pop.push_back(vector<size_t>(1,L*L/2));
+                    pop.push_back(vector<size_t>(1,L*L/2));
+                }
+            } else {
+                if(bomap["Sztot_non_zero_init"]){
+                    int Nup=(size_t)(RanGen::uniform()*L*L);
+                    pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
+                } else {
+                    pop.push_back({L*L/2,L*L/2});
+                }
+            }
             sp->RanInit(pop);
-        }
-        SlaterDeterminant amp(sp,wav);
-        Jastrow* jas=0;
-        JastrowPotential* jaspot=0;
-        if(domap["neel_jastrow"]!=0.0){
-            jaspot=new NeelJastrowPotential(&slat,domap["neel_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else if(domap["stag_jastrow"]!=0.0){
-            jaspot=new StagJastrowPotential(&slat,domap["stag_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else if(domap["log_jastrow"]!=0.0){
-            jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else {
-            jas=new IdentityJastrow;
-        }
-        if(stmap["spinstate"]=="" || !bomap["Neel_init"]){
+            amp.Init();
             int tc=0,failcount=10;
             while(amp.Amp()==0.0 && tc<failcount){
                 sp->RanInit(pop);
@@ -317,90 +338,114 @@ int main(int argc, char* argv[])
                 cerr<<"wf state is:"<<endl<<*wav<<endl;
                 myexit(1);
             }
-        } else {
-            amp.Init();
-            jas->Init();
         }
+        BigDouble maxq=norm(amp.Amp());
+        size_t kmax=wav->GetCurrentStateIndex();
+        for(size_t k=0;k<wav->GetNExc();++k){
+            wav->Hop(k);
+            amp.Init();
+            if(norm(amp.Amp())>maxq){
+                kmax=k;
+                maxq=norm(amp.Amp());
+            }
+        }
+        wav->Hop(kmax);
+        amp.Init();
+#ifndef DNDEBUG
+        cout<<"initial Lattice is:"<<endl<<*sp<<endl;
+        cout<<"Create Monte Carlo stepper"<<endl;
+#endif
         LatticeStepper step(sp,wav,&amp,jas);
-        if(!bomap["Sztot_zero_proj"]){
+        if(!bomap["Sztot_conserved"] && (!bomap["Sztot_zero_proj"] || domap["hz"]!=0)){
             //if applied field, Sztot is not
             //conserved and spins-up must be
             //able to tunel to spin-down.
             vector<bool> flip(1,true);
             step.SetFlavorFlip(flip);
         }
-        MetroMC varmc(&step,&fm);
+#ifndef DNDEBUG
+        cout<<"Create Metropolis MC object"<<endl;
+#endif
+        MetroMC varmc(&step,fm);
         if(bomap["meas_projheis"]){
-            ProjHeis* heisen=new ProjHeis(&step,&fm,&slat,domap["Bx"]);
+            ProjHeis* heisen=new ProjHeis(&step,fm,&slat,domap["Bx"]);
             varmc.AddQuantity(heisen);
         }
         if(stmap["channel"]=="groundstate"){
             if(bomap["meas_stagmagn"]){
                 if(bomap["Sztot_conserved"]){
-                    StagMagnZ* stagsz=new StagMagnZ(&step,&fm);
+                    StagMagnZ* stagsz=new StagMagnZ(&step,fm);
                     varmc.AddQuantity(stagsz);
                 } else {
-                    StagMagn* stags=new StagMagn(&step,&fm,!bomap["Sztot_zero_proj"]);
+                    StagMagn* stags=new StagMagn(&step,fm,!bomap["Sztot_zero_proj"]);
                     varmc.AddQuantity(stags);
                 }
             }
             if(bomap["meas_statspinstruct"]){
-                StatSpinStruct* stat=new StatSpinStruct(&step,&fm,!bomap["Sztot_zero_proj"]);
+                StatSpinStruct* stat=new StatSpinStruct(&step,fm,!bomap["Sztot_zero_proj"]);
                 varmc.AddQuantity(stat);
             }
             if(bomap["meas_magnetization"] && (domap["Bx"]!=0 || !bomap["Sztot_conserved"])){
-                Magnetization* magn=new Magnetization(&step,&fm,!bomap["Sztot_zero_proj"]);
+                Magnetization* magn=new Magnetization(&step,fm,!bomap["Sztot_zero_proj"]);
                 varmc.AddQuantity(magn);
             }
         }
         if(bomap["track_stagmagn"]){
-            StagMagnTrack* stt=new StagMagnTrack(&step,&fm);
+            StagMagnTrack* stt=new StagMagnTrack(&step,fm);
             varmc.AddQuantity(stt);
         }
         if(bomap["track_overlap"]){
-            OverlapTrack* ovt=new OverlapTrack(&step,&fm);
+            OverlapTrack* ovt=new OverlapTrack(&step,fm);
             varmc.AddQuantity(ovt);
         }
         if(bomap["track_jastrow"]){
-            JastrowTrack* jast=new JastrowTrack(&step,&fm);
+            JastrowTrack* jast=new JastrowTrack(&step,fm);
             varmc.AddQuantity(jast);
         }
-        
+#ifndef DNDEBUG
+        cout<<"Thermalize."<<endl;
+#endif
         // Start calculation: thermalize
         if(simap["therm"]){
             Timer::tic("main/thermalize");
             varmc.Walk(size_t(simap["therm"]*L*L),0);
             Timer::toc("main/thermalize");
         }
-        fm.MonitorTotal()=simap["samples"]*simap["samples_saves"];         
+        fm->MonitorTotal()=simap["samples"]*simap["samples_saves"];         
         // Calculation
+#ifndef DNDEBUG
+        cout<<"Random walk start now."<<endl;
+#endif
         for(size_t sample=0;sample<simap["samples"];++sample){
             for(size_t m=0;m<simap["samples_saves"];++m){
-                fm.MonitorCompletion()=double(sample*simap["samples_saves"]+m)/(simap["samples"]*simap["samples_saves"]);
+                fm->MonitorCompletion()=double(sample*simap["samples_saves"]+m)/(simap["samples"]*simap["samples_saves"]);
                 Timer::tic("main/ranwalk");
                 varmc.Walk(simap["meas_interv"]*simap["samples_saves_stat"],simap["meas_interv"]);
                 Timer::toc("main/ranwalk");
                 rej=varmc.Rejection();
                 for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)
                     varmc.GetQuantities()[qu]->save();
-                fm.DataAttribute("rej",rej);
-                fm.DataAttribute("time",Timer::timer("randwalk"));
-                fm.DataAttribute("statistics",(m+1)*simap["samples_saves_stat"]);
+                fm->DataAttribute("rej",rej);
+                fm->DataAttribute("time",Timer::timer("randwalk"));
+                fm->DataAttribute("statistics",(m+1)*simap["samples_saves_stat"]);
 #ifdef USEMPI
-                int mess(fm.message_save);
+                int mess(fm->message_save);
                 //cout<<"rank "<<comm_rank<<": sends message_save"<<endl;
-                MPI_Send(&mess,1,MPI_INT,0,fm.message_comm,MPI_COMM_WORLD);
+                MPI_Send(&mess,1,MPI_INT,0,fm->message_comm,MPI_COMM_WORLD);
 #endif
-                fm.Write();
+                fm->Write();
             }
         }
 #ifdef USEMPI
-        int mess=fm.message_loop, stop=1;
+        int mess=fm->message_loop, stop=1;
         //cout<<"rank "<<comm_rank<<": sends message_loop"<<endl;
-        MPI_Send(&mess,1,MPI_INT,0,fm.message_comm,MPI_COMM_WORLD);
-        MPI_Send(&stop,1,MPI_INT,0,fm.message_loop,MPI_COMM_WORLD);
+        MPI_Send(&mess,1,MPI_INT,0,fm->message_comm,MPI_COMM_WORLD);
+        MPI_Send(&stop,1,MPI_INT,0,fm->message_loop,MPI_COMM_WORLD);
 #endif
-        //sp->save(&fm);
+#ifndef DNDEBUG
+        cout<<"Calculation finished, cleaning up!"<<endl;
+#endif
+        sp->Save();
         delete wav;
         delete sp;
         delete jas;
@@ -409,7 +454,7 @@ int main(int argc, char* argv[])
             delete varmc.GetQuantities()[qu];
 #ifdef USEMPI
     } else {
-        fm.MainLoop();
+        fm->MainLoop();
     }
 #endif
     // Output
@@ -432,7 +477,7 @@ int main(int argc, char* argv[])
 #endif
             std::cout<<"############################################"<<std::endl;
         }
-        std::cout<<"output prefix="<<fm.Prefix()<<std::endl;
+        std::cout<<"output prefix="<<fm->Prefix()<<std::endl;
     } else {
 #ifdef USEMPI
         string rep=Timer::report();
@@ -444,6 +489,7 @@ int main(int argc, char* argv[])
         delete [] mes;
 #endif
     }
+    delete fm;
 #ifdef USEMPI
     MPI_Finalize();
 #endif

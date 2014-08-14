@@ -43,18 +43,20 @@ def fermisigns(states):
     refstate=copy.deepcopy(states[0,:])
     fs=np.ones(np.shape(states)[0])
     for s in range(np.shape(states)[0]):
-        hole=None
-        part=None
+        hole=[]
+        part=[]
         ref=copy.deepcopy(refstate)
         for i in range(np.shape(states)[1]):
             if ref[i]==0 and states[s,i]!=0:
-                part=i
+                part.append(i)
             if ref[i]!=0 and states[s,i]==0:
-                hole=i
-            if part!=None and hole!=None:
-                fs[s]*=(-1)**(np.sum(ref[min(hole,part)+1:max(hole,part)]))
-                ref[hole]=0
-                ref[part]=1
-                hole=None
-                part=None
+                hole.append(i)
+            if part and hole:
+                h=hole.pop()
+                p=part.pop()
+                fs[s]*=(-1)**(np.sum(ref[min(h,p)+1:max(h,p)]))
+                ref[h]=0
+                ref[p]=1
+        if hole or part:
+            raise(RuntimeError('fermisigns: particle number not conserved?'))
     return fs

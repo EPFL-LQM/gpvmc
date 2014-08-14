@@ -1,7 +1,7 @@
 #!/bin/env python
 
 import numpy as np
-import recspace
+from vmc_postproc import recspace
 
 def delta(kx,ky,params):
     return 0.5*(np.exp(1j*params['phi']*np.pi)*np.cos(kx*2*np.pi)+\
@@ -72,7 +72,7 @@ def spinops(params):
                   skq*(evk[1,2,:].conjugate()*evq[3,1,:]-evk[3,2,:].conjugate()*evq[1,1,:]))
     so[s+3::4,1]=0.5j*(evk[0,3,:].conjugate()*evq[2,1,:]-evk[2,3,:].conjugate()*evq[0,1,:]+\
                   skq*(evk[1,3,:].conjugate()*evq[3,1,:]-evk[3,3,:].conjugate()*evq[1,1,:]))
-    #Sqx
+    #Sqz
     so[s::4,2]=0.5*(evk[0,2,:].conjugate()*evq[2,0,:]+evk[2,2,:].conjugate()*evq[0,0,:]+\
                skq*(evk[1,2,:].conjugate()*evq[3,0,:]+evk[3,2,:].conjugate()*evq[1,0,:]))
     so[s+1::4,2]=0.5*(evk[0,3,:].conjugate()*evq[2,0,:]+evk[2,3,:].conjugate()*evq[0,0,:]+\

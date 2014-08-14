@@ -4,14 +4,15 @@
 
 using namespace std;
 
-SFpNpHxExciton::SFpNpHxExciton(size_t Lx,
+SFpNpHxExciton::SFpNpHxExciton(FileManager* fm,
+                               size_t Lx,
                                size_t Ly,
                                double phi,
                                double neel,
                                double hx,
                                vector<double> bc_phase,
                                vector<size_t> q)
-    :SFpNpHxWaveFunction(Lx,Ly,
+    :SFpNpHxWaveFunction(fm,Lx,Ly,
                          Lx*Ly,
                          phi,neel,hx,bc_phase),
      m_q(q)

@@ -1,6 +1,6 @@
 #!/bin/env python
 
-import proc,load
+from vmc_postproc import proc,load
 import numpy as np
 import re
 import six
@@ -12,10 +12,11 @@ def get_eig_sys(filenames,nsamp,wav=None,tol=1e-12):
     H=HO[:,:HO.shape[1]/2,:]
     O=HO[:,HO.shape[1]/2:,:]
     if not wav:
-        print filenames
+        print(filenames)
         mo=re.search(r'(.*/[0-9]+)-ProjHeis\.h5',filenames[0])
         wav=mo.groups()[0]+'-WaveFunction.h5'
-    fs=np.diag(proc.fermisigns(load.get_wav(wav)))
+    wav_st=load.get_wav(wav)
+    fs=np.diag(proc.fermisigns(wav_st))
     H=np.einsum('ij,kjl,lm->kim',fs,H,fs)
     O=np.einsum('ij,kjl,lm->kim',fs,O,fs)
     evals=np.zeros(H.shape[:2])

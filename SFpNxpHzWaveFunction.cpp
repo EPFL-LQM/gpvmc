@@ -5,11 +5,13 @@
 
 using namespace std;
 
-SFpNxpHzWaveFunction::SFpNxpHzWaveFunction(size_t Lx, size_t Ly,
+SFpNxpHzWaveFunction::SFpNxpHzWaveFunction(FileManager* fm,
+                                           size_t Lx, size_t Ly,
                                            size_t Nby,
                                            double phi, double neel, double hz,
                                            const vector<double>& bc_phase)
-    :m_Lx(Lx), m_Ly(Ly),
+    :WaveFunction(fm),
+     m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*4]),
      m_fock2qn(new size_t[Lx*Ly*2*3]),
      m_phi(phi), m_nx(neel), m_hz(hz),
@@ -79,6 +81,14 @@ std::complex<double> SFpNxpHzWaveFunction::matrix_element(size_t fk,size_t fr, s
 #endif
     }
     return out;
+}
+
+void SFpNxpHzWaveFunction::quantum_numbers(const size_t& f, const size_t& fl, map<string,size_t>& qn)
+{
+    qn.clear();
+    qn["kx"]=m_fock2qn[3*f];
+    qn["ky"]=m_fock2qn[3*f+1];
+    qn["band"]=m_fock2qn[3*f+2];
 }
 
 bool SFpNxpHzWaveFunction::inmbz(size_t kx, size_t ky) const

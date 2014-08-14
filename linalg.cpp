@@ -24,7 +24,7 @@ bool linalg::DetInv(const std::complex<double> *A, std::complex<double>* I,
     if(!singular)
         linalg::zgetri(mi, I ,mi, ipiv, work, mi, &succ);
     else {
-#ifdef DEBUG
+#ifndef DNDEBUG
         std::cout<<"linalg::DetInv: Warning, matrix is singular: det="<<norm(d)<<std::endl;
         std::cout<<"Matrix was"<<endl;
         for(size_t i=0;i<M;++i){

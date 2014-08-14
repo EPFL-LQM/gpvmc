@@ -5,10 +5,12 @@
 
 using namespace std;
 
-StagFluxWaveFunction::StagFluxWaveFunction(size_t Lx, size_t Ly,
+StagFluxWaveFunction::StagFluxWaveFunction(FileManager * fm,
+                                           size_t Lx, size_t Ly,
                                            size_t Nbyup, size_t Nbydo,
                                            double phi, double neel, vector<double> bc_phase)
-    :m_Lx(Lx), m_Ly(Ly),
+    :WaveFunction(fm),
+     m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*2]),
      m_fock2qn(new size_t[Lx*Ly*3]),
      m_phi(phi), m_neel(neel), m_bc_phase(bc_phase)
@@ -73,6 +75,14 @@ std::complex<double> StagFluxWaveFunction::matrix_element(size_t fk,
 #endif
     }
     return out;
+}
+
+void StagFluxWaveFunction::quantum_numbers(const size_t& f, const size_t& fl, map<string,size_t>& qn)
+{
+    qn.clear();
+    qn["kx"]=m_fock2qn[3*f];
+    qn["ky"]=m_fock2qn[3*f+1];
+    qn["band"]=m_fock2qn[3*f+2];
 }
 
 bool StagFluxWaveFunction::inmbz(size_t kx, size_t ky) const

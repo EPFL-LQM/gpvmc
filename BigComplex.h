@@ -15,11 +15,13 @@ class BigComplex
 
         void bound()
         {
+            bool unbounded=false;
 #ifdef CRAY
-            if(isnan(real(m_c)) || isinf(real(m_c)) || isnan(imag(m_c)) || isinf(imag(m_c)))
+            unbounded=(isnan(real(m_c)) || isinf(real(m_c)) || isnan(imag(m_c)) || isinf(imag(m_c)));
 #else
-            if(std::isnan(real(m_c)) || std::isinf(real(m_c)) || std::isnan(imag(m_c)) || std::isinf(imag(m_c))){
+            unbounded=(std::isnan(real(m_c)) || std::isinf(real(m_c)) || std::isnan(imag(m_c)) || std::isinf(imag(m_c)));
 #endif
+            if(unbounded){
 #ifdef EXCEPT
                 throw(std::logic_error("BigComplex::bound: NaN or Inf encountered"));
 #else

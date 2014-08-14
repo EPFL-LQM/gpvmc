@@ -23,8 +23,8 @@ class BigDouble
 #else
                 cerr<<"BigComplex::bound: NaN or Inf encountered"<<endl;
                 abort();
+#endif//EXCEPT
             }
-#endif
             if(isinf(m_c)/* || (abs(m_c)<1e4 && abs(m_c)>1e-4)*/) return;
 #else
             if(std::isnan(m_c)){
@@ -33,10 +33,10 @@ class BigDouble
 #else
                 cerr<<"BigDouble::bound: NaN encountered"<<endl;
                 abort();
+#endif//EXCPET
             }
-#endif
             if(std::isinf(m_c)/* || (abs(m_c)<1e4 && abs(m_c)>1e-4)*/) return;
-#endif
+#endif//CRAY
             while(std::abs(m_c)>10.0){
                 m_c/=10.0;
                 m_e++;
