@@ -124,4 +124,4 @@ def get_wav(filename):
     for k in hfile.keys():
         states_flav.append(hfile[k])
     wav_states=np.column_stack(states_flav)
-/bin/bash: s: command not found
+    return wav_states
