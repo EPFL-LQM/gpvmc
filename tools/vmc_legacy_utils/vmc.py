@@ -7,8 +7,8 @@ from scipy.linalg import eigh
 import scipy as sc
 from numpy.linalg import matrix_rank
 import numpy as np
-import vmc_utils as vln
-import stagflux as sf
+from vmc_legacy_utils import vmc_utils as vln
+from vmc_legacy_utils import stagflux as sf
 import os
 import re
 import code
@@ -91,13 +91,16 @@ def GetFermiSigns(filename,refstate=None,channel=None):
         refstate[0::2]=1
     if filetype=='WaveFunction':
         hfile=h5py.File(filename,'r')
-        states=sc.column_stack([hfile['states_up'],hfile['states_do']])
+        if 'states_up' in hfile.keys():
+            states=sc.column_stack([hfile['states_up'],hfile['states_do']])
+        else:
+            states=sc.column_stack([hfile['states_0'],hfile['states_1']])
         hfile.close()
         return sf.fermisigns(states,refstate)
     else:
         if channel==None:
             channel=attr['channel']
-        L=attr['L']
+        L=int(attr['L'])
         if 'phasex' in attr.keys():
             shift=[attr['phasex']/2.0,attr['phasey']/2.0]
         else:
@@ -133,7 +136,7 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     dpath,args=GetStat(filename,Nsamp)
     dat=sc.array(hfile["/rank-1/data-0"])
     hfile.close()
-    N=sc.shape(dat)[0]/2
+    N=int(sc.shape(dat)[0]/2)
     L=attr['L']
     shift=None
     if 'phasex' in attr.keys():
@@ -177,9 +180,9 @@ def GetEigSys(filename,gsfile=None,Nsamp=1,channel=None,wavefile=None,q=None):
     return H,O,E,V
 
 def RenormalizeFactor(excfile,gsfile,channel=None,Nsamp=1,O=None,q=None):
-    if type(excfile)==str:
+    if not type(excfile)==list:
         excfile=[excfile]
-    if type(gsfile)==str:
+    if not type(gsfile)==list:
         gsfile=[gsfile]
     exat=GetAttr(excfile[0])
     gsat=GetAttr(gsfile[0])
@@ -268,7 +271,7 @@ def GetSqAmpl(filename,Nsamp=1,channel=None,V=None,O=None,r=sc.zeros((1,2)),rp=s
     attrs=GetAttr(filename[0])
     if channel==None:
         channel=attrs['channel']
-    L=attrs['L']
+    L=int(attrs['L'])
     if q==None:
         q=[float(attrs['qx']/L),float(attrs['qy'])/L]
     else:

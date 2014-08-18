@@ -5,6 +5,7 @@ import numpy as np
 import numpy.linalg as lg
 from scipy.linalg import eigh
 import warnings
+from vmc_postproc import stagflux,sfpnxphz
 
 def geneigh(A,B,tol=1e-12):
     """
@@ -39,8 +40,15 @@ def geneigh(A,B,tol=1e-12):
     E=np.concatenate((float('NaN')*np.ones(idx),Et))
     return E,U
 
-def fermisigns(states):
-    refstate=copy.deepcopy(states[0,:])
+def fermisigns(states,params):
+    qp_mod=None
+    if params['sfpnxphz_wav']:
+        qp_mod=sfpnxphz
+    elif params['stagflux_wav']:
+        qp_mod=stagflux
+    else:
+        raise RuntimeError('not implemented')
+    refstate=copy.deepcopy(qp_mod.refstate(params))
     fs=np.ones(np.shape(states)[0])
     for s in range(np.shape(states)[0]):
         hole=[]

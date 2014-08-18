@@ -92,10 +92,8 @@ int main(int argc, char* argv[])
     inmap["verbose"]=1;
     inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
-    domap["nx"]=0.0;
-    domap["nz"]=0.0;
-    domap["hx"]=0.0;
-    domap["hz"]=0.0;
+    domap["neel"]=0.055;
+    domap["field"]=0.0;
     domap["neel_jastrow"]=0.0;
     domap["stag_jastrow"]=0.0;
     domap["log_jastrow"]=0.0;
@@ -109,8 +107,9 @@ int main(int argc, char* argv[])
     bomap["meas_stagmagn"]=false;
     bomap["meas_statspinstruct"]=false;
     bomap["meas_magnetization"]=false;
-    bomap["Sztot_conserved"]=false;
-    bomap["long_neel_order"]=false;
+    bomap["stagflux_wav"]=false;
+    bomap["sfpnxphz_wav"]=false;
+    bomap["sfpnzphx_wav"]=false;
     bomap["Sztot_zero_proj"]=false;
     bomap["Sztot_non_zero_init"]=false;
     bomap["Neel_init"]=false;
@@ -120,16 +119,12 @@ int main(int argc, char* argv[])
     int help=ArgParse(argc,argv,domap,inmap,simap,bomap,stmap);
     if(help)
         myexit(0);
-    if(!simap["meas_interv"])
-        simap["meas_interv"]=pow(simap["L"],2);
     if(!comm_rank) cout<<"seed="<<inmap["seed"]<<endl;
-    RanGen::srand(inmap["seed"]+100*comm_rank);
     // Setup calculation parameters
     FileManager * fm=new FileManager(stmap["dir"],inmap["prefix"]);
     fm->Verbose()=inmap["verbose"];
     fm->MonitorTotal()=simap["samples"]*simap["samples_saves"];
     fm->StatPerSample()=simap["samples_saves"];
-    domap["phi"]*=M_PI;
     for(map<string,bool>::iterator it=bomap.begin();it!=bomap.end();++it)
         fm->FileAttribute(it->first,it->second);
     for(map<string,size_t>::iterator it=simap.begin();it!=simap.end();++it)
@@ -141,31 +136,16 @@ int main(int argc, char* argv[])
     for(map<string,string>::iterator it=stmap.begin();it!=stmap.end();++it)
         fm->FileAttribute(it->first,it->second);
     fm->FileAttribute("gitversion",GIT_SHA1);
+    
+    RanGen::srand(inmap["seed"]+100*comm_rank);
+    domap["phi"]*=M_PI;
+    if(!simap["meas_interv"])
+        simap["meas_interv"]=pow(simap["L"],2);
 
     //some input checks
-    if(domap["nx"]!=0.0){
-        if(bomap["Sztot_conserved"]){
-            cerr<<"Error: Transverse Neel order and conservation of Sztot are mutually exclusive"<<endl;
-            myexit(EXIT_FAILURE);
-        }
-        if(domap["nz"]!=0.0){
-            cerr<<"Error, Neel order either on x axis or z axis."<<endl;
-            myexit(EXIT_FAILURE);
-        }
-        if(domap["hx"]!=0.0){
-            cerr<<"Error, field must be applied perpendicular to Neel order."<<endl;
-            myexit(EXIT_FAILURE);
-        }
-    }
-    if(domap["nz"]!=0.0){
-        if(domap["hz"]!=0.0){
-            cerr<<"Error, field must be applied perpendicular to Neel order."<<endl;
-            myexit(EXIT_FAILURE);
-        }
-        if(domap["hx"]!=0.0 && bomap["Sztot_conserved"]){
-            cerr<<"Error, Sztot is not conserved if an transverse field is applied."<<endl;
-            myexit(EXIT_FAILURE);
-        }
+    if(int(bomap["stagflux_wav"])+int(bomap["sfpnxphz_wav"])+int(bomap["sfpnzphx_wav"])!=1){
+        cerr<<"Error: exactly one out of the possible trial wavefunctions [stagflux_wav,sfpnxphz_wav,sfpnzphx_wav] must be picked."<<endl;
+        myexit(0);
     }
 
 #ifdef USEMPI
@@ -176,9 +156,9 @@ int main(int argc, char* argv[])
         double rej=0;
         size_t L=simap["L"];
         vector<size_t> Q(2);
-        double neel=max(domap["nx"],domap["nz"]);
+        double neel=domap["neel"];
         double phi=domap["phi"];
-        double field=max(domap["hx"],domap["hz"]);
+        double field=domap["field"];
         vector<double> phase_shift(2);
         phase_shift[0]=domap["phase_shift_x"];
         phase_shift[1]=domap["phase_shift_y"];
@@ -186,7 +166,7 @@ int main(int argc, char* argv[])
         Q[1]=simap["qy"];
         SquareLattice slat(L,L);
         LatticeState* sp(0);
-        if(bomap["Sztot_conserved"]){
+        if(bomap["stagflux_wav"]){
             if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
                 sp=new LatticeState(fm,&slat,{L*L/2,L*L/2},{1,1});
             } else if(stmap["channel"]=="trans"){
@@ -196,7 +176,7 @@ int main(int argc, char* argv[])
             sp=new LatticeState(fm,&slat,{L*L},{2});
         }
         WaveFunction* wav(0);
-        if(bomap["Sztot_conserved"]){
+        if(bomap["stagflux"]){
             if(stmap["channel"]=="groundstate"){
                 wav=new StagFluxGroundState(fm,L,L,phi,neel,phase_shift);
             } else if(stmap["channel"]=="trans"){
@@ -204,17 +184,17 @@ int main(int argc, char* argv[])
             } else if(stmap["channel"]=="long"){
                 wav=new StagFluxLongExciton(fm,L,L,phi,neel,phase_shift,Q);
             }
-        } else if(domap["nz"]!=0.0 || bomap["long_neel_order"]){
+        } else if(bomap["sfpnzphx"]){
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,domap["hx"],phase_shift);
+                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,field,phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNpHxExciton(fm,L,L,phi,neel,domap["hx"],phase_shift,Q);
+                wav=new SFpNpHxExciton(fm,L,L,phi,neel,field,phase_shift,Q);
             }
-        } else {
+        } else /*if(bomap["sfpnxphz"])*/{
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,domap["hz"],phase_shift);
+                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,field,phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,domap["hz"],phase_shift,Q);
+                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,field,phase_shift,Q);
             }
         }
 #ifndef DNDEBUG
@@ -247,12 +227,12 @@ int main(int argc, char* argv[])
             for(size_t v=0;v<slat.GetNv();++v){
                 bool even=(slat.GetVertices()[v]->uc[0]+slat.GetVertices()[v]->uc[1])%2;
                 if(even){
-                    if(bomap["Sztot_conserved"])
+                    if(bomap["stagflux_wav"])
                         fst[0][v]=0;
                     else
                         fst[0][v*2]=0;
                 } else {
-                    if(bomap["Sztot_conserved"])
+                    if(bomap["stagflux_wav"])
                         fst[1][v]=0;
                     else
                         fst[0][v*2+1]=0;
@@ -307,7 +287,7 @@ int main(int argc, char* argv[])
             jas->Init();
         } else {
             vector<vector<size_t> > pop;
-            if(bomap["Sztot_conserved"]){
+            if(bomap["stagflux_wav"]){
                 if(stmap["channel"]=="trans"){
                     pop.push_back(vector<size_t>(1,L*L/2+1));
                     pop.push_back(vector<size_t>(1,L*L/2-1));
@@ -356,7 +336,7 @@ int main(int argc, char* argv[])
         cout<<"Create Monte Carlo stepper"<<endl;
 #endif
         LatticeStepper step(sp,wav,&amp,jas);
-        if(!bomap["Sztot_conserved"] && (!bomap["Sztot_zero_proj"] || domap["hz"]!=0)){
+        if(!bomap["staglux_wav"] && !bomap["Sztot_zero_proj"]){
             //if applied field, Sztot is not
             //conserved and spins-up must be
             //able to tunel to spin-down.
@@ -373,7 +353,7 @@ int main(int argc, char* argv[])
         }
         if(stmap["channel"]=="groundstate"){
             if(bomap["meas_stagmagn"]){
-                if(bomap["Sztot_conserved"]){
+                if(bomap["stagflux_wav"]){
                     StagMagnZ* stagsz=new StagMagnZ(&step,fm);
                     varmc.AddQuantity(stagsz);
                 } else {

@@ -26,7 +26,7 @@ def vmc_exec(**kwargs):
                 'meas_projheis':'ProjHeis',\
                 'meas_stagmagn':'StagMagn',\
                 'meas_statspinstruct':'StatSpinStruct'}
-    if kwargs.setdefault('Sztot_conserved',False):
+    if kwargs.setdefault('stagflux_wav',False):
         meas_trans['meas_stagmagn']='StagMagnZ'
     vmcargs=[]
     for key,value in kwargs.items():
