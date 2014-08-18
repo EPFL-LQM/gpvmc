@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
             sp=new LatticeState(fm,&slat,{L*L},{2});
         }
         WaveFunction* wav(0);
-        if(bomap["stagflux"]){
+        if(bomap["stagflux_wav"]){
             if(stmap["channel"]=="groundstate"){
                 wav=new StagFluxGroundState(fm,L,L,phi,neel,phase_shift);
             } else if(stmap["channel"]=="trans"){
@@ -184,13 +184,13 @@ int main(int argc, char* argv[])
             } else if(stmap["channel"]=="long"){
                 wav=new StagFluxLongExciton(fm,L,L,phi,neel,phase_shift,Q);
             }
-        } else if(bomap["sfpnzphx"]){
+        } else if(bomap["sfpnzphx_wav"]){
             if(stmap["channel"]=="groundstate"){
                 wav=new SFpNpHxGroundState(fm,L,L,phi,neel,field,phase_shift);
             } else {//trans and long are mixed
                 wav=new SFpNpHxExciton(fm,L,L,phi,neel,field,phase_shift,Q);
             }
-        } else /*if(bomap["sfpnxphz"])*/{
+        } else /*if(bomap["sfpnxphz_wav"])*/{
             if(stmap["channel"]=="groundstate"){
                 wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,field,phase_shift);
             } else {//trans and long are mixed
