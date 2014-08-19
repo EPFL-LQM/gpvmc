@@ -2,6 +2,7 @@
 
 import copy
 import numpy as np
+from numpy import ma
 import numpy.linalg as lg
 from scipy.linalg import eigh
 import warnings
@@ -68,3 +69,25 @@ def fermisigns(states,params):
         if hole or part:
             raise(RuntimeError('fermisigns: particle number not conserved?'))
     return fs
+
+def gaussians(x,x0,A,sig):
+    x0m=ma.masked_invalid(np.atleast_1d(x0))
+    Am=ma.masked_invalid(np.atleast_1d(A))
+    sigm=ma.masked_invalid(np.atleast_1d(sig))
+    amp=Am*np.sqrt(0.5/np.pi)/sigm
+    [X,X0]=np.meshgrid(x,x0m)
+    gg=None
+    gg=np.einsum('...i,...ij->...j',amp,np.exp(-0.5*(X-X0)**2/np.tile(sigm**2,(np.shape(x)[0],1)).T))
+    return gg
+
+def stat_spin_struct_real_space(Sq,params):
+    q=np.arange(params['L'])
+    qx,qy=np.meshgrid(q,q)
+    r=np.arange(-params['L']/2,params['L']/2)
+    rx,ry=np.meshgrid(r,r)
+    ph=np.exp(2j*np.pi*(np.einsum('i,j->ij',rx.flatten(),qx.flatten()/params['L'])+\
+                        np.einsum('i,j->ij',ry.flatten(),qy.flatten()/params['L'])))
+    Srxx=np.einsum('ij,sj->si',ph,Sq[0])
+    Sryy=np.einsum('ij,sj->si',ph,Sq[1])
+    Srzz=np.einsum('ij,sj->si',ph,Sq[2])
+    return Srxx,Sryy,Srzz

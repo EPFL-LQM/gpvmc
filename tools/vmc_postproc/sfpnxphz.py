@@ -80,10 +80,10 @@ def spinops(params):
     evq=evecs(kqx,kqy,params)
     nexc=2*params['L']**2
     s=0
-    if (params['qx'],params['qy']) in [(0,0),(params['L']/2,params['L']/2)]:
+    if (int(params['qx']),int(params['qy'])) in [(0,0),(int(params['L']/2),int(params['L']/2))]:
         nexc+=1
         s=1
-    so=[np.zeros((nexc),dtype=complex)]*3
+    so=[np.zeros((nexc),dtype=complex) for i in range(3)]
     #Sqx
     so[0][s::4]=0.5*(-evk[0,2,:].conjugate()*evq[0,0,:]+evk[2,2,:].conjugate()*evq[2,0,:]+\
                  skq*(-evk[1,2,:].conjugate()*evq[1,0,:]+evk[3,2,:].conjugate()*evq[3,0,:]))
@@ -94,14 +94,14 @@ def spinops(params):
     so[0][s+3::4]=0.5*(-evk[0,3,:].conjugate()*evq[0,1,:]+evk[2,3,:].conjugate()*evq[2,1,:]+\
                  skq*(-evk[1,3,:].conjugate()*evq[1,1,:]+evk[3,3,:].conjugate()*evq[3,1,:]))
     #Sqy
-    so[1][s::4]=0.5j*(evk[0,2,:].conjugate()*evq[2,0,:]-evk[2,2,:].conjugate()*evq[0,0,:]+\
-                skq*(evk[1,2,:].conjugate()*evq[3,0,:]-evk[3,2,:].conjugate()*evq[1,0,:]))
-    so[1][s+1::4]=0.5j*(evk[0,3,:].conjugate()*evq[2,0,:]-evk[2,3,:].conjugate()*evq[0,0,:]+\
-                  skq*(evk[1,3,:].conjugate()*evq[3,0,:]-evk[3,3,:].conjugate()*evq[1,0,:]))
-    so[1][s+2::4]=0.5j*(evk[0,2,:].conjugate()*evq[2,1,:]-evk[2,2,:].conjugate()*evq[0,1,:]+\
-                  skq*(evk[1,2,:].conjugate()*evq[3,1,:]-evk[3,2,:].conjugate()*evq[1,1,:]))
-    so[1][s+3::4]=0.5j*(evk[0,3,:].conjugate()*evq[2,1,:]-evk[2,3,:].conjugate()*evq[0,1,:]+\
-                  skq*(evk[1,3,:].conjugate()*evq[3,1,:]-evk[3,3,:].conjugate()*evq[1,1,:]))
+    so[1][s::4]=0.5j*(-evk[0,2,:].conjugate()*evq[2,0,:]+evk[2,2,:].conjugate()*evq[0,0,:]+\
+                skq*(-evk[1,2,:].conjugate()*evq[3,0,:]+evk[3,2,:].conjugate()*evq[1,0,:]))
+    so[1][s+1::4]=0.5j*(-evk[0,3,:].conjugate()*evq[2,0,:]+evk[2,3,:].conjugate()*evq[0,0,:]+\
+                  skq*(-evk[1,3,:].conjugate()*evq[3,0,:]+evk[3,3,:].conjugate()*evq[1,0,:]))
+    so[1][s+2::4]=0.5j*(-evk[0,2,:].conjugate()*evq[2,1,:]+-evk[2,2,:].conjugate()*evq[0,1,:]+\
+                  skq*(-evk[1,2,:].conjugate()*evq[3,1,:]+evk[3,2,:].conjugate()*evq[1,1,:]))
+    so[1][s+3::4]=0.5j*(-evk[0,3,:].conjugate()*evq[2,1,:]+evk[2,3,:].conjugate()*evq[0,1,:]+\
+                  skq*(-evk[1,3,:].conjugate()*evq[3,1,:]+evk[3,3,:].conjugate()*evq[1,1,:]))
     #Sqz
     so[2][s::4]=0.5*(evk[0,2,:].conjugate()*evq[2,0,:]+evk[2,2,:].conjugate()*evq[0,0,:]+\
                skq*(evk[1,2,:].conjugate()*evq[3,0,:]+evk[3,2,:].conjugate()*evq[1,0,:]))
@@ -111,11 +111,19 @@ def spinops(params):
                  skq*(evk[1,2,:].conjugate()*evq[3,1,:]+evk[3,2,:].conjugate()*evq[1,1,:]))
     so[2][s+3::4]=0.5*(evk[0,3,:].conjugate()*evq[2,1,:]+evk[2,3,:].conjugate()*evq[0,1,:]+\
                  skq*(evk[1,3,:].conjugate()*evq[3,1,:]+evk[3,3,:].conjugate()*evq[1,1,:]))
-    if (params['qx'],params['qy']) in [(0,0),(params['L']/2,params['L']/2)]:
+    if (params['qx'],params['qy']) in [(0,0),(int(params['L']/2),int(params['L']/2))]:
         so[0][0]=0.5*np.sum(-evk[0,0,:].conjugate()*evq[0,0,:]+evk[2,0,:].conjugate()*evq[2,0,:]+\
                     skq*(-evk[1,0,:].conjugate()*evq[1,0,:]+evk[3,0,:].conjugate()*evq[3,0,:]))+\
                  0.5*np.sum(-evk[0,1,:].conjugate()*evq[0,1,:]+evk[2,1,:].conjugate()*evq[2,1,:]+\
                     skq*(-evk[1,1,:].conjugate()*evq[1,1,:]+evk[3,1,:].conjugate()*evq[3,1,:]))
+        so[1][0]=0.5j*np.sum(evk[0,0,:].conjugate()*evq[2,0,:]-evk[2,0,:].conjugate()*evq[0,0,:]+\
+                    skq*(evk[1,0,:].conjugate()*evq[3,0,:]-evk[3,0,:].conjugate()*evq[1,0,:]))+\
+                 0.5j*np.sum(evk[0,1,:].conjugate()*evq[2,1,:]-evk[2,1,:].conjugate()*evq[0,1,:]+\
+                    skq*(evk[1,1,:].conjugate()*evq[3,1,:]-evk[3,1,:].conjugate()*evq[1,1,:]))
+        so[2][0]=0.5*np.sum(evk[0,0,:].conjugate()*evq[2,0,:]+evk[2,0,:].conjugate()*evq[0,0,:]+\
+                    skq*(evk[1,0,:].conjugate()*evq[3,0,:]+evk[3,0,:].conjugate()*evq[1,0,:]))+\
+                 0.5*np.sum(evk[0,1,:].conjugate()*evq[2,1,:]+evk[2,1,:].conjugate()*evq[0,1,:]+\
+                    skq*(evk[1,1,:].conjugate()*evq[3,1,:]+evk[3,1,:].conjugate()*evq[1,1,:]))
     return so
 
 def refstate(params):
