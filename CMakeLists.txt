@@ -2,24 +2,29 @@ cmake_minimum_required(VERSION 2.8)
 
 project(vmc CXX Fortran)
 
-enable_testing()
+option (BuildTests "Build the tests and enable \"make test\" command." OFF)
 
-set(VMC_SOURCES Amplitude.h SlaterDeterminant.h SlaterDeterminant.cpp Jastrow.h Jastrow.cpp JastrowPotential.h JastrowPotential.cpp NeelJastrowPotential.h StagJastrowPotential.h LogJastrowPotential.h IdentityJastrow.h ArgParse.h ArgParse.cpp BigComplex.h BigDouble.h blas_lapack.h defs.h defs.cpp FileManager.h FileManager.cpp Lattice.h LatticeState.h LatticeState.cpp LatticeStepper.h LatticeStepper.cpp linalg.h linalg.cpp Magnetization.h Magnetization.cpp MatrixQuantity.h MatrixQuantity.cpp MetroMC.h MetroMC.cpp OverlapTrack.h OverlapTrack.cpp JastrowTrack.h JastrowTrack.cpp ProjHeis.h ProjHeis.cpp Quantity.h Quantity.cpp RanGen.h RanGen.cpp ScalarQuantity.h ScalarQuantity.cpp SFpNpHxExciton.h SFpNpHxExciton.cpp SFpNpHxGroundState.h SFpNpHxGroundState.cpp SFpNpHxWaveFunction.h SFpNpHxWaveFunction.cpp SFpNxpHzWaveFunction.h SFpNxpHzWaveFunction.cpp SFpNxpHzGroundState.h SFpNxpHzGroundState.cpp SFpNxpHzExciton.h SFpNxpHzExciton.cpp SquareLattice.h SquareLattice.cpp StagFluxGroundState.h StagFluxGroundState.cpp StagFluxLongExciton.h StagFluxLongExciton.cpp StagFluxTransExciton.h StagFluxTransExciton.cpp StagFluxWaveFunction.h StagFluxWaveFunction.cpp StagMagn.h StagMagn.cpp StagMagnZ.h StagMagnZ.cpp StagMagnTrack.h StagMagnTrack.cpp State.h State.cpp StatSpinStruct.h StatSpinStruct.cpp Stepper.h Timer.h Timer.cpp unix_signals.h VectorQuantity.h VectorQuantity.cpp WaveFunction.h WaveFunction.cpp zdotu_sub.f)
+
+set(VMC_SOURCES Amplitude.h SlaterDeterminant.h SlaterDeterminant.cpp Jastrow.h Jastrow.cpp JastrowPotential.h JastrowPotential.cpp NeelJastrowPotential.h StagJastrowPotential.h LogJastrowPotential.h PairedMagnonJastrowPotential.h IdentityJastrow.h ArgParse.h ArgParse.cpp BigComplex.h BigDouble.h blas_lapack.h defs.h defs.cpp FileManager.h FileManager.cpp Lattice.h LatticeState.h LatticeState.cpp LatticeStepper.h LatticeStepper.cpp linalg.h linalg.cpp Magnetization.h Magnetization.cpp MatrixQuantity.h MatrixQuantity.cpp MetroMC.h MetroMC.cpp OverlapTrack.h OverlapTrack.cpp JastrowTrack.h JastrowTrack.cpp ProjHeis.h ProjHeis.cpp Quantity.h Quantity.cpp RanGen.h RanGen.cpp ScalarQuantity.h ScalarQuantity.cpp SFpNpHxExciton.h SFpNpHxExciton.cpp SFpNpHxGroundState.h SFpNpHxGroundState.cpp SFpNpHxWaveFunction.h SFpNpHxWaveFunction.cpp SFpNxpHzWaveFunction.h SFpNxpHzWaveFunction.cpp SFpNxpHzGroundState.h SFpNxpHzGroundState.cpp SFpNxpHzExciton.h SFpNxpHzExciton.cpp SquareLattice.h SquareLattice.cpp StagFluxGroundState.h StagFluxGroundState.cpp StagFluxLongExciton.h StagFluxLongExciton.cpp StagFluxTransExciton.h StagFluxTransExciton.cpp StagFluxWaveFunction.h StagFluxWaveFunction.cpp StagMagn.h StagMagn.cpp StagMagnZ.h StagMagnZ.cpp StagMagnTrack.h StagMagnTrack.cpp State.h State.cpp StatSpinStruct.h StatSpinStruct.cpp Stepper.h Timer.h Timer.cpp unix_signals.h VectorQuantity.h VectorQuantity.cpp WaveFunction.h WaveFunction.cpp zdotu_sub.f)
 
 add_executable(vmc vmc.cpp ${VMC_SOURCES})
-add_executable(test_jastrow test_jastrow.cpp ${VMC_SOURCES})
-add_executable(test_random_walk test_random_walk.cpp ${VMC_SOURCES})
+if (BuildTests)
+    enable_testing()
+    add_executable(test_jastrow test_jastrow.cpp ${VMC_SOURCES})
+    add_executable(test_random_walk test_random_walk.cpp ${VMC_SOURCES})
+    add_test(NAME "IdentityJastrow_update_test" COMMAND test_jastrow --L=8 --N_hop_tests=100)
+    add_test(NAME "NeelJastrow_update_test" COMMAND test_jastrow --Neel_jastrow --N_hop_tests=100)
+    add_test(NAME "StagJastrow_update_test" COMMAND test_jastrow --Stag_jastrow --N_hop_tests=100)
+    add_test(NAME "LogJastrow_update_test" COMMAND test_jastrow --Log_jastrow --N_hop_tests=100)
+    add_test(NAME "NeelJastrow_update_grad_hessian_test" COMMAND test_jastrow --Neel_jastrow --N_hop_tests=100 --grad_hessian_test)
+    add_test(NAME "StagJastrow_update_grad_hessian_test" COMMAND test_jastrow --Stag_jastrow --N_hop_tests=100 --grad_hessian_test)
+    add_test(NAME "LogJastrow_update_grad_hessian_test" COMMAND test_jastrow --Log_jastrow --N_hop_tests=100 --grad_hessian_test)
+    set(VMC_TARGETS vmc test_jastrow test_random_walk)
+else (BuildTests)
+    set(VMC_TARGETS vmc)
+endif (BuildTests)
 
-set(VMC_TARGETS vmc test_jastrow test_random_walk)
 set(VMC_INSTALL_TARGETS vmc)
-
-add_test(NAME "IdentityJastrow_update_test" COMMAND test_jastrow --L=8 --N_hop_tests=100)
-add_test(NAME "NeelJastrow_update_test" COMMAND test_jastrow --Neel_jastrow --N_hop_tests=100)
-add_test(NAME "StagJastrow_update_test" COMMAND test_jastrow --Stag_jastrow --N_hop_tests=100)
-add_test(NAME "LogJastrow_update_test" COMMAND test_jastrow --Log_jastrow --N_hop_tests=100)
-add_test(NAME "NeelJastrow_update_grad_hessian_test" COMMAND test_jastrow --Neel_jastrow --N_hop_tests=100 --grad_hessian_test)
-add_test(NAME "StagJastrow_update_grad_hessian_test" COMMAND test_jastrow --Stag_jastrow --N_hop_tests=100 --grad_hessian_test)
-add_test(NAME "LogJastrow_update_grad_hessian_test" COMMAND test_jastrow --Log_jastrow --N_hop_tests=100 --grad_hessian_test)
 
 option (MtROSA "Special flag to build on Monte Rosa cluster" OFF)
 if (MtROSA)

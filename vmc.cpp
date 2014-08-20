@@ -30,6 +30,7 @@
 #include "NeelJastrowPotential.h"
 #include "StagJastrowPotential.h"
 #include "LogJastrowPotential.h"
+#include "PairedMagnonJastrowPotential.h"
 #include "RanGen.h"
 #include "FileManager.h"
 #include "ArgParse.h"
@@ -97,6 +98,7 @@ int main(int argc, char* argv[])
     domap["neel_jastrow"]=0.0;
     domap["stag_jastrow"]=0.0;
     domap["log_jastrow"]=0.0;
+    domap["pm_jastrow"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
@@ -212,6 +214,9 @@ int main(int argc, char* argv[])
             jas=new Jastrow(sp,jaspot);
         } else if(domap["log_jastrow"]!=0.0){
             jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
+            jas=new Jastrow(sp,jaspot);
+        } else if(domap["pm_jastrow"]!=0.0){
+            jaspot=new PairedMagnonJastrowPotential(&slat,domap["pm_jastrow"]);
             jas=new Jastrow(sp,jaspot);
         } else {
             jas=new IdentityJastrow;
