@@ -57,7 +57,7 @@ def vmc_exec(**kwargs):
 
 cd {rundir}
 
-mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=kwargs['partition'])+vmcargs
+mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=kwargs['partition'],rundir=kwargs['rundir'])+vmcargs
         batch_file=open('vmc_exec_batch.sh','w')
         batch_file.write(batchscript)
         batchfile.close()
