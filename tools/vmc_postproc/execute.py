@@ -65,7 +65,7 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
         batch_file.write(batchscript)
         batch_file.close()
         slurmproc=subprocess.Popen(['sbatch','vmc_exec_batch.sh'],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        stdout,stderr=subprocess.communicate()
+        stdout,stderr=slurmproc.communicate()
         if six.PY3:
             stdout=str(stdout,encoding='utf-8')
             stderr=str(stderr,encoding='utf-8')
