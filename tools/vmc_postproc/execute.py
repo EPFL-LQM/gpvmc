@@ -81,7 +81,7 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
             stdout,stderr=squeueproc.communicate()
             done=(len(stdout)==0)
             time.sleep(10)
-        print('Finished calculation '+prefix)
+        print('Finished calculation '+str(prefix))
     else:
         vmcproc=subprocess.Popen(['mpiexec','-np',str(kwargs['nprocs']),'--host',kwargs['hosts'],'vmc']+vmcargs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         stdout,stderr=vmcproc.communicate()
