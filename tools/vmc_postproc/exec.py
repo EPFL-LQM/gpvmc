@@ -5,14 +5,18 @@ import subprocess
 import sys
 import re
 import h5py
+import time
 import numpy as np
+from vmc_postproc import load
 
 def vmc_exec(**kwargs):
     """
     arguments:
     - nprocs (default 4)`
     - hosts (default localhost)
-    - Nsamp (default 1)
+    - slurmqueue (default False)
+    - partition (default qwfall)
+    - rundir (default .)
     plus all those given by runing vmc -h.
     returns a dictionnary with all measurements as
     asked using the kwargs.
@@ -22,6 +26,10 @@ def vmc_exec(**kwargs):
     kwargs.setdefault('nprocs',4)
     kwargs.setdefault('hosts','localhost')
     kwargs.setdefault('dir','.')
+    kwargs.setdefault('partition','qwfall')
+    kwargs.setdefault('rundir','.')
+    kwargs.setdefault('slurmqueue',False)
+    add_keys=['nprocs','hosts','slurmqueue','partition','rundir']
     meas_trans={'meas_magnetization':'Magnetization',\
                 'meas_projheis':'ProjHeis',\
                 'meas_stagmagn':'StagMagn',\
@@ -30,7 +38,7 @@ def vmc_exec(**kwargs):
         meas_trans['meas_stagmagn']='StagMagnZ'
     vmcargs=[]
     for key,value in kwargs.items():
-        if key!='nprocs' and key!='hosts' and key!='Nsamp':
+        if not key in add_keys:
             if not key in opts:
                 raise RuntimeError('Unrecognized option \'{}\'.'.format(key))
             if type(value)==bool:
@@ -38,21 +46,55 @@ def vmc_exec(**kwargs):
                     vmcargs+=['--{}'.format(key)]
             else:
                 vmcargs+=['--{key}={val}'.format(key=key,val=value)]
-    vmcproc=subprocess.Popen(['mpiexec','-np',str(kwargs['nprocs']),'--host',kwargs['hosts'],'vmc']+vmcargs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    stdout,stderr=vmcproc.communicate()
-    if six.PY3:
-        stdout=str(stdout,encoding='utf-8')
-        stderr=str(stderr,encoding='utf-8')
+    if kwargs['slurmqueue']:
+        batchscript="""#!/bin/bash
+#SBATCH -n {nprocs}
+#SBATCH -c 1
+#SBATCH -J vmc_exec
+#SBATCH -p {partition}
+#SBATCH --error=vmc_exec-%j.stderr
+#SBATCH --output=vmc_exec-%j.stdout
+
+cd {rundir}
+
+mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(kwargs)+vmcargs
+        batch_file=open('vmc_exec_batch.sh','w')
+        batch_file.write(batchscript)
+        batchfile.close()
+        slurmproc=subprocess.Popen(['sbatch','vmc_exec_batch.sh'],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        stdout,stderr=subprocess.communicate()
+        if six.PY3:
+            stdout=str(stdout,encoding='utf-8')
+            stderr=str(stderr,encoding='utf-8')
+        else:
+            stdout=unicode(stdout,encoding='utf-8')
+            stderr=unicode(stderr,encoding='utf-8')
+        print(stderr)
+        print(stdout)
+        prefix=re.findall(r'Submitted batch job ([0-9]+)',stdout)
+        done=False
+        while not done:
+            squeueproc=subprocess.Popen(['squeue','-h','-j',prefix],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            stdout,stderr=squeueproc.communicate()
+            done=(len(stdout)==0)
+            time.sleep(10)
+        print('Finished calculation '+prefix)
     else:
-        stdout=unicode(stdout,encoding='utf-8')
-        stderr=unicode(stderr,encoding='utf-8')
-    print(stderr)
-    prefix=re.findall(r'output prefix=([0-9]+)',stdout)
+        vmcproc=subprocess.Popen(['mpiexec','-np',str(kwargs['nprocs']),'--host',kwargs['hosts'],'vmc']+vmcargs,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        stdout,stderr=vmcproc.communicate()
+        if six.PY3:
+            stdout=str(stdout,encoding='utf-8')
+            stderr=str(stderr,encoding='utf-8')
+        else:
+            stdout=unicode(stdout,encoding='utf-8')
+            stderr=unicode(stderr,encoding='utf-8')
+        print(stderr)
+        prefix=re.findall(r'output prefix=([0-9]+)',stdout)
 
     outq=dict()
     for meas in meas_trans.keys():
         if kwargs.setdefault(meas,False):
-            outq[meas_trans[meas]]=get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['samples'])
+            outq[meas_trans[meas]]=load.get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['samples'])
     return outq
 
 def get_vmc_args():
