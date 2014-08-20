@@ -77,7 +77,7 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
         prefix=re.findall(r'Submitted batch job ([0-9]+)',stdout)
         done=False
         while not done:
-            squeueproc=subprocess.Popen(['squeue','-h','-j',prefix],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            squeueproc=subprocess.Popen(['squeue','-h','-j',str(prefix)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             stdout,stderr=squeueproc.communicate()
             done=(len(stdout)==0)
             time.sleep(10)
