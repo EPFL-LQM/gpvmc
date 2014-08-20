@@ -47,6 +47,9 @@ def vmc_exec(**kwargs):
             else:
                 vmcargs+=['--{key}={val}'.format(key=key,val=value)]
     if kwargs['slurmqueue']:
+        vmcargsinline=''
+        for a in vmcargs:
+            vmcargsinline+=' '+a
         batchscript="""#!/bin/bash
 #SBATCH -n {nprocs}
 #SBATCH -c 1
@@ -57,7 +60,7 @@ def vmc_exec(**kwargs):
 
 cd {rundir}
 
-mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=kwargs['partition'],rundir=kwargs['rundir'])+vmcargs
+mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=kwargs['partition'],rundir=kwargs['rundir'])+vmcargsinline
         batch_file=open('vmc_exec_batch.sh','w')
         batch_file.write(batchscript)
         batchfile.close()
