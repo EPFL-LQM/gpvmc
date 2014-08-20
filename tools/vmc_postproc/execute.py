@@ -75,6 +75,7 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
         print(stderr)
         print(stdout)
         prefix=re.findall(r'Submitted batch job ([0-9]+)',stdout)
+        prefix=prefix[0]
         done=False
         while not done:
             squeueproc=subprocess.Popen(['squeue','-h','-j',str(prefix)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -93,11 +94,11 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
             stderr=unicode(stderr,encoding='utf-8')
         print(stderr)
         prefix=re.findall(r'output prefix=([0-9]+)',stdout)
-
+        prefix=prefix[0]
     outq=dict()
     for meas in meas_trans.keys():
         if kwargs.setdefault(meas,False):
-            outq[meas_trans[meas]]=load.get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix[0],measname=meas_trans[meas]),kwargs['samples'])
+            outq[meas_trans[meas]]=load.get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix,measname=meas_trans[meas]),kwargs['samples'])
     return outq
 
 def get_vmc_args():

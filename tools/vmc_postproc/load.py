@@ -13,7 +13,7 @@ import warnings
 
 def get_quantity(filepath,Nsamp):
     if type(filepath)!=list:
-        fielpath=[filepath]
+        filepath=[filepath]
     dpath,args=get_stat(filepath,Nsamp)
     hfile=h5py.File(dpath[args[0][0]][0],'r')
     dshape=list(hfile[dpath[args[0][0]][1]].shape)
