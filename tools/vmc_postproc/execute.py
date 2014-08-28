@@ -29,6 +29,11 @@ def vmc_exec(**kwargs):
     kwargs.setdefault('partition','qwfall')
     kwargs.setdefault('rundir','.')
     kwargs.setdefault('slurmqueue',False)
+    nsamp=kwargs.setdefault('samples',10)
+    if nsamp<kwargs['nprocs']:
+        kwargs['samples']=1
+    else:
+        kwargs['samples']=int(nsamp/kwargs['nprocs'])+1
     add_keys=['nprocs','hosts','slurmqueue','partition','rundir']
     meas_trans={'meas_magnetization':'Magnetization',\
                 'meas_projheis':'ProjHeis',\
@@ -98,7 +103,7 @@ mpirun ./vmc --prefix=$SLURM_JOB_ID""".format(nprocs=kwargs['nprocs'],partition=
     outq=dict()
     for meas in meas_trans.keys():
         if kwargs.setdefault(meas,False):
-            outq[meas_trans[meas]]=load.get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix,measname=meas_trans[meas]),kwargs['samples'])
+            outq[meas_trans[meas]]=load.get_quantity(kwargs['dir']+'/{prefix}-{measname}.h5'.format(prefix=prefix,measname=meas_trans[meas]),nsamp)
     return outq
 
 def get_vmc_args():
