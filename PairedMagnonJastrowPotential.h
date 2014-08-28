@@ -10,8 +10,8 @@ using namespace std;
 
 class PairedMagnonJastrowPotential: public JastrowPotential {
     public:
-        PairedMagnonJastrowPotential(const Lattice* lattice, double neel)
-            :JastrowPotential(lattice,vector<double>(1,neel))
+        PairedMagnonJastrowPotential(const Lattice* lattice, double neel, double nnjas, double nnnjas)
+            :JastrowPotential(lattice,vector<double>({neel,nnjas,nnnjas}))
         {
             this->init();
         }
@@ -21,9 +21,13 @@ class PairedMagnonJastrowPotential: public JastrowPotential {
                                        const uint_vec_t& Rj,
                                        const std::vector<double>& rj) const
         {
-            if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
+            if(Ri[0]==Rj[0] && Ri[1]==Rj[1]){
                 return 0.0;
-            else{
+            } else if(NN(Ri,Rj)){
+                return -m_params[1];
+            } else if(NNN(Ri,Rj)){
+                return -m_params[2];
+            } else{
                 double rx,ry;
                 rx=double(Rj[0])-double(Ri[0]);
                 ry=double(Rj[1])-double(Ri[1]);
@@ -36,9 +40,15 @@ class PairedMagnonJastrowPotential: public JastrowPotential {
                                             const std::vector<double>& rj,
                                             std::size_t param) const
         {
-            if(Ri[0]==Rj[0] && Ri[1]==Rj[1])
+            if(Ri[0]==Rj[0] && Ri[1]==Rj[1]){
                 return 0.0;
-            else{
+            } else if(NN(Ri,Rj)){
+                if(param==1) return -1.0;
+                else return 0.0;
+            } else if(NNN(Ri,Rj)){
+                if(param==2) return -1.0;
+                else return 0.0;
+            } else{
                 double rx,ry;
                 rx=double(Rj[0])-double(Ri[0]);
                 ry=double(Rj[1])-double(Ri[1]);
@@ -92,6 +102,16 @@ class PairedMagnonJastrowPotential: public JastrowPotential {
                 }
             }
             return out/m_lattice->GetLx()/m_lattice->GetLy();
+        }
+        bool NN(const uint_vec_t& Ri,const uint_vec_t& Rj) const
+        {
+            return (abs(int(Ri[0])-int(Rj[0]))==1 && Ri[1]==Rj[1]) ||
+                   (abs(int(Ri[1])-int(Rj[1]))==1 && Ri[0]==Rj[0]);
+        }
+        bool NNN(const uint_vec_t& Ri,const uint_vec_t& Rj) const
+        {
+            return abs(int(Ri[0])-int(Rj[0]))==1 &&
+                   abs(int(Ri[1])-int(Rj[1]))==1;
         }
 };
 

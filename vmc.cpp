@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
     domap["stag_jastrow"]=0.0;
     domap["log_jastrow"]=0.0;
     domap["pm_jastrow"]=0.0;
+    domap["pm_jastrow_nn"]=0.0;
+    domap["pm_jastrow_nnn"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
@@ -216,7 +218,9 @@ int main(int argc, char* argv[])
             jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
             jas=new Jastrow(sp,jaspot);
         } else if(domap["pm_jastrow"]!=0.0){
-            jaspot=new PairedMagnonJastrowPotential(&slat,domap["pm_jastrow"]);
+            jaspot=new PairedMagnonJastrowPotential(&slat,domap["pm_jastrow"],
+                                                          domap["pm_jastrow_nn"],
+                                                          domap["pm_jastrow_nnn"]);
             jas=new Jastrow(sp,jaspot);
         } else {
             jas=new IdentityJastrow;
