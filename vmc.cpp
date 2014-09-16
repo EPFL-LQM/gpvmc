@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
                 wav=new SFpNxpHzExciton(fm,L,L,phi,neel,field,phase_shift,Q);
             }
         }
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Wavefunction is:"<<endl<<*wav<<endl;
 #endif
         wav->Save();
@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
         } else {
             jas=new IdentityJastrow;
         }
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Initialize initial spin state"<<endl;
 #endif
         if(bomap["Neel_init"]){
@@ -340,7 +340,7 @@ int main(int argc, char* argv[])
         }
         wav->Hop(kmax);
         amp.Init();
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"initial Lattice is:"<<endl<<*sp<<endl;
         cout<<"Create Monte Carlo stepper"<<endl;
 #endif
@@ -352,7 +352,7 @@ int main(int argc, char* argv[])
             vector<bool> flip(1,true);
             step.SetFlavorFlip(flip);
         }
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Create Metropolis MC object"<<endl;
 #endif
         MetroMC varmc(&step,fm);
@@ -391,7 +391,7 @@ int main(int argc, char* argv[])
             JastrowTrack* jast=new JastrowTrack(&step,fm);
             varmc.AddQuantity(jast);
         }
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Thermalize."<<endl;
 #endif
         // Start calculation: thermalize
@@ -402,7 +402,7 @@ int main(int argc, char* argv[])
         }
         fm->MonitorTotal()=simap["samples"]*simap["samples_saves"];         
         // Calculation
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Random walk start now."<<endl;
 #endif
         for(size_t sample=0;sample<simap["samples"];++sample){
@@ -431,7 +431,7 @@ int main(int argc, char* argv[])
         MPI_Send(&mess,1,MPI_INT,0,fm->message_comm,MPI_COMM_WORLD);
         MPI_Send(&stop,1,MPI_INT,0,fm->message_loop,MPI_COMM_WORLD);
 #endif
-#ifndef DNDEBUG
+#ifndef NDEBUG
         cout<<"Calculation finished, cleaning up!"<<endl;
 #endif
         sp->Save();
