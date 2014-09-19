@@ -91,7 +91,11 @@ class BigDouble
             return *this;
         }
 
-        int exp() const {return m_e;}
+        static BigDouble exp(const double& d)
+        {
+            double x=d*std::log10(M_E);
+            return BigDouble(std::pow(10,x-int(x)),int(x));
+        }
 
         const BigDouble& operator+() const {return *this;}
         const BigDouble operator-() const {return BigDouble(-m_c,m_e);}
@@ -168,6 +172,12 @@ class BigDouble
 inline const BigDouble abs(const BigDouble& bd)
 {
     return BigDouble(std::abs(bd.m_c),bd.m_e);
+}
+
+inline const BigDouble pow(const BigDouble& bd,const double& p)
+{
+    double x=p*std::log10(bd.m_c);
+    return BigDouble(std::pow(10,x-int(x)),bd.m_e*p+int(x));
 }
 
 inline const BigDouble operator+(const BigDouble& left, const BigDouble& right)

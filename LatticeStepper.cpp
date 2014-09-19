@@ -81,7 +81,7 @@ BigDouble LatticeStepper::trystep()
     }
     const vector<vector<hop_path_t> >& khops=m_wav->GetHops();
     vector<BigComplex> qs(khops.size());
-    vector<double> js(1);
+    vector<BigDouble> js(1);
 #ifdef PROFILE
     Timer::tic("LatticeStepper::trystep/VirtUpdate");
 #endif

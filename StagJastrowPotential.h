@@ -27,28 +27,6 @@ class StagJastrowPotential: public JastrowPotential {
             return out;
         }
 
-        virtual double space_potential_grad(const uint_vec_t& Ri,
-                                            const std::vector<double>& ri,
-                                            const uint_vec_t& Rj,
-                                            const std::vector<double>& rj,
-                                            std::size_t param) const
-        {
-            double out(0);
-            if(Ri[0]!=Rj[0] || Ri[1]!=Rj[1] || ri[0]!=rj[0] || ri[1]!=rj[1])
-                out=double(1.0-2.0*linalg::mod(int(Rj[0]+Rj[1])-int(Ri[0]+Ri[1]),2))/m_lattice->GetNv();
-            return out;
-        }
-
-        virtual double space_potential_hess(const uint_vec_t& Ri,
-                                            const std::vector<double>& ri,
-                                            const uint_vec_t& Rj,
-                                            const std::vector<double>& rj,
-                                            std::size_t param_a,
-                                            std::size_t param_b) const
-        {
-            return 0;
-        }
-
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,
                                                          const uint_vec_t& statej) const
         {
