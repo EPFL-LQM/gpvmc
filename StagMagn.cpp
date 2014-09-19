@@ -17,7 +17,7 @@ void StagMagn::measure()
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti;
     vector<BigComplex> swamps(hops.size(),BigComplex(0.0,0.0));
-    vector<double> swjs(hops.size(),0);
+    vector<BigDouble> swjs(hops.size(),0);
     BigComplex amp=m_stepper->GetAmp()->Amp()*m_stepper->GetJas()->Jas();
     if(m_meas_trans){
         for(size_t v=0;v<st->GetNsites();++v){

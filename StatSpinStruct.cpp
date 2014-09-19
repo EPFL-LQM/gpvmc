@@ -86,7 +86,7 @@ void StatSpinStruct::measure()
     }
     // Calculate spin swap amplitudes
     vector<BigComplex> swamps(hops.size());
-    vector<double> swjs(hops.size());
+    vector<BigDouble> swjs(hops.size());
     BigComplex amp=m_stepper->GetAmp()->Amp();
     double jas=m_stepper->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(st->GetNfl())),swamps);

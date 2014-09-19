@@ -91,7 +91,7 @@ void ProjHeis::measure()
     // add the no swap empty hop path
     rhop.push_back(vector<hop_path_t>(st->GetNfl()));
     vector<BigComplex> qs(rhop.size()*Nexc,0.0);
-    vector<double> js(rhop.size(),1.0);
+    vector<BigDouble> js(rhop.size(),1.0);
 #ifdef PROFILE
     Timer::tic("ProjHeis::measure/VirtUpdate");
 #endif

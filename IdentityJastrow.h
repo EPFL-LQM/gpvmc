@@ -15,9 +15,9 @@ class IdentityJastrow: public Jastrow {
         {
             return 0;
         }
-        virtual double Jas() const
+        virtual BigDouble Jas() const
         {
-            return 1;
+            return BigDouble(1,0);
         }
         virtual void JasGrad(std::vector<double>& grad) const
         {
@@ -28,9 +28,9 @@ class IdentityJastrow: public Jastrow {
             hess.resize(0);
         }
         virtual void VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
-                                std::vector<double>& js) const
+                                std::vector<BigDouble>& js) const
         {
-            js.assign(rhop.size(),1.0);
+            js.assign(rhop.size(),BigDouble(1.0,0));
         }
         virtual void VirtUpdate(const std::vector<std::vector<hop_path_t> >& rhop,
                                 std::vector<double>& js,
