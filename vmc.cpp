@@ -218,9 +218,9 @@ int main(int argc, char* argv[])
             jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
             jas=new Jastrow(sp,jaspot);
         } else if(domap["pm_jastrow"]!=0.0){
-            jaspot=new PairedMagnonJastrowPotential(&slat,domap["pm_jastrow"],
-                                                          domap["pm_jastrow_nn"],
-                                                          domap["pm_jastrow_nnn"]);
+            jaspot=new PairedMagnonJastrowPotential(&slat,{domap["pm_jastrow_nn"],
+                                                          domap["pm_jastrow_nnn"],
+                                                          domap["pm_jastrow"]});
             jas=new Jastrow(sp,jaspot);
         } else {
             jas=new IdentityJastrow;

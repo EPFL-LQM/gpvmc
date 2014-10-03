@@ -3,14 +3,15 @@
 
 #include <iostream>
 #include <algorithm>
+#include <set>
+#include <map>
 #include "JastrowPotential.h"
 #include "linalg.h"
 
 class PairedMagnonJastrowPotential: public JastrowPotential {
     public:
         PairedMagnonJastrowPotential(const Lattice* lattice,
-                                     double neel, double nnjas,
-                                     double nnnjas);
+                                     const vector<double>& neigh_ratios);
         ~PairedMagnonJastrowPotential();
     protected:
         virtual void init();
@@ -22,10 +23,10 @@ class PairedMagnonJastrowPotential: public JastrowPotential {
                                                          const uint_vec_t& statej) const;
     private:
         bool isup(const uint_vec_t& state) const;
-        bool NN(const double & rx,const double& ry) const;
-        bool NNN(const double & rx,const double& ry) const;
 
+        map<size_t,size_t> m_neigh_index;
         double* m_cache;
+        double* m_neigh_r;
 };
 
 #endif//_LOGJASTROWPOTENTIAL_H

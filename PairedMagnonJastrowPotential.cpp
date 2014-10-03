@@ -5,10 +5,10 @@
 
 using namespace std;
 
-PairedMagnonJastrowPotential::PairedMagnonJastrowPotential(const Lattice* lattice,
-                                                           double neel, double nnjas,
-                                                           double nnnjas)
-    :JastrowPotential(lattice,vector<double>({neel,nnjas,nnnjas})),
+PairedMagnonJastrowPotential::PairedMagnonJastrowPotential(
+        const Lattice* lattice,
+        const vector<double>& neigh_ratio)
+    :JastrowPotential(lattice,neigh_ratio),
      m_cache(new double[(lattice->GetLx()/2+1)*(lattice->GetLy()/2+1)])
 {
     this->init();
@@ -26,11 +26,29 @@ PairedMagnonJastrowPotential::PairedMagnonJastrowPotential(const Lattice* lattic
 PairedMagnonJastrowPotential::~PairedMagnonJastrowPotential()
 {
     delete [] m_cache;
+    delete [] m_neigh_r;
 }
 
 void PairedMagnonJastrowPotential::init()
 {
     size_t Lx(m_lattice->GetLx()),Ly(m_lattice->GetLy());
+    // Initialize the neighbour index set.
+    set<size_t> neigh_dist;
+    for(size_t rx=0;rx<=Lx/2;++rx){
+        for(size_t ry=0;ry<=Ly/2;++ry){
+            neigh_dist.insert(rx*rx+ry*ry);
+        }
+    }
+    size_t idx=0;
+    for(set<size_t>::iterator iter=neigh_dist.begin();iter!=neigh_dist.end();++iter){
+        if(idx<m_params.size()){
+            m_neigh_index[*iter]=idx;
+            idx++;
+        } else {
+            m_neigh_index[*iter]=m_params.size()-1;
+        }
+    }
+
     double * Dk = new double[(Lx/2+1)*(Ly/2+1)];
     fftw_plan plan = fftw_plan_r2r_2d(Lx/2+1,Ly/2+1,
                                       Dk,m_cache,
@@ -69,15 +87,8 @@ double PairedMagnonJastrowPotential::space_potential(const uint_vec_t& Ri,
     rx=int(Rj[0])-int(Ri[0]);
     ry=int(Rj[1])-int(Ri[1]);
     transvecmod(rx,ry);
-    if(Ri[0]==Rj[0] && Ri[1]==Rj[1]){
-        return 0.0;
-    } else if(NN(rx,ry)){
-        return -m_params[1]*m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
-    } else if(NNN(rx,ry)){
-        return -m_params[2]*m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
-    } else{
-        return -m_params[0]*m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
-    }
+    return -m_params[m_neigh_index.at(abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry))]*
+        m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
 }
 double PairedMagnonJastrowPotential::internal_quantum_number_potential(
                                                 const uint_vec_t& statei,
@@ -103,12 +114,4 @@ bool PairedMagnonJastrowPotential::isup(const uint_vec_t& state) const
         return true;
     else
         return false;
-}
-bool PairedMagnonJastrowPotential::NN(const double & rx,const double& ry) const
-{
-    return abs(abs(rx)+abs(ry)-1)<1e-6;
-}
-bool PairedMagnonJastrowPotential::NNN(const double & rx,const double& ry) const
-{
-    return abs(abs(rx)+abs(ry)-2)<1e-6;
 }
