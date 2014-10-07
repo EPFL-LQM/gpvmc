@@ -99,8 +99,6 @@ int main(int argc, char* argv[])
     domap["stag_jastrow"]=0.0;
     domap["log_jastrow"]=0.0;
     domap["pm_jastrow"]=0.0;
-    domap["pm_jastrow_nn"]=0.0;
-    domap["pm_jastrow_nnn"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
@@ -120,6 +118,7 @@ int main(int argc, char* argv[])
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
+    stmap["pm_jastrow_factors"]="";
     int help=ArgParse(argc,argv,domap,inmap,simap,bomap,stmap);
     if(help)
         myexit(0);
@@ -218,9 +217,19 @@ int main(int argc, char* argv[])
             jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
             jas=new Jastrow(sp,jaspot);
         } else if(domap["pm_jastrow"]!=0.0){
-            jaspot=new PairedMagnonJastrowPotential(&slat,{domap["pm_jastrow_nn"],
-                                                          domap["pm_jastrow_nnn"],
-                                                          domap["pm_jastrow"]});
+            vector<double> pm_factors;
+            string fcts=stmap["pm_jastrow_factors"];
+            while(fcts.size()){
+                size_t colon_pos=fcts.find(':');
+                pm_factors.push_back(stod(fcts.substr(0,colon_pos)));
+                if(colon_pos!=string::npos){
+                    fcts=fcts.substr(colon_pos+1);
+                } else {
+                    fcts="";
+                }
+            }
+            pm_factors.push_back(domap["pm_jastrow"]);
+            jaspot=new PairedMagnonJastrowPotential(&slat,pm_factors);
             jas=new Jastrow(sp,jaspot);
         } else {
             jas=new IdentityJastrow;

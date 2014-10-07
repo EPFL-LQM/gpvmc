@@ -16,7 +16,13 @@ PairedMagnonJastrowPotential::PairedMagnonJastrowPotential(
     fdb.open("pa_pot_db.txt");
     for(int x=-int(m_lattice->GetLx()/2);x<int(m_lattice->GetLx()/2);++x){
         for(int y=-int(m_lattice->GetLy()/2);y<int(m_lattice->GetLy()/2);++y){
-            fdb<<m_cache[abs(x)*(m_lattice->GetLx()/2+1)+abs(y)]<<"\t";
+            int rx(x),ry(y);
+            transvecmod(rx,ry);
+            if(rx*rx+ry*ry){
+                fdb<<-m_params[m_neigh_index.at(rx*rx+ry*ry)]*m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)]<<"\t";
+            } else {
+                fdb<<"0.0\t";
+            }
         }
         fdb<<std::endl;
     }
@@ -41,11 +47,13 @@ void PairedMagnonJastrowPotential::init()
     }
     size_t idx=0;
     for(set<size_t>::iterator iter=neigh_dist.begin();iter!=neigh_dist.end();++iter){
-        if(idx<m_params.size()){
-            m_neigh_index[*iter]=idx;
-            idx++;
-        } else {
-            m_neigh_index[*iter]=m_params.size()-1;
+        if(*iter){
+            if(idx<m_params.size()){
+                m_neigh_index[*iter]=idx;
+                idx++;
+            } else {
+                m_neigh_index[*iter]=m_params.size()-1;
+            }
         }
     }
 
@@ -87,8 +95,12 @@ double PairedMagnonJastrowPotential::space_potential(const uint_vec_t& Ri,
     rx=int(Rj[0])-int(Ri[0]);
     ry=int(Rj[1])-int(Ri[1]);
     transvecmod(rx,ry);
-    return -m_params[m_neigh_index.at(abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry))]*
-        m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
+    if(rx*rx+ry*ry){
+        return -m_params[m_neigh_index.at(rx*rx+ry*ry)]*
+            m_cache[abs(rx)*(m_lattice->GetLy()/2+1)+abs(ry)];
+    } else {
+        return 0.0;
+    }
 }
 double PairedMagnonJastrowPotential::internal_quantum_number_potential(
                                                 const uint_vec_t& statei,
