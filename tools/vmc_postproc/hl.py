@@ -34,8 +34,9 @@ def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
     wav_st=load.get_wav(wav)
     fs=np.diag(proc.fermisigns(wav_st,load.get_attr(filenames[0])))
     renorm=1.0;
-    H=np.einsum('ij,kjl,lm->kim',fs,H,fs)
-    O=np.einsum('ij,kjl,lm->kim',fs,O,fs)
+    for k in range(nsamp):
+        H[k,:,:]=np.dot(fs,np.dot(H[k,:,:],fs))
+        O[k,:,:]=np.dot(fs,np.dot(O[k,:,:],fs))
     evals=np.zeros(H.shape[:2])
     evecs=np.zeros(H.shape,dtype=complex)
     for s in range(nsamp):
@@ -92,5 +93,7 @@ def get_sq_ampl(filenames,nsamp,wav=None,tol=1e-12,H=None,O=None,evals=None,evec
     elif params['sfpnxphz_wav']:
         out=[None]*3
         for a in range(3):
-            out[a]=abs(np.einsum('i,sij,sjk->sk',np.conj(pkq[a]),O,evecs))**2
+            out[a]=np.zeros((nsamp,O.shape[1]))
+            for k in range(nsamp):
+                out[a][k,:]=abs(np.dot(np.conj(pkq[a]),np.dot(O[k,:,:],evecs[k,:,:])))**2
         return out
