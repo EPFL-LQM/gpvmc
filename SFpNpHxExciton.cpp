@@ -9,12 +9,13 @@ SFpNpHxExciton::SFpNpHxExciton(FileManager* fm,
                                size_t Ly,
                                double phi,
                                double neel,
+                               double neel_exp,
                                double hx,
                                vector<double> bc_phase,
                                vector<size_t> q)
     :SFpNpHxWaveFunction(fm,Lx,Ly,
                          Lx*Ly,
-                         phi,neel,hx,bc_phase),
+                         phi,neel,neel_exp,hx,bc_phase),
      m_q(q)
 {
     // add all two-spinons excitons

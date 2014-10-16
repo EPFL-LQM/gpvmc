@@ -9,7 +9,7 @@ class StagFluxGroundState : public StagFluxWaveFunction
     public:
         StagFluxGroundState(FileManager* fm,
                             size_t Lx, size_t Ly,
-                            double phi, double neel,
+                            double phi, double neel, double neel_exp,
                             std::vector<double> bc_phase);
 };
 

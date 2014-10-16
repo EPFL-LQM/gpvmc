@@ -20,7 +20,7 @@ class StagFluxWaveFunction : public WaveFunction {
         StagFluxWaveFunction(FileManager* fm,
                              size_t Lx, size_t Ly,
                              size_t Nbyup, size_t Nbydo,
-                             double phi, double neel,
+                             double phi, double neel, double neel_exp,
                              std::vector<double> bc_phase);
         virtual ~StagFluxWaveFunction();
 
@@ -31,6 +31,7 @@ class StagFluxWaveFunction : public WaveFunction {
         size_t *m_fock2qn;
         double m_phi;
         double m_neel;
+        double m_ne;
         std::vector<double> m_bc_phase;
 
         virtual std::complex<double>
@@ -43,6 +44,7 @@ class StagFluxWaveFunction : public WaveFunction {
          * magnetic Brillouin zone.*/
         void mbzmod(size_t* k) const;
         std::complex<double> delta(double* k) const;
+        double neelk(double* k) const;
         double omega(double* k) const;
         std::complex<double> Uk(double* k,
                                 bool up,

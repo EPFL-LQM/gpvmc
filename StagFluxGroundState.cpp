@@ -2,11 +2,11 @@
 
 StagFluxGroundState::StagFluxGroundState(FileManager* fm,
                                          size_t Lx, size_t Ly,
-                                         double phi, double neel,
+                                         double phi, double neel, double neel_exp,
                                          std::vector<double> bc_phase)
     :StagFluxWaveFunction(fm,Lx,Ly,
                           Lx*Ly/2,Lx*Ly/2,
-                          phi,neel, bc_phase)
+                          phi,neel, neel_exp, bc_phase)
 {
     uint_vec_t fst(Lx*Ly,Lx*Ly/2);
     for(size_t f=0;f<Lx*Ly/2;++f)

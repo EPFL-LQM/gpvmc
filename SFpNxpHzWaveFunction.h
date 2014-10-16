@@ -10,7 +10,8 @@ class SFpNxpHzWaveFunction : public WaveFunction {
         SFpNxpHzWaveFunction(FileManager* fm,
                              size_t Lx, size_t Ly,
                              size_t Nby,
-                             double phi, double neel, double hz,
+                             double phi, double neel,
+                             double neel_exp, double hz,
                              const std::vector<double>& bc_phase);
         virtual ~SFpNxpHzWaveFunction();
 
@@ -21,6 +22,7 @@ class SFpNxpHzWaveFunction : public WaveFunction {
         size_t *m_fock2qn;
         double m_phi;
         double m_nx;
+        double m_ne;
         double m_hz;
         std::vector<double> m_bc_phase;
 
@@ -35,6 +37,7 @@ class SFpNxpHzWaveFunction : public WaveFunction {
         void mbzmod(size_t* k) const;
         int sign( double x) const;
         std::complex<double> delta(double* k) const;
+        double neelk(double* k) const;
         double omega(double* k, size_t band) const;
         std::complex<double> Uk(double* k,
                                 size_t band) const;

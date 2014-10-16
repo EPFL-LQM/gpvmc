@@ -69,7 +69,7 @@ void PairedMagnonJastrowPotential::init()
                 double dkx=double(kx)*2*M_PI/double(Lx);
                 double dky=double(ky)*2*M_PI/double(Ly);
                 double gk=0.5*(cos(dkx)+cos(dky));
-                Dk[kx*(Ly/2+1)+ky]=sqrt((1+gk)/(1-gk))-1;
+                Dk[kx*(Ly/2+1)+ky]=0.5*(sqrt((1+gk)/(1-gk))-1);
             }
         }
     }

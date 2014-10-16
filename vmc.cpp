@@ -94,6 +94,7 @@ int main(int argc, char* argv[])
     inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
     domap["neel"]=0.055;
+    domap["neel_exp"]=0.0;
     domap["field"]=0.0;
     domap["neel_jastrow"]=0.0;
     domap["stag_jastrow"]=0.0;
@@ -160,6 +161,7 @@ int main(int argc, char* argv[])
         size_t L=simap["L"];
         vector<size_t> Q(2);
         double neel=domap["neel"];
+        double neel_exp=domap["neel_exp"];
         double phi=domap["phi"];
         double field=domap["field"];
         vector<double> phase_shift(2);
@@ -181,23 +183,23 @@ int main(int argc, char* argv[])
         WaveFunction* wav(0);
         if(bomap["stagflux_wav"]){
             if(stmap["channel"]=="groundstate"){
-                wav=new StagFluxGroundState(fm,L,L,phi,neel,phase_shift);
+                wav=new StagFluxGroundState(fm,L,L,phi,neel,neel_exp,phase_shift);
             } else if(stmap["channel"]=="trans"){
-                wav=new StagFluxTransExciton(fm,L,L,phi,neel,phase_shift,Q);
+                wav=new StagFluxTransExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
             } else if(stmap["channel"]=="long"){
-                wav=new StagFluxLongExciton(fm,L,L,phi,neel,phase_shift,Q);
+                wav=new StagFluxLongExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
             }
         } else if(bomap["sfpnzphx_wav"]){
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,field,phase_shift);
+                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,neel_exp,field,phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNpHxExciton(fm,L,L,phi,neel,field,phase_shift,Q);
+                wav=new SFpNpHxExciton(fm,L,L,phi,neel,neel_exp,field,phase_shift,Q);
             }
         } else /*if(bomap["sfpnxphz_wav"])*/{
             if(stmap["channel"]=="groundstate"){
-                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,field,phase_shift);
+                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,neel_exp,field,phase_shift);
             } else {//trans and long are mixed
-                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,field,phase_shift,Q);
+                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,neel_exp,field,phase_shift,Q);
             }
         }
 #ifndef NDEBUG
@@ -314,11 +316,19 @@ int main(int argc, char* argv[])
                     pop.push_back(vector<size_t>(1,L*L/2));
                 }
             } else {
-                if(bomap["Sztot_non_zero_init"]){
-                    int Nup=(size_t)(RanGen::uniform()*L*L);
-                    pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
+                if(bomap["Sztot_zero_proj"]){
+                    if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
+                        pop.push_back({L*L/2,L*L/2});
+                    } else {
+                        pop.push_back({L*L/2+1,L*L/2-1});
+                    }
                 } else {
-                    pop.push_back({L*L/2,L*L/2});
+                    if(bomap["Sztot_non_zero_init"]){
+                        int Nup=(size_t)(RanGen::uniform()*L*L);
+                        pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
+                    } else {
+                        pop.push_back({L*L/2,L*L/2});
+                    }
                 }
             }
             sp->RanInit(pop);

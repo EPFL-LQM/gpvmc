@@ -9,11 +9,12 @@ StagFluxTransExciton::StagFluxTransExciton(FileManager* fm,
                                            size_t Ly,
                                            double phi,
                                            double neel,
+                                           double neel_exp,
                                            vector<double> bc_phase,
                                            vector<size_t> q)
     :StagFluxWaveFunction(fm,Lx,Ly,
                           Lx*Ly/2+1,Lx*Ly/2-1,
-                          phi,neel,bc_phase),
+                          phi,neel,neel_exp,bc_phase),
      m_q(q)
 {
     vector<double> en(Lx*Ly/2,0);

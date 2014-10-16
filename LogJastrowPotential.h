@@ -27,10 +27,7 @@ class LogJastrowPotential: public JastrowPotential {
                 int rx,ry;
                 rx=int(Rj[0])-int(Ri[0]);
                 ry=int(Rj[1])-int(Ri[1]);
-                int ph=1;
-                if(linalg::mod(rx+ry,2))
-                    ph=-1;
-                return -ph*m_params[0]*log(sqrt(0.5*(pow(sin(rx*M_PI/m_lattice->GetLx()),2)+pow(sin(ry*M_PI/m_lattice->GetLy()),2))))/m_lattice->GetNv();
+                return -m_params[0]*log(sqrt(0.5*(pow(sin(rx*M_PI/m_lattice->GetLx()),2)+pow(sin(ry*M_PI/m_lattice->GetLy()),2))))/m_lattice->GetNv();
             }
         }
         virtual double internal_quantum_number_potential(const uint_vec_t& statei,

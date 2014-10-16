@@ -9,7 +9,8 @@ class SFpNxpHzGroundState : public SFpNxpHzWaveFunction
     public:
         SFpNxpHzGroundState(FileManager* fm,
                             size_t Lx, size_t Ly,
-                            double phi, double neel, double hz,
+                            double phi, double neel,
+                            double neel_exp, double hz,
                             const std::vector<double>& bc_phase);
 };
 

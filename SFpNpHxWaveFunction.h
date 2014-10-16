@@ -20,7 +20,7 @@ class SFpNpHxWaveFunction : public WaveFunction {
         SFpNpHxWaveFunction(FileManager* fm,
                             size_t Lx, size_t Ly,
                             size_t Nby,
-                            double phi, double neel, double hx,
+                            double phi, double neel, double neel_exp, double hx,
                             const std::vector<double>& bc_phase);
         virtual ~SFpNpHxWaveFunction();
 
@@ -31,6 +31,7 @@ class SFpNpHxWaveFunction : public WaveFunction {
         size_t *m_fock2qn;
         double m_phi;
         double m_neel;
+        double m_ne;
         double m_hx;
         std::vector<double> m_bc_phase;
 
@@ -46,6 +47,7 @@ class SFpNpHxWaveFunction : public WaveFunction {
         int sign( double x) const;
         std::complex<double> delta(double* k) const;
         double omega(double* k, size_t band) const;
+        double neelk(double *k) const;
         std::complex<double> Uk(double* k,
                                 bool up,
                                 size_t band) const;

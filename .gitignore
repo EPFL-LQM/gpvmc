@@ -7,6 +7,7 @@ local.mak
 config.mak
 *.swp
 *.pyc
+.gdb_history
 vmc
 vmc_1
 tools/MANIFEST

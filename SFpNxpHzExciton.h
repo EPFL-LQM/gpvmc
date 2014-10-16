@@ -11,7 +11,8 @@ class SFpNxpHzExciton : public SFpNxpHzWaveFunction
     public:
         SFpNxpHzExciton(FileManager* fm,
                         size_t Lx, size_t Ly,
-                        double phi, double neel, double hz,
+                        double phi, double neel,
+                        double neel_exp, double hz,
                         std::vector<double> bc_phase, std::vector<size_t> q);
         virtual ~SFpNxpHzExciton();
     private:

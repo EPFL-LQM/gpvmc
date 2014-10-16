@@ -8,12 +8,13 @@ using namespace std;
 StagFluxWaveFunction::StagFluxWaveFunction(FileManager * fm,
                                            size_t Lx, size_t Ly,
                                            size_t Nbyup, size_t Nbydo,
-                                           double phi, double neel, vector<double> bc_phase)
+                                           double phi, double neel,
+                                           double neel_exp, vector<double> bc_phase)
     :WaveFunction(fm),
      m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*2]),
      m_fock2qn(new size_t[Lx*Ly*3]),
-     m_phi(phi), m_neel(neel), m_bc_phase(bc_phase)
+     m_phi(phi), m_neel(neel), m_ne(neel_exp), m_bc_phase(bc_phase)
 {
     vector<size_t> Nby(2);
     vector<size_t> Nfs(2,Lx*Ly);
@@ -122,20 +123,29 @@ std::complex<double> StagFluxWaveFunction::delta(double* k) const
     return 0.5*(cos(k[0])*std::polar(1.0,m_phi)+cos(k[1])*std::polar(1.0,-m_phi));
 }
 
+double StagFluxWaveFunction::neelk(double* k) const
+{
+    if (m_ne==0.0)
+        return m_neel;
+    else
+        return m_neel*pow(0.5*(pow(cos(k[0]),2)+pow(cos(k[1]),2)),m_ne);
+}
+
 double StagFluxWaveFunction::omega(double* k) const
 {
-    return sqrt(m_neel*m_neel + norm(delta(k)));
+    return sqrt(pow(neelk(k),2) + norm(delta(k)));
 }
 
 std::complex<double> StagFluxWaveFunction::Uk(double* k, bool up, size_t band) const
 {
     double om=omega(k);
     std::complex<double> d=delta(k);
+    double nk=neelk(k);
     int sig=2*int(!up)-1;
     if(band==0){
-        return sqrt(0.5*std::complex<double>(1+sig*m_neel/om));
+        return sqrt(0.5*std::complex<double>(1+sig*nk/om));
     } else {
-        return -conj(d)/abs(d)*sqrt(0.5*std::complex<double>(1-sig*m_neel/om));
+        return -conj(d)/abs(d)*sqrt(0.5*std::complex<double>(1-sig*nk/om));
     }
 }
 
@@ -143,11 +153,12 @@ std::complex<double> StagFluxWaveFunction::Vk(double* k, bool up, size_t band) c
 {
     double om=omega(k);
     std::complex<double> d=delta(k);
+    double nk=neelk(k);
     int sig=2*int(!up)-1;
     if(band==0){
-        return d/abs(d)*sqrt(0.5*std::complex<double>(1-sig*m_neel/om));
+        return d/abs(d)*sqrt(0.5*std::complex<double>(1-sig*nk/om));
     } else {
-        return sqrt(0.5*std::complex<double>(1+sig*m_neel/om));
+        return sqrt(0.5*std::complex<double>(1+sig*nk/om));
     }
 }
 

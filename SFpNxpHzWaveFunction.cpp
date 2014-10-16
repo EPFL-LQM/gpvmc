@@ -8,13 +8,15 @@ using namespace std;
 SFpNxpHzWaveFunction::SFpNxpHzWaveFunction(FileManager* fm,
                                            size_t Lx, size_t Ly,
                                            size_t Nby,
-                                           double phi, double neel, double hz,
+                                           double phi, double neel,
+                                           double neel_exp, double hz,
                                            const vector<double>& bc_phase)
     :WaveFunction(fm),
      m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*4]),
      m_fock2qn(new size_t[Lx*Ly*2*3]),
-     m_phi(phi), m_nx(neel), m_hz(hz),
+     m_phi(phi), m_nx(neel),
+     m_ne(neel_exp), m_hz(hz),
      m_bc_phase(bc_phase)
 {
     vector<size_t> Nbyv(1,Nby);
@@ -138,23 +140,31 @@ std::complex<double> SFpNxpHzWaveFunction::delta(double* k) const
     return 0.5*(cos(k[0])*std::polar(1.0,m_phi)+cos(k[1])*std::polar(1.0,-m_phi));
 }
 
+double SFpNxpHzWaveFunction::neelk(double* k) const
+{
+    if(m_ne==0)
+        return m_nx;
+    else
+        return m_nx*pow(0.5*(pow(cos(k[0]),2)+pow(cos(k[1]),2)),m_ne);
+}
+
 double SFpNxpHzWaveFunction::omega(double* k, size_t band) const
 {
     if(band==0){
-        return -sqrt(m_nx*m_nx + pow(m_hz-abs(delta(k)),2));
+        return -sqrt(pow(neelk(k),2) + pow(m_hz-abs(delta(k)),2));
     } else if(band==1){
-        return -sqrt(m_nx*m_nx + pow(m_hz+abs(delta(k)),2));
+        return -sqrt(pow(neelk(k),2) + pow(m_hz+abs(delta(k)),2));
     } else if(band==2){
-        return sqrt(m_nx*m_nx + pow(m_hz-abs(delta(k)),2));
+        return sqrt(pow(neelk(k),2) + pow(m_hz-abs(delta(k)),2));
     } else {//band==3
-        return sqrt(m_nx*m_nx + pow(m_hz+abs(delta(k)),2));
+        return sqrt(pow(neelk(k),2) + pow(m_hz+abs(delta(k)),2));
     }
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Uk(double* k, size_t band) const
 {
     double om=omega(k,band);
-    return 0.5*sqrt(1.0-m_nx/om);
+    return 0.5*sqrt(1.0-neelk(k)/om);
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Vk(double* k, size_t band) const
@@ -162,28 +172,30 @@ std::complex<double> SFpNxpHzWaveFunction::Vk(double* k, size_t band) const
     double om=omega(k,band);
     std::complex<double> d=delta(k);
     std::complex<double> pd=d/abs(d);
+    double ne=neelk(k);
     if(band==0)
-        return 0.5*sign(abs(d)-m_hz)*pd*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)-m_hz)*pd*sqrt(1+ne/om);
     if(band==1)
-        return 0.5*sign(abs(d)+m_hz)*pd*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)+m_hz)*pd*sqrt(1+ne/om);
     if(band==2)
-        return -0.5*sign(abs(d)-m_hz)*pd*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)-m_hz)*pd*sqrt(1+ne/om);
     else //band==3
-        return -0.5*sign(abs(d)+m_hz)*pd*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)+m_hz)*pd*sqrt(1+ne/om);
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Xk(double* k, size_t band) const
 {
     std::complex<double> d=delta(k);
     double om=omega(k,band);
+    double ne=neelk(k);
     if(band==0)
-        return 0.5*sign(abs(d)-m_hz)*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)-m_hz)*sqrt(1+ne/om);
     if(band==1)
-        return -0.5*sign(abs(d)+m_hz)*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)+m_hz)*sqrt(1+ne/om);
     if(band==2)
-        return -0.5*sign(abs(d)-m_hz)*sqrt(1+m_nx/om);
+        return -0.5*sign(abs(d)-m_hz)*sqrt(1+ne/om);
     else //band==3
-        return 0.5*sign(abs(d)+m_hz)*sqrt(1+m_nx/om);
+        return 0.5*sign(abs(d)+m_hz)*sqrt(1+ne/om);
 }
 
 std::complex<double> SFpNxpHzWaveFunction::Yk(double* k, size_t band) const
@@ -191,14 +203,15 @@ std::complex<double> SFpNxpHzWaveFunction::Yk(double* k, size_t band) const
     double om=omega(k,band);
     std::complex<double> d=delta(k);
     std::complex<double> pd=d/abs(d);
+    double ne=neelk(k);
     if(band==0)
-        return 0.5*pd*sqrt(1-m_nx/om);
+        return 0.5*pd*sqrt(1-ne/om);
     if(band==1)
-        return -0.5*pd*sqrt(1-m_nx/om);
+        return -0.5*pd*sqrt(1-ne/om);
     if(band==2)
-        return 0.5*pd*sqrt(1-m_nx/om);
+        return 0.5*pd*sqrt(1-ne/om);
     else //band==3
-        return -0.5*pd*sqrt(1-m_nx/om);
+        return -0.5*pd*sqrt(1-ne/om);
 }
 
 std::ostream & operator<<(std::ostream& left, const SFpNxpHzWaveFunction & right)

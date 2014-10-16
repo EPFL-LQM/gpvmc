@@ -9,7 +9,7 @@ class SFpNpHxGroundState : public SFpNpHxWaveFunction
     public:
         SFpNpHxGroundState(FileManager* fm,
                            size_t Lx, size_t Ly,
-                           double phi, double neel, double hx,
+                           double phi, double neel, double neel_exp, double hx,
                            const std::vector<double>& bc_phase);
 };
 

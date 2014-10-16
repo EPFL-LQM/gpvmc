@@ -8,13 +8,14 @@ using namespace std;
 SFpNpHxWaveFunction::SFpNpHxWaveFunction(FileManager* fm,
                                          size_t Lx, size_t Ly,
                                          size_t Nby,
-                                         double phi, double neel, double hx,
+                                         double phi, double neel, double neel_exp,
+                                         double hx,
                                          const vector<double>& bc_phase)
     :WaveFunction(fm),
      m_Lx(Lx), m_Ly(Ly),
      m_qn2fock(new size_t[Lx*Ly*4]),
      m_fock2qn(new size_t[Lx*Ly*2*3]),
-     m_phi(phi), m_neel(neel), m_hx(hx),
+     m_phi(phi), m_neel(neel), m_ne(neel_exp), m_hx(hx),
      m_bc_phase(bc_phase)
 {
     vector<size_t> Nbyv(1,Nby);
@@ -131,16 +132,25 @@ std::complex<double> SFpNpHxWaveFunction::delta(double* k) const
     return 0.5*(cos(k[0])*std::polar(1.0,m_phi)+cos(k[1])*std::polar(1.0,-m_phi));
 }
 
+double SFpNpHxWaveFunction::neelk(double* k) const
+{
+    if(m_ne==0)
+        return m_neel;
+    else
+        return m_neel*pow(0.5*(pow(cos(k[0]),2)+pow(cos(k[1]),2)),m_ne);
+}
+
 double SFpNpHxWaveFunction::omega(double* k, size_t band) const
 {
+    double nk=pow(neelk(k),2);
     if(band==0){
-        return -sqrt(m_neel*m_neel + pow(m_hx-abs(delta(k)),2));
+        return -sqrt(nk + pow(m_hx-abs(delta(k)),2));
     } else if(band==1){
-        return -sqrt(m_neel*m_neel + pow(m_hx+abs(delta(k)),2));
+        return -sqrt(nk + pow(m_hx+abs(delta(k)),2));
     } else if(band==2){
-        return sqrt(m_neel*m_neel + pow(m_hx-abs(delta(k)),2));
+        return sqrt(nk + pow(m_hx-abs(delta(k)),2));
     } else {//band==3
-        return sqrt(m_neel*m_neel + pow(m_hx+abs(delta(k)),2));
+        return sqrt(nk + pow(m_hx+abs(delta(k)),2));
     }
 }
 
@@ -148,29 +158,30 @@ std::complex<double> SFpNpHxWaveFunction::Uk(double* k, bool up, size_t band) co
 {
     double om=omega(k,band);
     std::complex<double> d=delta(k);
+    double nk=neelk(k);
     if(band==0){
         if(up){
-            return 0.5*sqrt(1.0-m_neel/om);
+            return 0.5*sqrt(1.0-nk/om);
         } else {
-            return 0.5*sign(abs(d)-m_hx)*sqrt(1.0+m_neel/om);
+            return 0.5*sign(abs(d)-m_hx)*sqrt(1.0+nk/om);
         }
     } else if(band==1){
         if(up){
-            return 0.5*sqrt(1.0-m_neel/om);
+            return 0.5*sqrt(1.0-nk/om);
         } else {
-            return -0.5*sign(abs(d)+m_hx)*sqrt(1.0+m_neel/om);
+            return -0.5*sign(abs(d)+m_hx)*sqrt(1.0+nk/om);
         }
     } else if(band==2){
         if(up){
-            return 0.5*sqrt(1.0-m_neel/om);
+            return 0.5*sqrt(1.0-nk/om);
         } else {
-            return -0.5*sign(abs(d)-m_hx)*sqrt(1.0+m_neel/om);
+            return -0.5*sign(abs(d)-m_hx)*sqrt(1.0+nk/om);
         }
     } else {//band==3
         if(up){
-            return 0.5*sqrt(1.0-m_neel/om);
+            return 0.5*sqrt(1.0-nk/om);
         } else {
-            return 0.5*sign(abs(d)+m_hx)*sqrt(1.0+m_neel/om);
+            return 0.5*sign(abs(d)+m_hx)*sqrt(1.0+nk/om);
         }
     }
 }
@@ -179,30 +190,31 @@ std::complex<double> SFpNpHxWaveFunction::Vk(double* k, bool up, size_t band) co
 {
     double om=omega(k,band);
     std::complex<double> d=delta(k);
+    double nk=neelk(k);
     complex<double> pd=conj(d)/abs(d);
     if(band==0){
         if(up){
-            return 0.5*sign(abs(d)-m_hx)*pd*sqrt(1.0+m_neel/om);
+            return 0.5*sign(abs(d)-m_hx)*pd*sqrt(1.0+nk/om);
         } else {
-            return 0.5*pd*sqrt(1.0-m_neel/om);
+            return 0.5*pd*sqrt(1.0-nk/om);
         }
     } else if(band==1){
         if(up){
-            return 0.5*sign(abs(d)+m_hx)*pd*sqrt(1.0+m_neel/om);
+            return 0.5*sign(abs(d)+m_hx)*pd*sqrt(1.0+nk/om);
         } else {
-            return -0.5*pd*sqrt(1.0-m_neel/om);
+            return -0.5*pd*sqrt(1.0-nk/om);
         }
     } else if(band==2){
         if(up){
-            return -0.5*sign(abs(d)-m_hx)*pd*sqrt(1.0+m_neel/om);
+            return -0.5*sign(abs(d)-m_hx)*pd*sqrt(1.0+nk/om);
         } else {
-            return 0.5*pd*sqrt(1.0-m_neel/om);
+            return 0.5*pd*sqrt(1.0-nk/om);
         }
     } else {//band==3
         if(up){
-            return -0.5*sign(abs(d)+m_hx)*pd*sqrt(1.0+m_neel/om);
+            return -0.5*sign(abs(d)+m_hx)*pd*sqrt(1.0+nk/om);
         } else {
-            return -0.5*pd*sqrt(1.0-m_neel/om);
+            return -0.5*pd*sqrt(1.0-nk/om);
         }
     }
 }

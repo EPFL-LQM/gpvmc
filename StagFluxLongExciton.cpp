@@ -8,12 +8,13 @@ StagFluxLongExciton::StagFluxLongExciton(FileManager* fm,
                                          size_t Ly,
                                          double phi,
                                          double neel,
+                                         double neel_exp,
                                          vector<double> bc_phase,
                                          vector<size_t> q)
     :StagFluxWaveFunction(fm,
                           Lx,Ly,
                           Lx*Ly/2,Lx*Ly/2,
-                          phi,neel,bc_phase),
+                          phi,neel,neel_exp,bc_phase),
      m_q(q)
 {
     for(size_t fe=0;fe<Lx*Ly/2;++fe){
