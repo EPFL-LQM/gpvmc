@@ -11,32 +11,14 @@ using namespace std;
 StatSpinStruct::StatSpinStruct(const Stepper* stepper,
                                FileManager* fm, bool meas_trans)
     :MatrixQuantity(stepper,fm,"StatSpinStruct",5,
-                      stepper->GetLatticeState()->GetLattice()->GetLx()*
-                      stepper->GetLatticeState()->GetLattice()->GetLy()), m_meas_trans(meas_trans)
-{
-    size_t Lx=stepper->GetLatticeState()->GetLattice()->GetLx();
-    size_t Ly=stepper->GetLatticeState()->GetLattice()->GetLy();
-    m_qs.reserve(Lx*Ly);
-    for(size_t qx=0; qx<Lx;++qx){
-        for(size_t qy=0;qy<Ly;++qy){
-            m_qs.push_back(qx);
-            m_qs.push_back(qy);
-        }
-    }
-    complex<double> I(0,1);
-    m_ph=vector<complex<double> >(Lx*Ly*m_qs.size()/2);
-    for(size_t q=0;q<m_qs.size()/2;++q){
-        for(size_t x=0;x<Lx;++x){
-            for(size_t y=0;y<Ly;++y){
-                double phase=2*M_PI*(double(m_qs[2*q]*x)/Lx+double(m_qs[2*q+1]*y)/Ly);
-                m_ph[(q*Lx+x)*Ly+y]=1.0/sqrt(Lx*Ly)*(cos(phase)+I*sin(phase));
-            }
-        }
-    }
-}
+                    pow(stepper->GetLatticeState()->GetLattice()->GetNv(),2)), m_meas_trans(meas_trans)
+{}
 
 void StatSpinStruct::measure()
 {
+#ifndef NDEBUG
+    cout<<"StatSpinStruct::measure"<<endl;
+#endif
     const LatticeState* st=m_stepper->GetLatticeState();
     if(!(st->GetNfl()==1 && st->GetNifs()[0]==2) &&
                     !(st->GetNfl()==2 && st->GetNifs()[0]==1 && st->GetNifs()[1]))
@@ -52,12 +34,14 @@ void StatSpinStruct::measure()
     Quantity::measure();
     size_t Lx=m_stepper->GetLatticeState()->GetLattice()->GetLx();
     size_t Ly=m_stepper->GetLatticeState()->GetLattice()->GetLy();
+    size_t N=Lx*Ly;
+
     // get spin swap list
     vector<vector<hop_path_t> > hops;
     vector<uint_vec_t> sti,stj;
     uint_vec_t Nifs=st->GetNifs();
-    for(size_t vi=0;vi<st->GetNsites();++vi){
-        for(size_t vj=vi;vj<st->GetNsites();++vj){
+    for(size_t vi=0;vi<N;++vi){
+        for(size_t vj=vi;vj<N;++vj){
             const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
             const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
             st->GetLatOc(vxi->idx,sti);
@@ -84,6 +68,7 @@ void StatSpinStruct::measure()
             }
         }
     }
+
     // Calculate spin swap amplitudes
     vector<BigComplex> swamps(hops.size());
     vector<BigDouble> swjs(hops.size());
@@ -91,105 +76,65 @@ void StatSpinStruct::measure()
     double jas=m_stepper->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(st->GetNfl())),swamps);
     m_stepper->GetJas()->VirtUpdate(hops,swjs);
-    // Calculate Static spin structure factor
-    vector<complex<double> > sqlong(m_qs.size()/2,0);
-    vector<BigComplex> sqtranspm(m_qs.size()/2,0);
-    vector<BigComplex> sqtransmp(m_qs.size()/2,0);
-    vector<BigComplex> sqtranspp(m_qs.size()/2,0);
-    vector<BigComplex> sqtransmm(m_qs.size()/2,0);
-    for(size_t q=0;q<m_qs.size()/2;++q){
-        size_t sw=0;
-        for(size_t vi=0;vi<st->GetNsites();++vi){
-            for(size_t vj=vi;vj<st->GetNsites();++vj){
-                const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
-                const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
-                st->GetLatOc(vxi->idx,sti);
-                st->GetLatOc(vxj->idx,stj);
-                if(isup(sti)){
-                    if(isup(stj)){
-                        if(vi==vj){
-                            sqtranspm[q]+=norm(amp)*pow(jas,2)/double(Lx*Ly);
-                            sqlong[q]+=0.25/double(Lx*Ly);
-                        } else {
-                            sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                            0.25*
-                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                            sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                            0.25*
-                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                            if(m_meas_trans && st->GetNfl()==1){
-                                sqtransmm[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                              m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                                sqtransmm[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                              m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                                ++sw;
-                            }
-                        }
+
+    // Populate sab[i,j] matrices
+    complex<double>* szz=&m_vals[0];
+    complex<double>* spm=&m_vals[pow(N,2)];
+    complex<double>* smp=&m_vals[2*pow(N,2)];
+    complex<double>* spp=&m_vals[3*pow(N,2)];
+    complex<double>* smm=&m_vals[4*pow(N,2)];
+    BigDouble w=m_stepper->weight();
+    size_t sw=0;
+    for(size_t vi=0; vi < N; ++vi){
+        for(size_t vj=vi; vj < N; ++vj){
+            const Vertex* vxi=st->GetLattice()->GetVertices()[vi];
+            const Vertex* vxj=st->GetLattice()->GetVertices()[vj];
+            st->GetLatOc(vxi->idx,sti);
+            st->GetLatOc(vxj->idx,stj);
+            if(isup(sti)){
+                if(isup(stj)){
+                    if(vi==vj){
+                        spm[vi*N+vj]+=1.0;
+                        szz[vi*N+vj]+=0.25;
                     } else {
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                        (-0.25)*
-                                        m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                        (-0.25)*
-                                        m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                        sqtransmp[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                           conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                           m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                        sqtranspm[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                           amp*jas*conj(swamps[sw])*swjs[sw]*
-                                           m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                        ++sw;
+                        szz[vi*N+vj]+=0.25;
+                        szz[vj*N+vi]+=0.25;
+                        if(m_meas_trans && st->GetNfl()==1){
+                            smm[vi*N+vj]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            smm[vj*N+vi]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            ++sw;
+                        }
                     }
                 } else {
-                    if(isup(stj)){
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                        (-0.25)*
-                                        m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                        sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                        (-0.25)*
-                                        m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                        sqtranspm[q]-=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                           conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                           m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                        sqtransmp[q]-=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                           amp*jas*conj(swamps[sw])*swjs[sw]*
-                                           m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                        ++sw;
+                    szz[vi*N+vj]+=-0.25;
+                    szz[vj*N+vi]+=-0.25;
+                    smp[vi*N+vj]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    spm[vj*N+vi]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    ++sw;
+                }
+            } else {
+                if(isup(stj)){
+                    szz[vi*N+vj]+=-0.25;
+                    szz[vj*N+vi]+=-0.25;
+                    spm[vi*N+vj]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    smp[vj*N+vi]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    ++sw;
+                } else {
+                    if(vi==vj){
+                        smp[vi*N+vj]+=1.0;
+                        szz[vi*N+vj]+=0.25;
                     } else {
-                        if(vi==vj){
-                            sqtransmp[q]+=norm(amp)*pow(jas,2)/double(Lx*Ly);
-                            sqlong[q]+=0.25/double(Lx*Ly);
-                        } else {
-                            sqlong[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                            0.25*
-                                            m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                            sqlong[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                            0.25*
-                                            m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                            if(m_meas_trans && st->GetNfl()==1){
-                                sqtranspp[q]+=conj(m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]])*
-                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                              m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]];
-                                sqtranspp[q]+=conj(m_ph[(q*Lx+vxi->uc[0])*Ly+vxi->uc[1]])*
-                                              conj(amp)*jas*swamps[sw]*swjs[sw]*
-                                              m_ph[(q*Lx+vxj->uc[0])*Ly+vxj->uc[1]];
-                                ++sw;
-                            }
+                        szz[vi*N+vj]+=0.25;
+                        szz[vj*N+vi]+=0.25;
+                        if(m_meas_trans && st->GetNfl()==1){
+                            spp[vi*N+vj]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            spp[vj*N+vi]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            ++sw;
                         }
                     }
                 }
             }
         }
-    }
-    BigDouble w=m_stepper->weight();
-    for(size_t q=0;q<m_qs.size()/2;++q){
-        Val(0,q)+=sqlong[q];
-        Val(1,q)+=complex<double>(sqtransmp[q]/w);
-        Val(2,q)+=complex<double>(sqtranspm[q]/w);
-        Val(3,q)+=complex<double>(sqtranspp[q]/w);
-        Val(4,q)+=complex<double>(sqtransmm[q]/w);
     }
 }
 

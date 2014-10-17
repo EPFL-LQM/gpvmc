@@ -2,6 +2,7 @@
 
 from vmc_postproc import proc,load,stagflux,sfpnxphz
 import numpy as np
+import numpy.fft as fft
 import re
 import six
 
@@ -17,10 +18,45 @@ def get_stat_spin_struct(filenames,nsamp):
     if type(filenames)!=list:
         filenames=[filenames]
     Sq=load.get_quantity(filenames,nsamp)
-    Sqxx=0.25*(Sq[:,1,:]+Sq[:,2,:]+Sq[:,3,:]+Sq[:,4,:])
-    Sqyy=0.25*(Sq[:,1,:]+Sq[:,2,:]-Sq[:,3,:]-Sq[:,4,:])
-    Sqzz=Sq[:,0,:]
-    return Sqxx,Sqyy,Sqzz
+    params=load.get_attr(filenames[0])
+    Lx=int(params['L'])
+    Ly=int(params['L'])
+    hLx=int(Lx/2)
+    hLy=int(Ly/2)
+    N=Lx*Ly
+    if Sq.shape[2]==N:
+        # old file format, struct stored in Fourier components
+        Sqxx=np.reshape(0.25*(Sq[:,1,:]+Sq[:,2,:]+Sq[:,3,:]+Sq[:,4,:]),(Sq.shape[0],Lx,Ly))
+        Sqyy=np.reshape(0.25*(Sq[:,1,:]+Sq[:,2,:]-Sq[:,3,:]-Sq[:,4,:]),(Sq.shape[0],Lx,Ly))
+        Sqzz=np.reshape(Sq[:,0,:],(Sq.shape[0],Lx.Ly))
+        Srxx=fft.fftshift(fft.fft2(Sqxx,axes=(1,2)),axes=(1,2))/N
+        Sryy=fft.fftshift(fft.fft2(Sqyy,axes=(1,2)),axes=(1,2))/N
+        Srzz=fft.fftshift(fft.fft2(Sqzz,axes=(1,2)),axes=(1,2))/N
+    else :
+        # new file format, struct stored as real space site pairs.
+        rx,ry=np.meshgrid(np.arange(Lx,dtype=int),np.arange(Ly,dtype=int))
+        rx=rx.ravel()
+        ry=ry.ravel()
+        rix,rjx=np.meshgrid(rx,rx)
+        riy,rjy=np.meshgrid(ry,ry)
+        rijx=rjx-rix
+        rijy=rjy-riy
+        rijx[rijx>=hLx]-=Lx
+        rijx[rijx<-hLx]+=Lx
+        rijy[rijy>=hLy]-=Ly
+        rijy[rijy<-hLy]+=Ly
+        rijx=rijx.ravel()
+        rijy=rijy.ravel()
+        Sr=np.zeros((Sq.shape[0],5,N))
+        for t in range(N):
+            Sr[:,:,t]=np.sum(Sq[:,:,np.where((rijy+hLy)*Lx+rijx+hLx==t)[0]],axis=2)/N
+        Srxx=np.reshape(0.25*np.sum(Sr[:,1:,:],axis=1),(Sq.shape[0],Lx,Ly))
+        Sryy=np.reshape(0.25*(np.sum(Sr[:,1:3,:],axis=1)-np.sum(Sr[:,3:,:],axis=1)),(Sq.shape[0],Lx,Ly))
+        Srzz=np.reshape(Sr[:,0,:],(Sq.shape[0],Lx,Ly))
+        Sqxx=fft.ifft2(fft.fftshift(Srxx,axes=(1,2)),axes=(1,2))*np.sqrt(N)
+        Sqyy=fft.ifft2(fft.fftshift(Sryy,axes=(1,2)),axes=(1,2))*np.sqrt(N)
+        Sqzz=fft.ifft2(fft.fftshift(Srzz,axes=(1,2)),axes=(1,2))*np.sqrt(N)
+    return (Sqxx,Sqyy,Sqzz),(Srxx,Sryy,Srzz)
 
 def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
     if type(filenames)!=list:
