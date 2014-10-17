@@ -14,8 +14,6 @@ class StatSpinStruct : public MatrixQuantity
         bool isup(const std::vector<uint_vec_t>& in);
         bool isdo(const std::vector<uint_vec_t>& in);
         bool m_meas_trans;
-        std::vector<size_t> m_qs; //!< index of reciprocal space vector
-        std::vector<std::complex<double> > m_ph;
 };
 
 #endif//_STATSPINSTRUCT_H

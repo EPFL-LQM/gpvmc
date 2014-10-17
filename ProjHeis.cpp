@@ -40,6 +40,7 @@ ProjHeis::ProjHeis(const Stepper* stepper,
 
 void ProjHeis::measure()
 {
+    cout<<"ProjHeis::measure"<<endl;
 #ifdef PROFILE
     Timer::tic("ProjHeis::measure");
 #endif
