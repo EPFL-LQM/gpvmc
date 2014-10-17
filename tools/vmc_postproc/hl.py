@@ -47,12 +47,17 @@ def get_stat_spin_struct(filenames,nsamp):
         rijy[rijy<-hLy]+=Ly
         rijx=rijx.ravel()
         rijy=rijy.ravel()
-        Sr=np.zeros((Sq.shape[0],5,N))
-        for t in range(N):
-            Sr[:,:,t]=np.sum(Sq[:,:,np.where((rijy+hLy)*Lx+rijx+hLx==t)[0]],axis=2)/N
-        Srxx=np.reshape(0.25*np.sum(Sr[:,1:,:],axis=1),(Sq.shape[0],Lx,Ly))
-        Sryy=np.reshape(0.25*(np.sum(Sr[:,1:3,:],axis=1)-np.sum(Sr[:,3:,:],axis=1)),(Sq.shape[0],Lx,Ly))
-        Srzz=np.reshape(Sr[:,0,:],(Sq.shape[0],Lx,Ly))
+        Sr=np.zeros((Sq.shape[0],5,N),dtype=complex)
+        for samp in range(Sq.shape[0]):
+            for t in range(N):
+                Sr[samp,:,t]=np.sum(Sq[samp,:,np.where((rijy+hLy)*Lx+rijx+hLx==t)[0]],axis=0)/N
+        Srxx=np.zeros((Sq.shape[0],Lx,Ly),dtype=complex)
+        Sryy=np.zeros((Sq.shape[0],Lx,Ly),dtype=complex)
+        Srzz=np.zeros((Sq.shape[0],Lx,Ly),dtype=complex)
+        for samp in range(Sq.shape[0]):
+            Srxx[samp,:,:]=np.reshape(0.25*np.sum(Sr[samp,1:,:],axis=0),(Lx,Ly))
+            Sryy[samp,:,:]=np.reshape(0.25*(np.sum(Sr[samp,1:3,:],axis=0)-np.sum(Sr[samp,3:,:],axis=0)),(Lx,Ly))
+            Srzz[samp,:,:]=np.reshape(Sr[samp,0,:],(Lx,Ly))
         Sqxx=fft.ifft2(fft.fftshift(Srxx,axes=(1,2)),axes=(1,2))*np.sqrt(N)
         Sqyy=fft.ifft2(fft.fftshift(Sryy,axes=(1,2)),axes=(1,2))*np.sqrt(N)
         Sqzz=fft.ifft2(fft.fftshift(Srzz,axes=(1,2)),axes=(1,2))*np.sqrt(N)

@@ -88,8 +88,8 @@ int main(int argc, char* argv[])
     simap["qx"]=0;
     simap["qy"]=0;
     simap["meas_interv"]=0;
+    simap["therm"]=100;
     inmap["prefix"]=-1;
-    inmap["therm"]=100;
     inmap["verbose"]=1;
     inmap["seed"]=time(NULL);
     domap["phi"]=0.085;
@@ -411,7 +411,7 @@ int main(int argc, char* argv[])
             varmc.AddQuantity(jast);
         }
 #ifndef NDEBUG
-        cout<<"Thermalize."<<endl;
+        cout<<"Thermalize for "<<simap["therm"]<<" steps."<<endl;
 #endif
         // Start calculation: thermalize
         if(simap["therm"]){
