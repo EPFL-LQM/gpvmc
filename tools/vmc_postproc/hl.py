@@ -89,23 +89,28 @@ def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
             for qy in range(int(params['L'])):
                 qs.append((qx,qy))
         idx=qs.index((int(params['qx']),int(params['qy'])))
+        ssqx=statstruct[0]
+        ssqz=statstruct[2]
+        if len(ssqx.shape) != 2:
+            ssqx=ssqx[0,...].ravel()
+            ssqz=ssqz[0,...].ravel()
         if params['stagflux_wav']:
             pkq=stagflux.spinops(params)
             if params['channel']=='trans':
                 sqpm=np.einsum('i,sij,j->s',np.conj(pkq[1]),O,pkq[1])
                 for s in range(nsamp):
-                    O[s,:,:]*=statstruct[1][0,idx]*2/sqpm
+                    O[s,:,:]*=ssqx[idx]*2/sqpm
             elif params['channel']=='long':
                 sqzz=np.einsum('i,sij,j->s',np.conj(pkq[2]),O,pkq[2])
                 for s in range(nsamp):
-                    O[s,:,:]*=statstruct[2][0,idx]*2/sqzz
+                    O[s,:,:]*=ssqz[idx]*2/sqzz
             else:
                 raise RuntimeError('Channel not undertood')
         elif params['sfpnxphz_wav']:
             pkq=sfpnxphz.spinops(params)
             sqzz=np.einsum('i,sij,j->s',np.conj(pkq[2]),O,pkq[2])
             for s in range(nsamp):
-                O[s,:,:]*=statstruct[2][0,idx]*2/sqzz
+                O[s,:,:]*=ssqz[idx]*2/sqzz
         else:
             raise RuntimeError('Not implemented')
     return H,O,evals,evecs
