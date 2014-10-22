@@ -2,7 +2,6 @@
 #include "StatSpinStruct.h"
 #include "Stepper.h"
 #include "SlaterDeterminant.h"
-#include "Jastrow.h"
 #include "LatticeState.h"
 #include "Lattice.h"
 
@@ -71,11 +70,8 @@ void StatSpinStruct::measure()
 
     // Calculate spin swap amplitudes
     vector<BigComplex> swamps(hops.size());
-    vector<BigDouble> swjs(hops.size());
     BigComplex amp=m_stepper->GetAmp()->Amp();
-    double jas=m_stepper->GetJas()->Jas();
     m_stepper->GetAmp()->VirtUpdate(hops,vector<vector<hop_path_t> >(1,vector<hop_path_t>(st->GetNfl())),swamps);
-    m_stepper->GetJas()->VirtUpdate(hops,swjs);
 
     // Populate sab[i,j] matrices
     complex<double>* szz=&m_vals[0];
@@ -100,24 +96,24 @@ void StatSpinStruct::measure()
                         szz[vi*N+vj]+=0.25;
                         szz[vj*N+vi]+=0.25;
                         if(m_meas_trans && st->GetNfl()==1){
-                            smm[vi*N+vj]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
-                            smm[vj*N+vi]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            smm[vi*N+vj]+=complex<double>(conj(amp)*swamps[sw]/w);
+                            smm[vj*N+vi]+=complex<double>(conj(amp)*swamps[sw]/w);
                             ++sw;
                         }
                     }
                 } else {
                     szz[vi*N+vj]+=-0.25;
                     szz[vj*N+vi]+=-0.25;
-                    smp[vi*N+vj]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
-                    spm[vj*N+vi]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    smp[vi*N+vj]+=-complex<double>(conj(amp)*swamps[sw]/w);
+                    spm[vj*N+vi]+=-complex<double>(conj(amp)*swamps[sw]/w);
                     ++sw;
                 }
             } else {
                 if(isup(stj)){
                     szz[vi*N+vj]+=-0.25;
                     szz[vj*N+vi]+=-0.25;
-                    spm[vi*N+vj]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
-                    smp[vj*N+vi]+=-complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                    spm[vi*N+vj]+=-complex<double>(conj(amp)*swamps[sw]/w);
+                    smp[vj*N+vi]+=-complex<double>(conj(amp)*swamps[sw]/w);
                     ++sw;
                 } else {
                     if(vi==vj){
@@ -127,8 +123,8 @@ void StatSpinStruct::measure()
                         szz[vi*N+vj]+=0.25;
                         szz[vj*N+vi]+=0.25;
                         if(m_meas_trans && st->GetNfl()==1){
-                            spp[vi*N+vj]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
-                            spp[vj*N+vi]+=complex<double>(conj(amp)*jas*swamps[sw]*swjs[sw]/w);
+                            spp[vi*N+vj]+=complex<double>(conj(amp)*swamps[sw]/w);
+                            spp[vj*N+vi]+=complex<double>(conj(amp)*swamps[sw]/w);
                             ++sw;
                         }
                     }

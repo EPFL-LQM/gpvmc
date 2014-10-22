@@ -1,6 +1,5 @@
 #include "LatticeStepper.h"
 #include "SlaterDeterminant.h"
-#include "Jastrow.h"
 #include "LatticeState.h"
 #include "Lattice.h"
 #include "WaveFunction.h"
@@ -11,8 +10,8 @@
 
 using namespace std;
 
-LatticeStepper::LatticeStepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp, Jastrow* jas)
-    :Stepper(latstate,wav,amp,jas),
+LatticeStepper::LatticeStepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp)
+    :Stepper(latstate,wav,amp),
      m_Nfl(latstate->GetNfl()),
      m_Nifs(latstate->GetNifs()),
      m_prev(latstate->GetNfl()),
@@ -81,18 +80,15 @@ BigDouble LatticeStepper::trystep()
     }
     const vector<vector<hop_path_t> >& khops=m_wav->GetHops();
     vector<BigComplex> qs(khops.size());
-    vector<BigDouble> js(1);
 #ifdef PROFILE
     Timer::tic("LatticeStepper::trystep/VirtUpdate");
 #endif
     m_amp->VirtUpdate(vector<vector<hop_path_t> >(1,m_prev),khops,qs);
-    m_jas->VirtUpdate(vector<vector<hop_path_t> >(1,m_prev),js);
 #ifdef PROFILE
     Timer::toc("LatticeStepper::trystep/VirtUpdate");
 #endif
     BigDouble out(0);
     for_each(qs.begin(),qs.end(),[&](const BigComplex& aq){out+=norm(aq);}); 
-    out*=pow(js[0],2);
     m_khop=max_element(qs.begin(),qs.end(),
                        [](const BigComplex& a,const BigComplex& b)
                        {return norm(a)<norm(b);}) - qs.begin();
@@ -107,7 +103,6 @@ void LatticeStepper::step()
 {
     static int count=0;
     m_latstate->Hop(m_prev);
-    m_jas->Update(m_prev);
     try{
     if(m_khop>=0){
         const vector<hop_path_t>& khop_p=m_wav->GetHop(m_khop);
@@ -162,7 +157,7 @@ BigDouble LatticeStepper::weight()
         for(size_t k=0;k<khop.size();++k){
             out+=norm(qs[k]);
         }
-        m_weight=pow(m_jas->Jas(),2)*out;
+        m_weight=out;
         if(m_weight==0.0){
             std::cout<<"Warning: LatticeStepper::weight: "
                   "state has no overlap."<<std::endl;

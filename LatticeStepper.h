@@ -23,7 +23,7 @@ class LatticeStepper: public Stepper {
         BigDouble m_prev_weight;
         BigDouble m_weight;
     public:
-        LatticeStepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp, Jastrow* jas);
+        LatticeStepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp);
         virtual ~LatticeStepper() {}
         virtual void Reset();
         void SetFlavorFlip(const std::vector<bool>& flavor_flip);

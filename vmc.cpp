@@ -9,28 +9,13 @@
 #include "StagFluxTransExciton.h"
 #include "StagFluxLongExciton.h"
 #include "StagFluxGroundState.h"
-#include "SFpNpHxWaveFunction.h"
-#include "SFpNpHxGroundState.h"
-#include "SFpNxpHzWaveFunction.h"
-#include "SFpNxpHzGroundState.h"
-#include "SFpNxpHzExciton.h"
-#include "SFpNpHxExciton.h"
 #include "LatticeStepper.h"
 #include "ProjHeis.h"
 #include "StatSpinStruct.h"
-#include "StagMagn.h"
 #include "StagMagnZ.h"
-#include "Magnetization.h"
 #include "OverlapTrack.h"
-#include "JastrowTrack.h"
 #include "StagMagnTrack.h"
 #include "SlaterDeterminant.h"
-#include "IdentityJastrow.h"
-#include "Jastrow.h"
-#include "NeelJastrowPotential.h"
-#include "StagJastrowPotential.h"
-#include "LogJastrowPotential.h"
-#include "PairedMagnonJastrowPotential.h"
 #include "RanGen.h"
 #include "FileManager.h"
 #include "ArgParse.h"
@@ -95,31 +80,18 @@ int main(int argc, char* argv[])
     domap["phi"]=0.085;
     domap["neel"]=0.055;
     domap["neel_exp"]=0.0;
-    domap["field"]=0.0;
-    domap["neel_jastrow"]=0.0;
-    domap["stag_jastrow"]=0.0;
-    domap["log_jastrow"]=0.0;
-    domap["pm_jastrow"]=0.0;
     domap["phase_shift_x"]=1.0;
     domap["phase_shift_y"]=1.0;
     domap["jr"]=0.0;
     bomap["track_stagmagn"]=false;
     bomap["track_overlap"]=false;
-    bomap["track_jastrow"]=false;
     bomap["meas_projheis"]=false;
     bomap["meas_stagmagn"]=false;
     bomap["meas_statspinstruct"]=false;
-    bomap["meas_magnetization"]=false;
-    bomap["stagflux_wav"]=false;
-    bomap["sfpnxphz_wav"]=false;
-    bomap["sfpnzphx_wav"]=false;
-    bomap["Sztot_zero_proj"]=false;
-    bomap["Sztot_non_zero_init"]=false;
     bomap["Neel_init"]=false;
     stmap["dir"]=".";
     stmap["spinstate"]="";
     stmap["channel"]="groundstate";
-    stmap["pm_jastrow_factors"]="";
     int help=ArgParse(argc,argv,domap,inmap,simap,bomap,stmap);
     if(help)
         myexit(0);
@@ -146,12 +118,6 @@ int main(int argc, char* argv[])
     if(!simap["meas_interv"])
         simap["meas_interv"]=pow(simap["L"],2);
 
-    //some input checks
-    if(int(bomap["stagflux_wav"])+int(bomap["sfpnxphz_wav"])+int(bomap["sfpnzphx_wav"])!=1){
-        cerr<<"Error: exactly one out of the possible trial wavefunctions [stagflux_wav,sfpnxphz_wav,sfpnzphx_wav] must be picked."<<endl;
-        myexit(0);
-    }
-
 #ifdef USEMPI
     MPI_Barrier(MPI_COMM_WORLD);
     if(comm_rank){
@@ -163,7 +129,6 @@ int main(int argc, char* argv[])
         double neel=domap["neel"];
         double neel_exp=domap["neel_exp"];
         double phi=domap["phi"];
-        double field=domap["field"];
         vector<double> phase_shift(2);
         phase_shift[0]=domap["phase_shift_x"];
         phase_shift[1]=domap["phase_shift_y"];
@@ -171,71 +136,24 @@ int main(int argc, char* argv[])
         Q[1]=simap["qy"];
         SquareLattice slat(L,L);
         LatticeState* sp(0);
-        if(bomap["stagflux_wav"]){
-            if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
-                sp=new LatticeState(fm,&slat,{L*L/2,L*L/2},{1,1});
-            } else if(stmap["channel"]=="trans"){
-                sp=new LatticeState(fm,&slat,{L*L/2+1,L*L/2-1},{1,1});
-            }
-        } else {
-            sp=new LatticeState(fm,&slat,{L*L},{2});
+        if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
+            sp=new LatticeState(fm,&slat,{L*L/2,L*L/2},{1,1});
+        } else if(stmap["channel"]=="trans"){
+            sp=new LatticeState(fm,&slat,{L*L/2+1,L*L/2-1},{1,1});
         }
         WaveFunction* wav(0);
-        if(bomap["stagflux_wav"]){
-            if(stmap["channel"]=="groundstate"){
-                wav=new StagFluxGroundState(fm,L,L,phi,neel,neel_exp,phase_shift);
-            } else if(stmap["channel"]=="trans"){
-                wav=new StagFluxTransExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
-            } else if(stmap["channel"]=="long"){
-                wav=new StagFluxLongExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
-            }
-        } else if(bomap["sfpnzphx_wav"]){
-            if(stmap["channel"]=="groundstate"){
-                wav=new SFpNpHxGroundState(fm,L,L,phi,neel,neel_exp,field,phase_shift);
-            } else {//trans and long are mixed
-                wav=new SFpNpHxExciton(fm,L,L,phi,neel,neel_exp,field,phase_shift,Q);
-            }
-        } else /*if(bomap["sfpnxphz_wav"])*/{
-            if(stmap["channel"]=="groundstate"){
-                wav=new SFpNxpHzGroundState(fm,L,L,phi,neel,neel_exp,field,phase_shift);
-            } else {//trans and long are mixed
-                wav=new SFpNxpHzExciton(fm,L,L,phi,neel,neel_exp,field,phase_shift,Q);
-            }
+        if(stmap["channel"]=="groundstate"){
+            wav=new StagFluxGroundState(fm,L,L,phi,neel,neel_exp,phase_shift);
+        } else if(stmap["channel"]=="trans"){
+            wav=new StagFluxTransExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
+        } else if(stmap["channel"]=="long"){
+            wav=new StagFluxLongExciton(fm,L,L,phi,neel,neel_exp,phase_shift,Q);
         }
 #ifndef NDEBUG
         cout<<"Wavefunction is:"<<endl<<*wav<<endl;
 #endif
         wav->Save();
         SlaterDeterminant amp(sp,wav);
-        Jastrow* jas=0;
-        JastrowPotential* jaspot=0;
-        if(domap["neel_jastrow"]!=0.0){
-            jaspot=new NeelJastrowPotential(&slat,domap["neel_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else if(domap["stag_jastrow"]!=0.0){
-            jaspot=new StagJastrowPotential(&slat,domap["stag_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else if(domap["log_jastrow"]!=0.0){
-            jaspot=new LogJastrowPotential(&slat,domap["log_jastrow"]);
-            jas=new Jastrow(sp,jaspot);
-        } else if(domap["pm_jastrow"]!=0.0){
-            vector<double> pm_factors;
-            string fcts=stmap["pm_jastrow_factors"];
-            while(fcts.size()){
-                size_t colon_pos=fcts.find(':');
-                pm_factors.push_back(stod(fcts.substr(0,colon_pos)));
-                if(colon_pos!=string::npos){
-                    fcts=fcts.substr(colon_pos+1);
-                } else {
-                    fcts="";
-                }
-            }
-            pm_factors.push_back(domap["pm_jastrow"]);
-            jaspot=new PairedMagnonJastrowPotential(&slat,pm_factors);
-            jas=new Jastrow(sp,jaspot);
-        } else {
-            jas=new IdentityJastrow;
-        }
 #ifndef NDEBUG
         cout<<"Initialize initial spin state"<<endl;
 #endif
@@ -260,7 +178,6 @@ int main(int argc, char* argv[])
             }
             sp->InitFock(fst);
             amp.Init();
-            jas->Init();
         } else if(stmap["spinstate"]!=""){
             int calc_rank=0, calc_size=1;
 #ifdef USEMPI
@@ -304,7 +221,6 @@ int main(int argc, char* argv[])
             }
             sp->FockInit(fockstates);
             amp.Init();
-            jas->Init();
         } else {
             vector<vector<size_t> > pop;
             if(bomap["stagflux_wav"]){
@@ -331,13 +247,10 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            sp->RanInit(pop);
-            amp.Init();
             int tc=0,failcount=10;
             while(amp.Amp()==0.0 && tc<failcount){
                 sp->RanInit(pop);
                 amp.Init();
-                jas->Init();
                 tc++;
             }
             if(tc==failcount){
@@ -363,14 +276,7 @@ int main(int argc, char* argv[])
         cout<<"initial Lattice is:"<<endl<<*sp<<endl;
         cout<<"Create Monte Carlo stepper"<<endl;
 #endif
-        LatticeStepper step(sp,wav,&amp,jas);
-        if(!bomap["staglux_wav"] && !bomap["Sztot_zero_proj"]){
-            //if applied field, Sztot is not
-            //conserved and spins-up must be
-            //able to tunel to spin-down.
-            vector<bool> flip(1,true);
-            step.SetFlavorFlip(flip);
-        }
+        LatticeStepper step(sp,wav,&amp);
 #ifndef NDEBUG
         cout<<"Create Metropolis MC object"<<endl;
 #endif
@@ -381,21 +287,12 @@ int main(int argc, char* argv[])
         }
         if(stmap["channel"]=="groundstate"){
             if(bomap["meas_stagmagn"]){
-                if(bomap["stagflux_wav"]){
-                    StagMagnZ* stagsz=new StagMagnZ(&step,fm);
-                    varmc.AddQuantity(stagsz);
-                } else {
-                    StagMagn* stags=new StagMagn(&step,fm,!bomap["Sztot_zero_proj"]);
-                    varmc.AddQuantity(stags);
-                }
+                StagMagnZ* stagsz=new StagMagnZ(&step,fm);
+                varmc.AddQuantity(stagsz);
             }
             if(bomap["meas_statspinstruct"]){
                 StatSpinStruct* stat=new StatSpinStruct(&step,fm,!bomap["Sztot_zero_proj"]);
                 varmc.AddQuantity(stat);
-            }
-            if(bomap["meas_magnetization"] && (domap["Bx"]!=0 || !bomap["Sztot_conserved"])){
-                Magnetization* magn=new Magnetization(&step,fm,!bomap["Sztot_zero_proj"]);
-                varmc.AddQuantity(magn);
             }
         }
         if(bomap["track_stagmagn"]){
@@ -405,10 +302,6 @@ int main(int argc, char* argv[])
         if(bomap["track_overlap"]){
             OverlapTrack* ovt=new OverlapTrack(&step,fm);
             varmc.AddQuantity(ovt);
-        }
-        if(bomap["track_jastrow"]){
-            JastrowTrack* jast=new JastrowTrack(&step,fm);
-            varmc.AddQuantity(jast);
         }
 #ifndef NDEBUG
         cout<<"Thermalize for "<<simap["therm"]<<" steps."<<endl;
@@ -456,8 +349,6 @@ int main(int argc, char* argv[])
         sp->Save();
         delete wav;
         delete sp;
-        delete jas;
-        delete jaspot;
         for(size_t qu=0;qu<varmc.GetQuantities().size();++qu)
             delete varmc.GetQuantities()[qu];
 #ifdef USEMPI

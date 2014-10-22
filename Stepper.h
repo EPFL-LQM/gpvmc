@@ -3,7 +3,6 @@
 #include "BigDouble.h"
 
 class SlaterDeterminant;
-class Jastrow;
 class LatticeState;
 class WaveFunction;
 
@@ -13,8 +12,8 @@ class WaveFunction;
 
 class Stepper {
     public:
-        Stepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp, Jastrow* jas)
-            : m_amp(amp),m_jas(jas),m_latstate(latstate),m_wav(wav) {}
+        Stepper(LatticeState* latstate, WaveFunction* wav, SlaterDeterminant* amp)
+            : m_amp(amp),m_latstate(latstate),m_wav(wav) {}
         virtual ~Stepper() {}
         virtual void Reset()=0;
 
@@ -25,13 +24,11 @@ class Stepper {
         virtual double transprob()=0;
 
         const SlaterDeterminant* GetAmp() const {return m_amp;}
-        const Jastrow* GetJas() const {return m_jas;}
         const LatticeState* GetLatticeState() const {return m_latstate;}
         const WaveFunction* GetWaveFunction() const {return m_wav;}
 
     protected:
         SlaterDeterminant* m_amp;
-        Jastrow* m_jas;
         LatticeState* m_latstate;
         WaveFunction* m_wav;
 };

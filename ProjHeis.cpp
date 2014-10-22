@@ -7,7 +7,6 @@
 #include "WaveFunction.h"
 #include "LatticeState.h"
 #include "SlaterDeterminant.h"
-#include "Jastrow.h"
 #include "linalg.h"
 #include "Lattice.h"
 #include <vector>
@@ -48,7 +47,6 @@ void ProjHeis::measure()
 #endif
     Quantity::measure();
     const SlaterDeterminant* amp=m_stepper->GetAmp();
-    const Jastrow* jas=m_stepper->GetJas();
     const LatticeState* st=m_stepper->GetLatticeState();
     const WaveFunction* wav=m_stepper->GetWaveFunction();
     size_t Nexc=wav->GetNExc();
@@ -94,12 +92,10 @@ void ProjHeis::measure()
     // add the no swap empty hop path
     rhop.push_back(vector<hop_path_t>(st->GetNfl()));
     vector<BigComplex> qs(rhop.size()*Nexc,0.0);
-    vector<BigDouble> js(rhop.size(),1.0);
 #ifdef PROFILE
     Timer::tic("ProjHeis::measure/VirtUpdate");
 #endif
     amp->VirtUpdate(rhop,khop,qs);
-    jas->VirtUpdate(rhop,js);
     // qs has rhop.size() lines and khop.size() columns
 #ifdef PROFILE
     Timer::toc("ProjHeis::measure/VirtUpdate");
@@ -111,7 +107,7 @@ void ProjHeis::measure()
     // the |b> defined by hops (hopup,hopdo).
     size_t Nsw=rhop.size();
     for(size_t k=0;k<Nexc;++k){
-        amps[k]=qs[k*Nsw+Nsw-1]*jas->Jas();
+        amps[k]=qs[k*Nsw+Nsw-1];
     }
     size_t swc=0;
     for(size_t e=0;e<m_lat->GetEdges().size();++e){
@@ -126,7 +122,7 @@ void ProjHeis::measure()
         size_t fj=max_element(stj.begin(),stj.end(),uint_vec_t_comp)-stj.begin();
         if(fi!=fj || sti[fi][0]!=stj[fj][0]){
             for(size_t k=0;k<Nexc;++k){
-                heisamps[k]-=J*(0.25*amps[k]+0.5*qs[k*Nsw+swc]*js[swc]);
+                heisamps[k]-=J*(0.25*amps[k]+0.5*qs[k*Nsw+swc]);
             }
             ++swc;
         } else {
@@ -137,7 +133,7 @@ void ProjHeis::measure()
     if(m_Bx!=0){
         for(size_t v=0;v<m_lat->GetVertices().size();++v){
             for(size_t k=0;k<Nexc;++k){
-                heisamps[k]+=0.5*m_Bx*qs[k*Nsw+swc]*js[swc];
+                heisamps[k]+=0.5*m_Bx*qs[k*Nsw+swc];
             }
             ++swc;
         }
