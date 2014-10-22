@@ -8,24 +8,32 @@ def delta(kx,ky,params):
     return 0.5*(np.exp(1j*params['phi']*np.pi)*np.cos(kx*2*np.pi)+\
                 np.exp(-1j*params['phi']*np.pi)*np.cos(ky*2*np.pi))
 
+def neelk(kx,ky,params):
+    if params.setdefault('neel_exp',0.0)==0.0:
+        return params['neel']
+    else:
+        return params['neel']*np.power(0.5*(np.cos(kx*2*np.pi)**2+\
+                                            np.cos(ky*2*np.pi)**2)\
+                                       ,params['neel_exp'])
+
 def mfham(kx,ky,params):
     H=np.zeros([4,4]+list(np.shape(kx)),dtype=complex)
-    H[0,0,:]=-params['neel']
+    H[0,0,:]=-neelk(kx,ky,params)
     H[0,1,:]=-delta(kx,ky,params).conjugate()
     H[1,0,:]=-delta(kx,ky,params)
-    H[1,1,:]=params['neel']
-    H[2,2,:]=params['neel']
+    H[1,1,:]=neelk(kx,ky,params)
+    H[2,2,:]=neelk(kx,ky,params)
     H[2,3,:]=-delta(kx,ky,params).conjugate()
     H[3,2,:]=-delta(kx,ky,params)
-    H[3,3,:]=-params['neel']
+    H[3,3,:]=-neelk(kx,ky,params)
     return H
 
 def evals(kx,ky,params):
     v=np.zeros([4]+list(np.shape(kx)))
-    v[0,:]=-np.sqrt(params['neel']**2+abs(delta(kx,ky,params))**2)
-    v[1,:]=-np.sqrt(params['neel']**2+abs(delta(kx,ky,params))**2)
-    v[2,:]=np.sqrt(params['neel']**2+abs(delta(kx,ky,params))**2)
-    v[3,:]=np.sqrt(params['neel']**2+abs(delta(kx,ky,params))**2)
+    v[0,:]=-np.sqrt(neelk(kx,ky,params)**2+abs(delta(kx,ky,params))**2)
+    v[1,:]=-np.sqrt(neelk(kx,ky,params)**2+abs(delta(kx,ky,params))**2)
+    v[2,:]=np.sqrt(neelk(kx,ky,params)**2+abs(delta(kx,ky,params))**2)
+    v[3,:]=np.sqrt(neelk(kx,ky,params)**2+abs(delta(kx,ky,params))**2)
     return v
 
 def evecs(kx,ky,params):
@@ -33,18 +41,19 @@ def evecs(kx,ky,params):
     ev=evals(kx,ky,params)
     dk=delta(kx,ky,params)
     pdk=np.exp(1j*np.angle(dk))
+    nk=neelk(kx,ky,params)
     # spin up band -1
-    v[0,0,:]=np.sqrt(0.5*(1.0-params['neel']/ev[0,:]))
-    v[1,0,:]=pdk*np.sqrt(0.5*(1.0+params['neel']/ev[0,:]))
+    v[0,0,:]=np.sqrt(0.5*(1.0-nk/ev[0,:]))
+    v[1,0,:]=pdk*np.sqrt(0.5*(1.0+nk/ev[0,:]))
     # spin down band -1
-    v[2,1,:]=np.sqrt(0.5*(1.0+params['neel']/ev[1,:]))
-    v[3,1,:]=pdk*np.sqrt(0.5*(1.0-params['neel']/ev[1,:]))
+    v[2,1,:]=np.sqrt(0.5*(1.0+nk/ev[1,:]))
+    v[3,1,:]=pdk*np.sqrt(0.5*(1.0-nk/ev[1,:]))
     # spin up band +1
-    v[0,2,:]=-pdk.conjugate()*np.sqrt(0.5*(1.0-params['neel']/ev[2,:]))
-    v[1,2,:]=np.sqrt(0.5*(1.0+params['neel']/ev[2,:]))
+    v[0,2,:]=-pdk.conjugate()*np.sqrt(0.5*(1.0-nk/ev[2,:]))
+    v[1,2,:]=np.sqrt(0.5*(1.0+nk/ev[2,:]))
     # spin down band +1
-    v[2,3,:]=-pdk.conjugate()*np.sqrt(0.5*(1.0+params['neel']/ev[3,:]))
-    v[3,3,:]=np.sqrt(0.5*(1.0-params['neel']/ev[3,:]))
+    v[2,3,:]=-pdk.conjugate()*np.sqrt(0.5*(1.0+nk/ev[3,:]))
+    v[3,3,:]=np.sqrt(0.5*(1.0-nk/ev[3,:]))
     return v
 
 def spinops(params):
