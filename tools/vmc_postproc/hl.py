@@ -58,9 +58,9 @@ def get_stat_spin_struct(filenames,nsamp):
             Srxx[samp,:,:]=np.reshape(0.25*np.sum(Sr[samp,1:,:],axis=0),(Lx,Ly))
             Sryy[samp,:,:]=np.reshape(0.25*(np.sum(Sr[samp,1:3,:],axis=0)-np.sum(Sr[samp,3:,:],axis=0)),(Lx,Ly))
             Srzz[samp,:,:]=np.reshape(Sr[samp,0,:],(Lx,Ly))
-        Sqxx=fft.ifft2(fft.fftshift(Srxx,axes=(1,2)),axes=(1,2))*np.sqrt(N)
-        Sqyy=fft.ifft2(fft.fftshift(Sryy,axes=(1,2)),axes=(1,2))*np.sqrt(N)
-        Sqzz=fft.ifft2(fft.fftshift(Srzz,axes=(1,2)),axes=(1,2))*np.sqrt(N)
+        Sqxx=fft.ifft2(fft.fftshift(Srxx,axes=(1,2)),axes=(1,2))*N
+        Sqyy=fft.ifft2(fft.fftshift(Sryy,axes=(1,2)),axes=(1,2))*N
+        Sqzz=fft.ifft2(fft.fftshift(Srzz,axes=(1,2)),axes=(1,2))*N
     return (Sqxx,Sqyy,Sqzz),(Srxx,Sryy,Srzz)
 
 def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
@@ -70,7 +70,7 @@ def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
     H=HO[:,:HO.shape[1]/2,:]
     O=HO[:,HO.shape[1]/2:,:]
     if not wav:
-        mo=re.search(r'(.*/[0-9]+)-ProjHeis\.h5',filenames[0])
+        mo=re.search(r'(.*/?[0-9]+)-ProjHeis\.h5',filenames[0])
         wav=mo.groups()[0]+'-WaveFunction.h5'
     wav_st=load.get_wav(wav)
     fs=np.diag(proc.fermisigns(wav_st,load.get_attr(filenames[0])))
@@ -115,11 +115,11 @@ def get_eig_sys(filenames,nsamp,wav=None,statstruct=None,tol=1e-12):
             raise RuntimeError('Not implemented')
     return H,O,evals,evecs
 
-def get_sq_ampl(filenames,nsamp,wav=None,tol=1e-12,H=None,O=None,evals=None,evecs=None):
+def get_sq_ampl(filenames,nsamp,wav=None,tol=1e-12,O=None,evecs=None):
     if type(filenames)!=list:
         filenames=[filenames]
-    if H==None:
-        H,O,evals,evecs=get_eig_sys(filenames,nsamp,wav,tol)
+    if O==None or evecs==None:
+        H,O,evals,evecs=get_eig_sys(filenames,nsamp,wav,tol=tol)
     qp_mod=None
     params=load.get_attr(filenames[0])
     if params['sfpnxphz_wav']:

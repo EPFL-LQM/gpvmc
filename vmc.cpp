@@ -111,6 +111,9 @@ int main(int argc, char* argv[])
         fm->FileAttribute(it->first,it->second);
     for(map<string,string>::iterator it=stmap.begin();it!=stmap.end();++it)
         fm->FileAttribute(it->first,it->second);
+    fm->FileAttribute("stagflux_wav",true);
+    fm->FileAttribute("sfpnxphz_wav",false);
+    fm->FileAttribute("sfpnzphx_wav",false);
     fm->FileAttribute("gitversion",GIT_SHA1);
     
     RanGen::srand(inmap["seed"]+100*comm_rank);
@@ -165,15 +168,9 @@ int main(int argc, char* argv[])
             for(size_t v=0;v<slat.GetNv();++v){
                 bool even=(slat.GetVertices()[v]->uc[0]+slat.GetVertices()[v]->uc[1])%2;
                 if(even){
-                    if(bomap["stagflux_wav"])
-                        fst[0][v]=0;
-                    else
-                        fst[0][v*2]=0;
+                    fst[0][v]=0;
                 } else {
-                    if(bomap["stagflux_wav"])
-                        fst[1][v]=0;
-                    else
-                        fst[0][v*2+1]=0;
+                    fst[1][v]=0;
                 }
             }
             sp->InitFock(fst);
@@ -223,29 +220,12 @@ int main(int argc, char* argv[])
             amp.Init();
         } else {
             vector<vector<size_t> > pop;
-            if(bomap["stagflux_wav"]){
-                if(stmap["channel"]=="trans"){
-                    pop.push_back(vector<size_t>(1,L*L/2+1));
-                    pop.push_back(vector<size_t>(1,L*L/2-1));
-                } else {
-                    pop.push_back(vector<size_t>(1,L*L/2));
-                    pop.push_back(vector<size_t>(1,L*L/2));
-                }
+            if(stmap["channel"]=="trans"){
+                pop.push_back(vector<size_t>(1,L*L/2+1));
+                pop.push_back(vector<size_t>(1,L*L/2-1));
             } else {
-                if(bomap["Sztot_zero_proj"]){
-                    if(stmap["channel"]=="groundstate" || stmap["channel"]=="long"){
-                        pop.push_back({L*L/2,L*L/2});
-                    } else {
-                        pop.push_back({L*L/2+1,L*L/2-1});
-                    }
-                } else {
-                    if(bomap["Sztot_non_zero_init"]){
-                        int Nup=(size_t)(RanGen::uniform()*L*L);
-                        pop.push_back({size_t(Nup),size_t(int(L*L)-Nup)});
-                    } else {
-                        pop.push_back({L*L/2,L*L/2});
-                    }
-                }
+                pop.push_back(vector<size_t>(1,L*L/2));
+                pop.push_back(vector<size_t>(1,L*L/2));
             }
             int tc=0,failcount=10;
             while(amp.Amp()==0.0 && tc<failcount){
