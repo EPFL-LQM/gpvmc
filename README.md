@@ -61,6 +61,8 @@ The "vmc" executable, if called without arguments, will list all the possible op
 *   --meas\_stagmagn asks to measure the staggered magnetization.
 *   --meas\_statspinstruct asks to measure the static spin structure factor.
 
+A python script performing an example calculation may be found in the source root directory.
+
 ##Output
 The different outputs are in the HDF5 format, one file per quantity. The HDF5 files gather all the statistics of each quantity. Some postprocessing tools are provided in python.
 
