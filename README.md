@@ -42,6 +42,8 @@ In particular:
         :~/.../sourcedir/build$ make
         :~/.../sourcedir/build$ make install
 This produces the "vmc" executable and installs python packages (in the installation directory) that you can use for postprocessing (Make sure python knows where to find them).
+5.  The documentation may optionally be built as well by
+        :~/.../sourcedir/build$ make doc
 
 ##Run
 The "vmc" executable, if called without arguments, will list all the possible options. A typical example would be:
