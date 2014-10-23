@@ -41,15 +41,18 @@ This software has been built in various linux distributions. The requirements ar
         :~/.../sourcedir/build$ ccmake .
 
 In particular:
+
     *   If you don't have the GNU Scientific Library, please choose "USE_RNG_GSL=NO" and "USE_RNG_STD=YES". Doing so you will use the standard random number generator (probably a bad idea).
     *   If you don't have an MPI implementation installed, you must pick "USE_MPI=NO".
     *   Set the installation directory (default /usr/local) to some place you have write access (or you can do sudo)
+
 4.  Build the software and install it
 
         :~/.../sourcedir/build$ make
         :~/.../sourcedir/build$ make install
 
 This produces the "vmc" executable and installs python packages (in the installation directory) that you can use for postprocessing (Make sure python knows where to find them).
+
 5.  The documentation may optionally be built as well by
 
         :~/.../sourcedir/build$ make doc
