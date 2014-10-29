@@ -1,10 +1,6 @@
 Variational Monte-Carlo for Gutzwiller-Projected Wavefunctions implementation {#mainpage}
 =============================================================================
 
-This software was used to produce the numerical results published in
-
-B. Dalla Piazza _et al._, "Fractional excitations in the square lattice quantum antiferromagnet", Accepted in Nature Physics (October 2014).
-
 The software main objective is to provide an efficient way of calculating many-body wavefunction $|\psi\rangle$ overlaps with real space spin configuration state $|\alpha\rangle$. Its main components are:
 
 *   The wavefunction $|\psi\rangle$ is a trial ground state or excited state. Different such wavefunctions are implemented and inherit from the WaveFunction object.
